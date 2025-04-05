@@ -1,7 +1,12 @@
 import mongoose from 'mongoose';
 
 const adminSchema = new mongoose.Schema({
-    name: {
+    firstName: {
+        type: String,
+        required: true,
+        trim: true,
+    },
+    lastName: {
         type: String,
         required: true,
         trim: true,
@@ -21,6 +26,10 @@ const adminSchema = new mongoose.Schema({
         type: String,
         enum: ['superadmin', 'admin'],
         default: 'admin',
+    },
+    profilePicture: {
+        type: String,
+        default: 'default.jpg',
     },
     createdAt: {
         type: Date,
