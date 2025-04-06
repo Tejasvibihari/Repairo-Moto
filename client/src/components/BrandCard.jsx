@@ -1,13 +1,12 @@
 import React from 'react'
+import Heading from './ui/Heading'
 
 export default function BrandCard({ brands }) {
-    // console.log(brands)
+
     return (
         <>
             <div className='border border-gray-300 rounded p-4 shadow-sm h-[100vh] overflow-y-auto'>
-                <h1 className='text-kanit font-semibold border-l-4 pl-2 border-primary my-2'>
-                    Bike Brand & Model
-                </h1>
+                <Heading heading={"Bike Brand & Model"} />
                 <div>
                     {brands && brands.map((brand) => (
                         <fieldset key={brand._id} className='border border-gray-300 rounded p-4 my-4'>

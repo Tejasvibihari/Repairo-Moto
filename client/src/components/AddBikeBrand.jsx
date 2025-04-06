@@ -6,12 +6,12 @@ import { Plus } from 'lucide-react';
 import AlertSnackBar from './ui/AlertSnackBar.jsx';
 import { useDispatch, useSelector } from 'react-redux';
 import { setBrands, setLoading } from '../app/slice/brandSlice.js';
+import Heading from './ui/Heading.jsx';
 
 export default function AddBikeBrand() {
     const dispatch = useDispatch();
     const { loading } = useSelector((state) => state.brand);
     const [brand, setBrand] = useState('');
-    // const [loading, setLoading] = useState(false);
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
     const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
@@ -52,9 +52,7 @@ export default function AddBikeBrand() {
                 onClose={handleCloseSnackBar} // Close function for the Snackbar
             />
             <div className='shadow-sm border border-gray-300 rounded p-4'>
-                <h1 className='text-kanit font-semibold border-l-4 pl-2 border-primary my-2'>
-                    Add Bike Brand
-                </h1>
+                <Heading heading={"Add Bike Brand"} />
                 <form onSubmit={addBrand} className='flex flex-col gap-4 items-end justify-center mt-6 p-4 border border-gray-300 rounded'>
                     <TextField
                         onChange={(e) => setBrand(e.target.value)}

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-
 import TextField from '@mui/material/TextField';
 import { Plus } from 'lucide-react';
 import InputLabel from '@mui/material/InputLabel';
@@ -10,7 +9,10 @@ import axiosClient from '../service/axiosClient';
 import AlertSnackBar from './ui/AlertSnackBar'; // Import the Snackbar component
 import CircularLoading from './ui/CircularLoading';
 import { setBrands } from '../app/slice/brandSlice';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import Heading from './ui/Heading';
+
+
 export default function AddBikeModel() {
     const dispatch = useDispatch();
     const [loading, setLoading] = useState(false);
@@ -69,9 +71,7 @@ export default function AddBikeModel() {
                 onClose={handleCloseSnackBar} // Close function for the Snackbar
             />
             <div className='shadow-sm border border-gray-300 rounded p-4'>
-                <h1 className='text-kanit font-semibold border-l-4 pl-2 border-primary my-2'>
-                    Add Bike Model
-                </h1>
+                <Heading heading={"Add Bike Model"} />
                 <form onSubmit={addModel} className='flex flex-col gap-4 items-end justify-center mt-6 p-4 border border-gray-300 rounded'>
                     <FormControl fullWidth>
                         <InputLabel id="demo-simple-select-label">Select Brand</InputLabel>
