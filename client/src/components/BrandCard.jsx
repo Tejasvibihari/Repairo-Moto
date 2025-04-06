@@ -4,7 +4,7 @@ export default function BrandCard({ brands }) {
     // console.log(brands)
     return (
         <>
-            <div className='border border-gray-300 rounded p-4 shadow-sm'>
+            <div className='border border-gray-300 rounded p-4 shadow-sm h-[100vh] overflow-y-auto'>
                 <h1 className='text-kanit font-semibold border-l-4 pl-2 border-primary my-2'>
                     Bike Brand & Model
                 </h1>

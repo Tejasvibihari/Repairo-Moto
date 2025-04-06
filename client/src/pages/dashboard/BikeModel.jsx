@@ -4,19 +4,23 @@ import AddBikeModel from '../../components/AddBikeModel'
 import BrandCard from '../../components/BrandCard';
 import axiosClient from '../../service/axiosClient';
 import CircularLoading from '../../components/ui/CircularLoading';
+import { useSelector, useDispatch } from 'react-redux';
+import { setBrands } from '../../app/slice/brandSlice';
 
 export default function BikeModel() {
-    const [brands, setBrands] = React.useState({});
+    const dispatch = useDispatch();
+    const { brands } = useSelector((state) => state.brand)
+    const [loading, setLoading] = React.useState(false);
     const [models, setModels] = React.useState({});
-    const [loading, setLoading] = React.useState(true);
+    console.log(brands)
 
     useEffect(() => {
         const fetchBrands = async () => {
             setLoading(true)
             try {
                 const response = await axiosClient.get('/api/admin/brands/getBrands');
-                setBrands(response.data)
-                console.log(response.data)
+                dispatch(setBrands(response.data))
+                setLoading(false)
             } catch (error) {
                 console.error("Error fetching brands:", error);
             }
@@ -26,7 +30,7 @@ export default function BikeModel() {
     }, [])
     return (
         <>
-            <div className='grid grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                 <div>
                     <div>
                         <AddBikeBrand />
@@ -35,10 +39,14 @@ export default function BikeModel() {
                         <AddBikeModel />
                     </div>
                 </div>
-
                 <div>
-                    {loading ? <CircularLoading size={30} /> : <BrandCard brands={brands} />}
-
+                    {loading ? (
+                        <div className='flex items-center justify-center w-full'>
+                            <CircularLoading size={30} />
+                        </div>
+                    ) : (
+                        <BrandCard brands={brands} />
+                    )}
                 </div>
             </div>
         </>

@@ -9,7 +9,10 @@ import Select from '@mui/material/Select';
 import axiosClient from '../service/axiosClient';
 import AlertSnackBar from './ui/AlertSnackBar'; // Import the Snackbar component
 import CircularLoading from './ui/CircularLoading';
+import { setBrands } from '../app/slice/brandSlice';
+import { useDispatch, useSelector } from 'react-redux';
 export default function AddBikeModel() {
+    const dispatch = useDispatch();
     const [loading, setLoading] = useState(false);
     const [model, setModel] = useState('');
     const [brand, setBrand] = useState([]);
@@ -35,7 +38,8 @@ export default function AddBikeModel() {
         try {
             setLoading(true);
             const response = await axiosClient.post("api/admin/brands/addmodel", { brandId: selectedBrand, modelName: model });
-            console.log(response.data.message);
+            console.log(response.data.brands);
+            dispatch(setBrands(response.data.brands)); // Update the brands in the Redux store
             setSnackBarMessage(response.data.message); // Set the message to display in the Snackbar
             setSnackBarSeverity('success'); // Set severity to success
             setSnackBarOpen(true); // Open the Snackbar

@@ -5,7 +5,8 @@ export const addBrand = async (req, res) => {
     try {
         const newBrand = new Brand({ brandName });
         await newBrand.save();
-        res.status(201).json({ message: "Brand added successfully" });
+        const brands = await Brand.find();
+        res.status(201).json({ brands, message: "Brand added successfully" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
@@ -30,7 +31,9 @@ export const addModel = async (req, res) => {
         }
         brand.models.push({ name: modelName });
         await brand.save();
-        res.status(201).json({ message: "Model added successfully" });
+        const brands = await Brand.find();
+
+        res.status(201).json({ brands, message: "Model added successfully" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
