@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 
 // Import Router 
 import adminRoutes from "./Routes/adminRoutes.js";
+import brandRoutes from "./Routes/brandRoutes.js"
 
 
 const app = express();
@@ -19,6 +20,7 @@ const PORT = process.env.PORT || 5000;
 
 // Routes 
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/brands", brandRoutes);
 app.get("/", (req, res) => {
     res.send("Welcome to the Admin API");
 })
