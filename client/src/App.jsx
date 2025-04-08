@@ -10,8 +10,26 @@ import AdminBookingForm from './pages/dashboard/AdminBookingForm';
 import ManageEmployee from './pages/dashboard/ManageEmployee';
 import BlogEditor from './components/BlogEditor';
 import BlogPage from './pages/dashboard/BlogPage';
-
+import axiosClient from './service/axiosClient';
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { setBrands } from './app/slice/brandSlice';
 export default function App() {
+  const dispatch = useDispatch();
+  useEffect(() => {
+    const fetchBrands = async () => {
+
+      try {
+        const response = await axiosClient.get('/api/admin/brands/getBrands');
+        dispatch(setBrands(response.data))
+
+      } catch (error) {
+        console.error("Error fetching brands:", error);
+      }
+
+    }
+    fetchBrands()
+  }, [])
   return (
     <>
       <BrowserRouter>
