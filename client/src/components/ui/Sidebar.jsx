@@ -12,7 +12,9 @@ import {
     Menu,
     ChevronRight,
     Home,
-    Bike
+    Bike,
+    FileText,
+
 } from 'lucide-react';
 
 const Sidebar = ({ children }) => {
@@ -26,10 +28,7 @@ const Sidebar = ({ children }) => {
     const menuItems = [
         { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
         { id: 'bikebrand', path: '/model', label: 'Bike Model', icon: <Bike size={20} /> },
-        { id: 'adminorderbooking', path: '/admin-order-form', label: 'Order Booking', icon: <Briefcase size={20} /> },
-
-        
-        { id: 'manageemp', path: '/manage-employee', label: 'Manage Employee', icon: <Briefcase size={20} /> },
+        { id: 'adminorderbooking', path: '/adminorderform', label: 'Order Booking', icon: <Briefcase size={20} /> },
         { id: 'calendar', path: '/calendar', label: 'Calendar', icon: <Calendar size={20} /> },
         { id: 'messages', path: '/messages', label: 'Messages', icon: <MessageSquare size={20} /> },
         { id: 'analytics', path: '/analytics', label: 'Analytics', icon: <BarChart2 size={20} /> },

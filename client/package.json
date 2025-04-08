@@ -19,6 +19,7 @@
     "@tailwindcss/vite": "^4.1.3",
     "axios": "^1.8.4",
     "dayjs": "^1.11.13",
+    "jodit-react": "^5.2.19",
     "lucide-react": "^0.487.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

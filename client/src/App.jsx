@@ -7,7 +7,6 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Sidebar from './components/ui/Sidebar';
 import BikeModel from './pages/dashboard/BikeModel';
 import AdminBookingForm from './pages/dashboard/AdminBookingForm';
-import ManageEmployee from './pages/dashboard/ManageEmployee';
 
 
 export default function App() {
@@ -26,6 +25,8 @@ export default function App() {
             <Route path='/manage-employee' element={<ManageEmployee />} />
             {/* Auth Routes */}
             {/* Blog Routes */}
+            <Route path='/blog' element={<Blog />} />
+            <Route path='/blogeditor'element={<BlogEditor/>} />
           </Routes>
         </Sidebar>
       </BrowserRouter>
