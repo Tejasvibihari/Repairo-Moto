@@ -16,11 +16,11 @@ export default function BlogEditor() {
         console.log('Banner uploaded:', file);
     };
 
-    
+
 
     const handleEditorChange = (newContent) => {
         editorContent = newContent;
-     
+
         console.log(editorContent)
     };
 
@@ -33,7 +33,7 @@ export default function BlogEditor() {
             banner,
         };
         console.log('Blog Data:', blogData);
-        
+
     };
 
     return (
@@ -54,23 +54,6 @@ export default function BlogEditor() {
                         onChange={(e) => setTitle(e.target.value)}
                         required
                     />
-                </div>
-
-                <div className="mb-4">
-                    <label
-                        className="block text-sm font-medium mb-2"
-                        htmlFor="description"
-                    >
-                        Description
-                    </label>
-                    <textarea
-                        id="description"
-                        className="w-full p-2 border border-gray-300 rounded"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        rows="3"
-                        required
-                    ></textarea>
                 </div>
 
                 <div className="mb-4">
