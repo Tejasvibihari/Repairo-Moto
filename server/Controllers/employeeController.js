@@ -1,7 +1,8 @@
 import Employee from "../Models/employeeModel.js";
+import { generateReferralCode } from "../Utils/generateReferalCode.js";
 
 export const createEmployee = async (req, res) => {
-    const { firstName, lastName, email, phone, role, address, city, state, pincode, referralCode } = req.body;
+    const { firstName, lastName, email, phone, role, address, city, state, pincode } = req.body;
     try {
         const employee = await Employee.findOne({ email });
         if (employee) {
@@ -12,6 +13,7 @@ export const createEmployee = async (req, res) => {
         const lastPhoneDigits = phone.slice(-4);
         const password = `${firstNameDigits}${lastPhoneDigits}`;
         const hashedPassword = await bcrypt.hash(password, 10);
+        const referralCode = generateReferralCode(firstName, phone);
 
         const newEmployee = new Employee({
             firstName,
@@ -25,7 +27,7 @@ export const createEmployee = async (req, res) => {
             state,
             pincode,
             referralCode,
-            profilePicture: "https://example.com/default-profile-pic.jpg", // Placeholder URL
+            profilePicture // Placeholder URL
         });
         await newEmployee.save();
         res.status(201).json({ message: "Employee created successfully" });
