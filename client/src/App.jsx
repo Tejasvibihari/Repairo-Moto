@@ -7,6 +7,8 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Sidebar from './components/ui/Sidebar';
 import BikeModel from './pages/dashboard/BikeModel';
 import AdminBookingForm from './pages/dashboard/AdminBookingForm';
+import Blog from './pages/dashboard/Blog-page';
+import BlogEditor from './pages/dashboard/blog-editor';
 
 
 export default function App() {
@@ -23,6 +25,8 @@ export default function App() {
             <Route path='/dashboard' element={<Dashboard />} />
             {/* Auth Routes */}
             {/* Blog Routes */}
+            <Route path='/blog' element={<Blog />} />
+            <Route path='/blogeditor'element={<BlogEditor/>} />
           </Routes>
         </Sidebar>
       </BrowserRouter>
