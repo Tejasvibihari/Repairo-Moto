@@ -1,10 +1,10 @@
 import React from 'react'
-import BookingForm from '../../components/BookingForm'
+import ManualBookingForm from '../../components/ManualBookingForm'
 
 export default function AdminBookingForm() {
     return (
         <>
-            <BookingForm />
+            <ManualBookingForm />
         </>
     )
 }

@@ -3,7 +3,7 @@ import Heading from './ui/Heading';
 import AlertSnackBar from './ui/AlertSnackBar';
 import TextField from '@mui/material/TextField';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import { Phone, CircleHelp, IndianRupee, Bug } from 'lucide-react';
+import { Phone, CircleHelp, IndianRupee, Bug, Plus } from 'lucide-react';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
@@ -20,10 +20,15 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import axiosClient from '../service/axiosClient';
 import { Divider } from '@mui/material';
+import CircularLoading from './ui/CircularLoading';
 
-export default function BookingForm() {
+export default function ManualBookingForm() {
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
+    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
+    const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
+    const [loading, setLoading] = useState(false); // State to control loading spinner
     const [formData, setFormData] = useState({
         name: '',
         contactNo: '',
@@ -75,15 +80,40 @@ export default function BookingForm() {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Form Data:', formData);
+        try {
+            setLoading(true);
+            const response = await axiosClient.post('/api/admin/order/manualorder', formData);
+            console.log('Form submitted successfully:', response.data);
+            console.log('Form submitted successfully:', response.data.message);
+            setSnackBarMessage(response.data.message);
+            setSnackBarSeverity('success');
+            setSnackBarOpen(true); // Open the Snackbar
+            setLoading(false); // Stop loading state
+        } catch (error) {
+            console.log('Error submitting form:', error);
+            setSnackBarMessage(error.message); // Set the message to display in the Snackbar
+            setSnackBarSeverity('error'); // Set severity to error
+            setLoading(false)
+        }
         // Submit the form data to the server
     };
+    const handleCloseSnackBar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
 
+        setSnackBarOpen(false);
+    }
     return (
         <>
-            <AlertSnackBar />
+            <AlertSnackBar
+                open={snackBarOpen}
+                message={snackBarMessage}
+                severity={snackBarSeverity}
+                onClose={handleCloseSnackBar} // Close function for the Snackbar
+            />
             <div>
                 <Heading heading={'Booking Form'} />
                 <form className='my-6 p-4 border shadow border-gray-300' onSubmit={handleSubmit}>
@@ -153,6 +183,7 @@ export default function BookingForm() {
                                 value={formData.selectedBrand}
                                 onChange={handleBrandChange}
                                 fullWidth
+                                required
                                 displayEmpty
                                 inputProps={{ 'aria-label': 'Select Brand' }}
                             >
@@ -176,6 +207,7 @@ export default function BookingForm() {
                                 onChange={handleInputChange}
                                 fullWidth
                                 displayEmpty
+                                required
                                 inputProps={{ 'aria-label': 'Select Model' }}
                             >
                                 <MenuItem value="">
@@ -219,6 +251,7 @@ export default function BookingForm() {
                                 name="cc"
                                 value={formData.cc}
                                 onChange={handleInputChange}
+                                required
                                 row
                                 aria-labelledby="cc-label"
                             >
@@ -312,6 +345,7 @@ export default function BookingForm() {
                                     <DatePicker
                                         label="Preferred Date"
                                         value={formData.preferredDate}
+                                        required
                                         onChange={(newValue) =>
                                             setFormData((prev) => ({ ...prev, preferredDate: newValue }))
                                         }
@@ -344,7 +378,6 @@ export default function BookingForm() {
                                 label="Estimated Budget"
                                 variant="outlined"
                                 placeholder="Estimated Budget"
-                                required
                                 value={formData.estimatedBudget}
                                 onChange={handleInputChange}
                                 slotProps={{
@@ -378,9 +411,15 @@ export default function BookingForm() {
                     </div>
                     <button
                         type="submit"
-                        className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark"
+                        className="bg-primary  text-white px-4 py-2 rounded cursor-pointer hover:bg-primary-dark"
                     >
-                        Submit
+                        {loading ? (
+                            <div className='flex items-center justify-center'>
+                                <CircularLoading size={20} />
+                            </div>
+                        ) : (
+                            <span className='flex flex-row items-center justify-center'><Plus className='mr-2' /> Create Order</span>
+                        )}
                     </button>
                 </form>
             </div>

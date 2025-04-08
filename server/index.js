@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 // Import Router 
 import adminRoutes from "./Routes/adminRoutes.js";
 import brandRoutes from "./Routes/brandRoutes.js"
-
+import orderRouter from "./Routes/orderRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 5000;
 // Routes 
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/brands", brandRoutes);
-// app.use("/api/user/")
+app.use("/api/admin/order", orderRouter);
 // app.use("/api/vendor")
 // app.use("/api/employee")
 
