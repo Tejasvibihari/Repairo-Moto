@@ -6,8 +6,8 @@
     {
       "id": "AgRDgwvacvRzUyttyn2Xg",
       "type": "text",
-      "x": -160.19998168945312,
-      "y": 164.00000762939453,
+      "x": -275.3998718261719,
+      "y": 79.20003509521484,
       "width": 204.87986755371094,
       "height": 275,
       "angle": 0,
@@ -23,8 +23,8 @@
       "index": "a0",
       "roundness": null,
       "seed": 41616774,
-      "version": 440,
-      "versionNonce": 212154744,
+      "version": 558,
+      "versionNonce": 1136326400,
       "isDeleted": false,
       "boundElements": [
         {
@@ -32,7 +32,7 @@
           "type": "arrow"
         }
       ],
-      "updated": 1744100823725,
+      "updated": 1744141045729,
       "link": null,
       "locked": false,
       "text": "Admin Login\nUser Login\nOrder Booking\nBlog Section\nCustomer Dashboard\nAdmin Dashboard\nRefrel System\nCoupon Code\nSMS System\nRating of MECHANIC\n",
@@ -48,10 +48,10 @@
     {
       "id": "_VySKdS3pSXAyDmVeEx1B",
       "type": "arrow",
-      "x": 57.439964294433594,
-      "y": 298.7000045776367,
-      "width": 181,
-      "height": 54.399993896484375,
+      "x": -57.759925842285156,
+      "y": 243.20087553943696,
+      "width": 296.19989013671875,
+      "height": 1.0991351417153794,
       "angle": 0,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "transparent",
@@ -67,11 +67,11 @@
         "type": 2
       },
       "seed": 2127179384,
-      "version": 52,
-      "versionNonce": 359467128,
+      "version": 170,
+      "versionNonce": 524556032,
       "isDeleted": false,
-      "boundElements": null,
-      "updated": 1744100823725,
+      "boundElements": [],
+      "updated": 1744141045729,
       "link": null,
       "locked": false,
       "points": [
@@ -80,8 +80,8 @@
           0
         ],
         [
-          181,
-          -54.399993896484375
+          296.19989013671875,
+          1.0991351417153794
         ]
       ],
       "lastCommittedPoint": null,

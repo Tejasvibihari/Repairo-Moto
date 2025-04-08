@@ -30,7 +30,8 @@ const Sidebar = ({ children }) => {
         { id: 'bikebrand', path: '/model', label: 'Bike Model', icon: <Bike size={20} /> },
         { id: 'adminorderbooking', path: '/admin-order-form', label: 'Order Booking', icon: <Briefcase size={20} /> },
         { id: 'manageemployee', path: '/manage-employee', label: 'Manage Employee', icon: <Briefcase size={20} /> },
-        { id: 'Add Blog', path: '/add-blog', label: 'Add Blog', icon: <Briefcase size={20} /> },
+        { id: 'AddBlog', path: '/add-blog', label: 'Add Blog', icon: <Briefcase size={20} /> },
+        { id: 'manageBlog', path: '/manage-blog', label: 'Manage Blog', icon: <Briefcase size={20} /> },
 
 
 

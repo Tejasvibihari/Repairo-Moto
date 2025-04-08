@@ -8,12 +8,12 @@ import Sidebar from './components/ui/Sidebar';
 import BikeModel from './pages/dashboard/BikeModel';
 import AdminBookingForm from './pages/dashboard/AdminBookingForm';
 import ManageEmployee from './pages/dashboard/ManageEmployee';
-import BlogEditor from './components/BlogEditor';
-import BlogPage from './pages/dashboard/BlogPage';
 import axiosClient from './service/axiosClient';
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { setBrands } from './app/slice/brandSlice';
+import AddBlog from './pages/dashboard/AddBlog';
+import ManageBlog from './pages/dashboard/ManageBlog';
 export default function App() {
   const dispatch = useDispatch();
   useEffect(() => {
@@ -45,7 +45,8 @@ export default function App() {
             <Route path='/manage-employee' element={<ManageEmployee />} />
             {/* Auth Routes */}
             {/* Blog Routes */}
-            <Route path='/add-blog' element={<BlogPage />} />
+            <Route path='/add-blog' element={<AddBlog />} />
+            <Route path='/manage-blog' element={<ManageBlog />} />
           </Routes>
         </Sidebar>
       </BrowserRouter>
