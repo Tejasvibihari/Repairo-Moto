@@ -7,6 +7,7 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Sidebar from './components/ui/Sidebar';
 import BikeModel from './pages/dashboard/BikeModel';
 import AdminBookingForm from './pages/dashboard/AdminBookingForm';
+import ManageEmployee from './pages/dashboard/ManageEmployee';
 
 
 export default function App() {
@@ -17,10 +18,12 @@ export default function App() {
           <Routes>
             {/* Landing Page Routes */}
             <Route path='/' element={<Home />} />
-            <Route path='/model' element={<BikeModel />} />
-            <Route path='/adminorderform' element={<AdminBookingForm />} />
+    
             {/* Dashboard Routes */}
             <Route path='/dashboard' element={<Dashboard />} />
+            <Route path='/model' element={<BikeModel />} />
+            <Route path='/admin-order-form' element={<AdminBookingForm />} />
+            <Route path='/manage-employee' element={<ManageEmployee />} />
             {/* Auth Routes */}
             {/* Blog Routes */}
           </Routes>

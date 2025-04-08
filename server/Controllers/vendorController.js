@@ -1,0 +1,1 @@
+import Vendor from "../Models/vendorModel.js";

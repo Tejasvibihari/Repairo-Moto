@@ -21,6 +21,11 @@ const PORT = process.env.PORT || 5000;
 // Routes 
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/brands", brandRoutes);
+// app.use("/api/user/")
+// app.use("/api/vendor")
+// app.use("/api/employee")
+
+
 app.get("/", (req, res) => {
     res.send("Welcome to the Admin API");
 })
