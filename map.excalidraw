@@ -6,8 +6,8 @@
     {
       "id": "AgRDgwvacvRzUyttyn2Xg",
       "type": "text",
-      "x": -27.5999755859375,
-      "y": 192.00000762939453,
+      "x": -160.19998168945312,
+      "y": 164.00000762939453,
       "width": 204.87986755371094,
       "height": 275,
       "angle": 0,
@@ -23,11 +23,16 @@
       "index": "a0",
       "roundness": null,
       "seed": 41616774,
-      "version": 412,
-      "versionNonce": 129548494,
+      "version": 440,
+      "versionNonce": 212154744,
       "isDeleted": false,
-      "boundElements": [],
-      "updated": 1743853623043,
+      "boundElements": [
+        {
+          "id": "_VySKdS3pSXAyDmVeEx1B",
+          "type": "arrow"
+        }
+      ],
+      "updated": 1744100823725,
       "link": null,
       "locked": false,
       "text": "Admin Login\nUser Login\nOrder Booking\nBlog Section\nCustomer Dashboard\nAdmin Dashboard\nRefrel System\nCoupon Code\nSMS System\nRating of MECHANIC\n",
@@ -39,6 +44,56 @@
       "originalText": "Admin Login\nUser Login\nOrder Booking\nBlog Section\nCustomer Dashboard\nAdmin Dashboard\nRefrel System\nCoupon Code\nSMS System\nRating of MECHANIC\n",
       "autoResize": true,
       "lineHeight": 1.25
+    },
+    {
+      "id": "_VySKdS3pSXAyDmVeEx1B",
+      "type": "arrow",
+      "x": 57.439964294433594,
+      "y": 298.7000045776367,
+      "width": 181,
+      "height": 54.399993896484375,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a1",
+      "roundness": {
+        "type": 2
+      },
+      "seed": 2127179384,
+      "version": 52,
+      "versionNonce": 359467128,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1744100823725,
+      "link": null,
+      "locked": false,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          181,
+          -54.399993896484375
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "AgRDgwvacvRzUyttyn2Xg",
+        "focus": 0.18910162771062786,
+        "gap": 12.760078430175781
+      },
+      "endBinding": null,
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
     }
   ],
   "appState": {
