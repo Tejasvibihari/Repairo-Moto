@@ -43,3 +43,14 @@ export const createEmployee = async (req, res) => {
 
     }
 }
+
+export const getAllEmployee = async (req, res) => {
+    try {
+        const employees = await Employee.find({}).select("-password");
+        console.log(employees)
+        res.status(200).json({ employees });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
