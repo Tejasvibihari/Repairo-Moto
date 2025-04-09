@@ -3,16 +3,18 @@ import JoditEditor from 'jodit-react';
 import CircularLoading from './ui/CircularLoading.jsx';
 import { Plus } from 'lucide-react';
 
-export default function BlogEditor() {
+export default function BlogEditor({ title, setTitle, content, setContent, banner, setBanner }) {
 
 
     // state management
     const editor = useRef(null);
-    const [content, setContent] = useState('');
     const [loading] = useState(false);
-    const [title, setTitle] = useState('');
-    const [banner, setBanner] = useState(null);
+
+    // const [content, setContent] = useState('');
+    // const [title, setTitle] = useState('');
+    // const [banner, setBanner] = useState(null);
     // variables 
+
     let editorContent = content;
 
     const handleBannerUpload = (e) => {
@@ -25,6 +27,8 @@ export default function BlogEditor() {
 
     const handleEditorChange = (newContent) => {
         editorContent = newContent;
+        // setContent(newContent);
+       
 
         console.log(editorContent)
     };
@@ -74,7 +78,7 @@ export default function BlogEditor() {
                 </div>
 
                 <div className="mb-4">
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-sm font-medium mb-2" htmlFor="content">
                         Content
                     </label>
                     <JoditEditor
