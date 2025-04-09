@@ -1,10 +1,17 @@
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
+
+// Ensure the uploads/employee directory exists
+const uploadDir = 'uploads/employee';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true }); // Create the directory if it doesn't exist
+}
 
 // Configure storage for uploaded files
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'Uploads/employee'); // Directory to store uploaded files
+        cb(null, uploadDir); // Directory to store uploaded files
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);

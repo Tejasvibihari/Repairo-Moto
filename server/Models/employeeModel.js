@@ -38,12 +38,12 @@ const empleyeeSchema = new mongoose.Schema({
     referralCode: {
         type: String,
     },
-    profilePicture: {
+    profileImage: {
         type: String,
     },
     role: {
         type: String,
-        enum: ["admin", "employee", "mechanic", "manager", "operational manager", "telecaller"],
+        enum: ["admin", "employee", "mechanic", "manager", "operational manager", "telecaller", "delivery"],
     }
 })
 

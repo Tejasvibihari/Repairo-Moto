@@ -43,7 +43,6 @@ export default function AddEmployeeForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-
         const data = new FormData();
         Object.keys(formData).forEach((key) => {
             data.append(key, formData[key]);
@@ -51,30 +50,44 @@ export default function AddEmployeeForm() {
 
         try {
             console.log('Form Data:', formData);
-            const res = await axiosClient.post('/api/admin/employee/addemployee', data);
+            const res = await axiosClient.post('/api/admin/employee/addemployee', data,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data', // Ensure correct content type
+                    },
+                }
+            );
             console.log('Employee added:', res);
             setLoading(false);
+            console.log(res.data.message); // Set the message to display in the Snackbar
             setSnackBarMessage(res.data.message); // Set the message to display in the Snackbar
             setSnackBarSeverity('success'); // Set severity to success
-            setSnackBarOpen(false);
-            setFormData({
-                firstName: '',
-                lastName: '',
-                phone: '',
-                email: '',
-                role: '',
-                address: '',
-                city: '',
-                state: '',
-                pincode: '',
-                profileImage: null,
-            });
+            setSnackBarOpen(true);
+            // setFormData({
+            //     firstName: '',
+            //     lastName: '',
+            //     phone: '',
+            //     email: '',
+            //     role: '',
+            //     address: '',
+            //     city: '',
+            //     state: '',
+            //     pincode: '',
+            //     profileImage: null,
+            // });
         } catch (err) {
-            console.error('Error:', err);
-            setSnackBarMessage(err.message); // Set the message to display in the Snackbar
+            console.log('Error:', err);
+            // Check if the error has a response and status code
+            if (err.response && err.response.status === 400) {
+                setSnackBarMessage(err.response.data.message || 'Bad Request'); // Use the server-provided message or fallback
+            } else {
+                setSnackBarMessage(err.message || 'Something went wrong'); // Fallback to general error message
+            }
+
             setSnackBarSeverity('error'); // Set severity to error
             setSnackBarOpen(true); // Open the Snackbar
             setLoading(false);
+
             // alert('Something went wrong.');
         }
 
@@ -102,7 +115,7 @@ export default function AddEmployeeForm() {
                 <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-6'>
                     <InputField label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} />
                     <InputField label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} />
-                    <InputField label="Phone Number" name="phone" value={formData.phone} onChange={handleChange} />
+                    <InputField label="Phone Number" type='number' name="phone" value={formData.phone} onChange={handleChange} />
                     <InputField label="Email" name="email" value={formData.email} type="email" onChange={handleChange} />
                     <div>
                         <label className='text-gray-700 font-semibold mb-2 block text-sm'>Role</label>
@@ -118,7 +131,13 @@ export default function AddEmployeeForm() {
                     </div>
                     <div>
                         <label className='text-gray-700 font-semibold mb-2 block text-sm'>Profile Image</label>
-                        <input type='file' accept='image/*' name='profileImage' onChange={handleFileChange} required className='border-2 border-gray-300 rounded-md p-2 w-full' />
+                        <input
+                            type='file'
+                            accept='image/*'
+                            name='profileImage'
+                            onChange={handleFileChange}
+                            required
+                            className='border-2 border-gray-300 rounded-md p-2 w-full' />
                     </div>
                 </div>
                 <div className='grid grid-cols-1 md:grid-cols-4 gap-4 mt-4'>
@@ -140,7 +159,7 @@ export default function AddEmployeeForm() {
                     )}
                 </button>
             </form>
-        </div>
+        </div >
     );
 }
 

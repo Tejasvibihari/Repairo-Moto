@@ -3,10 +3,12 @@ import { generateReferralCode } from "../Utils/generateReferalCode.js";
 import bcrypt from "bcryptjs";
 
 export const createEmployee = async (req, res) => {
-    const { firstName, lastName, email, phone, role, address, city, state, pincode, } = req.body;
+    const { firstName, lastName, email, phone, role, address, city, state, pincode, profileImage } = req.body;
+    console.log(profileImage, "Profile  ");
     try {
-        const employee = await Employee.findOne({ email });
+        const employee = await Employee.find({ email });
         if (employee) {
+            console.log("Employee already exists");
             return res.status(400).json({ message: "Employee already exists" });
         }
 
@@ -18,7 +20,7 @@ export const createEmployee = async (req, res) => {
 
 
         // Handle uploaded file
-        const profilePicture = req.file ? req.file.path : null;
+        const profileImage = req.file ? req.file.path : null;
 
         const newEmployee = new Employee({
             firstName,
@@ -32,7 +34,7 @@ export const createEmployee = async (req, res) => {
             state,
             pincode,
             referralCode,
-            profilePicture // Placeholder URL
+            profileImage // Placeholder URL
         });
         await newEmployee.save();
         res.status(201).json({ message: "Employee created successfully" });
