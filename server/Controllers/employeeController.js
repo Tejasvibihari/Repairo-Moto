@@ -20,7 +20,7 @@ export const createEmployee = async (req, res) => {
 
 
         // Handle uploaded file
-        const profileImage = req.file ? req.file.path : null;
+        const profileImage = req.file ? `uploads/employee/${req.file.filename}` : null;
 
         const newEmployee = new Employee({
             firstName,

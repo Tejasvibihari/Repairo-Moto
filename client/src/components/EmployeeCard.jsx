@@ -11,7 +11,7 @@ import Heading from './ui/Heading';
 import AddEmployeeForm from './AddEmployeeForm';
 import EditEmployeeForm from './EditEmployeeForm';
 
-export default function EmployeeCard() {
+export default function EmployeeCard({ firstName, lastName, role, phone, email, profileImage }) {
     const [open, setOpen] = React.useState(false);
     const [openDelete, setOpenDelete] = React.useState(false);
 
@@ -35,13 +35,13 @@ export default function EmployeeCard() {
             <div className='border border-primary shadow-sm rounded-md p-4 mt-6 w-full'>
                 <div className='flex flex-col gap-2 items-center justify-between'>
                     <div>
-                        <img src="https://via.placeholder.com/150" alt="Employee" className='w-24 h-24 rounded-full border border-primary shadow-md' />
+                        <img src={`${import.meta.env.VITE_API_URL}/${profileImage}`} alt={profileImage} className='w-24 h-24 rounded-full border border-primary shadow-md' />
                     </div>
                     <div className='flex flex-col gap-1 items-center justify-center'>
-                        <span className='text-sm font-inter font-semibold'>John Doe</span>
-                        <span className='text-sm font-inter font-semibold'>Role</span>
-                        <span className='text-sm font-inter'>6205731150</span>
-                        <span className='text-sm font-inter'>tejasvibihari2000@gmail.com</span>
+                        <span className='text-sm font-inter font-semibold'>{firstName} {lastName}</span>
+                        <span className='text-sm font-inter font-semibold'>{role}</span>
+                        <span className='text-sm font-inter'>{phone}</span>
+                        <span className='text-sm font-inter'>{email}</span>
                         <span className='text-sm font-inter'>Rating</span>
                     </div>
                     <div className='flex gap-2'>

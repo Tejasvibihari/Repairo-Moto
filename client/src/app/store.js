@@ -5,6 +5,7 @@ import { combineReducers } from 'redux';
 
 // Example reducer (replace with your actual reducers)
 import brandReducers from './slice/brandSlice';
+import employeeReducers from './slice/employeeSlice'
 
 // Persist configuration
 const persistConfig = {
@@ -14,7 +15,8 @@ const persistConfig = {
 
 // Combine reducers
 const rootReducer = combineReducers({
-    brand: brandReducers, // Add your reducers here
+    brand: brandReducers,
+    employee: employeeReducers // Add your reducers here
 });
 
 // Create a persisted reducer
