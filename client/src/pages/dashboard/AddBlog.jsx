@@ -1,12 +1,23 @@
 import React from 'react'
 import BlogEditor from '../../components/BlogEditor'
 import Heading from "../../components/ui/Heading"
+import BlogLivePreview from '../../components/BlogLivePreview'
 
 export default function AddBlog() {
     return (
-        <div>
+        <>
             <Heading heading={"Add Blog"} />
-            <BlogEditor />
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+
+                <div>
+                    <BlogEditor />
+                </div>
+                <div>
+                    <BlogLivePreview />
+                </div>
+
+            </div>
+        </>
+
     )
 }

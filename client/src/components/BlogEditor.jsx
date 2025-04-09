@@ -1,13 +1,18 @@
 import React, { useRef, useState } from 'react';
 import JoditEditor from 'jodit-react';
+import CircularLoading from './ui/CircularLoading.jsx';
+import { Plus } from 'lucide-react';
 
 export default function BlogEditor() {
+
+
+    // state management
     const editor = useRef(null);
     const [content, setContent] = useState('');
-
+    const [loading] = useState(false);
     const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
     const [banner, setBanner] = useState(null);
+    // variables 
     let editorContent = content;
 
     const handleBannerUpload = (e) => {
@@ -28,8 +33,7 @@ export default function BlogEditor() {
         e.preventDefault();
         const blogData = {
             title,
-            description,
-            content,
+            content: editorContent,
             banner,
         };
         console.log('Blog Data:', blogData);
@@ -37,9 +41,9 @@ export default function BlogEditor() {
     };
 
     return (
-        <section>
+        <div className='shadow-sm border border-gray-300 rounded p-4'>
             <form
-                className="my-6 p-4 border shadow border-gray-300"
+                className='p-4 border border-gray-300 rounded'
                 onSubmit={handleSubmit}
             >
                 <div className="mb-4">
@@ -83,13 +87,11 @@ export default function BlogEditor() {
                     />
                 </div>
 
-                <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                    Submit Blog
+
+                <button type="submit" className="bg-primary mt-4  font-semibold hover:bg-transparent hover:text-primary  border-primary border text-white px-4 py-2 rounded cursor-pointer hover:bg-primary-dark">
+                    {loading ? <div className='flex items-center justify-center'> <CircularLoading size={20} /></div> : <div className='flex flex-row space-x-2'><span><Plus /></span><span>Submit Blog</span></div>}
                 </button>
             </form>
-        </section>
+        </div>
     );
 }
