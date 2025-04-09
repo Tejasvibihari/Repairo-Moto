@@ -1,6 +1,7 @@
 import Employee from "../Models/employeeModel.js";
 import { generateReferralCode } from "../Utils/generateReferalCode.js";
 import bcrypt from "bcryptjs";
+import fs from "fs";
 
 export const createEmployee = async (req, res) => {
     const { firstName, lastName, email, phone, role, address, city, state, pincode, profileImage } = req.body;
@@ -54,3 +55,40 @@ export const getAllEmployee = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
+export const deleteEmployeeById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Find the employee by ID to get the profile image path
+        const employee = await Employee.findById(id);
+
+        if (!employee) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+
+        // Delete the employee by ID
+        await Employee.findByIdAndDelete(id);
+
+        // Delete the associated profile image if it exists
+        if (employee.profileImage) {
+            fs.unlink(employee.profileImage, (err) => {
+                if (err) {
+                    console.error("Error deleting image:", err);
+                } else {
+                    console.log("Image deleted successfully:", employee.profileImage);
+                }
+            });
+        }
+
+        // Fetch all remaining employees
+        const getAllEmployees = await Employee.find({}).select("-password");
+        console.log(getAllEmployees);
+
+        // Return the updated list of employees
+        res.status(200).json({ employees: getAllEmployees, message: "Employee deleted successfully" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};

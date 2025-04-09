@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Check, CircleX, Trash, UserPen, X } from 'lucide-react'
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -10,11 +10,19 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Heading from './ui/Heading';
 import AddEmployeeForm from './AddEmployeeForm';
 import EditEmployeeForm from './EditEmployeeForm';
-
-export default function EmployeeCard({ firstName, lastName, role, phone, email, profileImage }) {
+import axiosClient from '../service/axiosClient';
+import AlertSnackBar from './ui/AlertSnackBar';
+import CircularLoading from './ui/CircularLoading';
+import { useDispatch } from 'react-redux';
+import { setEmployee } from '../app/slice/employeeSlice';
+export default function EmployeeCard({ id, firstName, lastName, role, phone, email, profileImage }) {
     const [open, setOpen] = React.useState(false);
     const [openDelete, setOpenDelete] = React.useState(false);
-
+    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
+    const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
+    const [loading, setLoading] = React.useState(false); // State to control loading spinner
+    const dispatch = useDispatch()
     const handleClickOpen = () => {
         setOpen(true);
     };
@@ -30,8 +38,39 @@ export default function EmployeeCard({ firstName, lastName, role, phone, email, 
         setOpenDelete(false);
     };
 
+    const handleDelete = async (id) => {
+        try {
+            console.log(id)
+            setLoading(true); // Start loading state
+            const response = await axiosClient.delete(`/api/admin/employee/deleteemployee/${id}`);
+            console.log(response.data.employees);
+            setSnackBarMessage(response.data.message); // Set the message to display in the Snackbar
+            setSnackBarSeverity('success'); // Set severity to success
+            setSnackBarOpen(true); // Open the Snackbar
+            setLoading(false); // Stop loading state
+            handleDeleteClose()
+            dispatch(setEmployee(response.data.employees)); // Update the employees in the Redux store
+        } catch (error) {
+            console.log(error);
+            setSnackBarMessage(error.message); // Set the message to display in the Snackbar
+            setSnackBarSeverity('error'); // Set severity to error
+        }
+    }
+    const handleCloseSnackBar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+
+        setSnackBarOpen(false);
+    };
     return (
         <>
+            <AlertSnackBar
+                open={snackBarOpen}
+                message={snackBarMessage}
+                severity={snackBarSeverity}
+                onClose={handleCloseSnackBar} // Close function for the Snackbar
+            />
             <div className='border border-primary shadow-sm rounded-md p-4 mt-6 w-full'>
                 <div className='flex flex-col gap-2 items-center justify-between'>
                     <div>
@@ -84,9 +123,8 @@ export default function EmployeeCard({ firstName, lastName, role, phone, email, 
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
             >
-                <DialogTitle id="alert-dialog-title">
-                    <Heading heading={"Delete Employee"} />
-                </DialogTitle>
+                <Heading heading={"Delete Employee"} />
+
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description">
                         Are you Sure Want to Delete Employee
@@ -97,14 +135,14 @@ export default function EmployeeCard({ firstName, lastName, role, phone, email, 
                         onClick={handleDeleteClose}>
                         <X className='mr-2' />No</button>
                     <button
-                        onClick={handleDeleteClose}
+                        onClick={() => handleDelete(id)}
                         autoFocus
                         className='flex flex-row cursor-pointer bg-red-600 text-white border hover:border-red-600 px-4 py-2 rounded hover:text-red-600 hover:bg-transparent'
                     >
-                        <Check className='mr-2' /> Yes
+                        {loading ? <CircularLoading /> : <span className='flex flex-row'>      <Check className='mr-2' /> Yes</span>}
                     </button>
                 </DialogActions>
-            </Dialog>
+            </Dialog >
         </>
     )
 }

@@ -28,6 +28,7 @@ export default function ManageEmployee() {
                     employees ? employees.map((employee) => (
                         <EmployeeCard
                             key={employee._id}
+                            id={employee._id}
                             firstName={employee.firstName}
                             lastName={employee.lastName}
                             role={employee.role}
