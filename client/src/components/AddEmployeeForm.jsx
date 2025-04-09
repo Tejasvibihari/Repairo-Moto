@@ -54,6 +54,9 @@ export default function AddEmployeeForm() {
             const res = await axiosClient.post('/api/admin/employee/addemployee', data);
             console.log('Employee added:', res);
             setLoading(false);
+            setSnackBarMessage(res.data.message); // Set the message to display in the Snackbar
+            setSnackBarSeverity('success'); // Set severity to success
+            setSnackBarOpen(false);
             setFormData({
                 firstName: '',
                 lastName: '',
@@ -68,6 +71,10 @@ export default function AddEmployeeForm() {
             });
         } catch (err) {
             console.error('Error:', err);
+            setSnackBarMessage(err.message); // Set the message to display in the Snackbar
+            setSnackBarSeverity('error'); // Set severity to error
+            setSnackBarOpen(true); // Open the Snackbar
+            setLoading(false);
             // alert('Something went wrong.');
         }
 
