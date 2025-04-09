@@ -3,11 +3,10 @@ import path from 'path';
 import fs from 'fs';
 
 // Ensure the uploads/employee directory exists
-const uploadDir = 'uploads/employee';
+const uploadDir = path.resolve('uploads/employee'); // Use an absolute path
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true }); // Create the directory if it doesn't exist
 }
-
 // Configure storage for uploaded files
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {

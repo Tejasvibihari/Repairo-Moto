@@ -63,18 +63,18 @@ export default function AddEmployeeForm() {
             setSnackBarMessage(res.data.message); // Set the message to display in the Snackbar
             setSnackBarSeverity('success'); // Set severity to success
             setSnackBarOpen(true);
-            // setFormData({
-            //     firstName: '',
-            //     lastName: '',
-            //     phone: '',
-            //     email: '',
-            //     role: '',
-            //     address: '',
-            //     city: '',
-            //     state: '',
-            //     pincode: '',
-            //     profileImage: null,
-            // });
+            setFormData({
+                firstName: '',
+                lastName: '',
+                phone: '',
+                email: '',
+                role: '',
+                address: '',
+                city: '',
+                state: '',
+                pincode: '',
+                profileImage: null,
+            });
         } catch (err) {
             console.log('Error:', err);
             // Check if the error has a response and status code

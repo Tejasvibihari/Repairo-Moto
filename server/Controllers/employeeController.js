@@ -6,7 +6,7 @@ export const createEmployee = async (req, res) => {
     const { firstName, lastName, email, phone, role, address, city, state, pincode, profileImage } = req.body;
     console.log(profileImage, "Profile  ");
     try {
-        const employee = await Employee.find({ email });
+        const employee = await Employee.findOne({ email });
         if (employee) {
             console.log("Employee already exists");
             return res.status(400).json({ message: "Employee already exists" });
