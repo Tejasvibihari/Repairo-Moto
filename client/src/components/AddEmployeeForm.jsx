@@ -4,9 +4,14 @@ import CircularLoading from './ui/CircularLoading';
 import { UserRoundPlus } from 'lucide-react';
 import axios from 'axios';
 import axiosClient from '../service/axiosClient';
+import AlertSnackBar from './ui/AlertSnackBar';
 
 export default function AddEmployeeForm() {
     const [loading, setLoading] = useState(false);
+    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
+    const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
+
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -46,8 +51,9 @@ export default function AddEmployeeForm() {
 
         try {
             console.log('Form Data:', formData);
-            const res = await axiosClient.post('http://localhost:5000/api/employees', data);
-            console.log('Employee added:', res.data);
+            const res = await axiosClient.post('/api/admin/employee/addemployee', data);
+            console.log('Employee added:', res);
+            setLoading(false);
             setFormData({
                 firstName: '',
                 lastName: '',
@@ -62,14 +68,28 @@ export default function AddEmployeeForm() {
             });
         } catch (err) {
             console.error('Error:', err);
-            alert('Something went wrong.');
+            // alert('Something went wrong.');
         }
 
         setLoading(false);
     };
 
+    const handleCloseSnackBar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+
+        setSnackBarOpen(false);
+    }
+
     return (
         <div>
+            <AlertSnackBar
+                open={snackBarOpen}
+                message={snackBarMessage}
+                severity={snackBarSeverity}
+                onClose={handleCloseSnackBar} // Close function for the Snackbar
+            />
             <Heading heading="Add Employee" />
             <form className='shadow-sm border border-gray-300 rounded p-4' onSubmit={handleSubmit}>
                 <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-6'>
@@ -81,12 +101,12 @@ export default function AddEmployeeForm() {
                         <label className='text-gray-700 font-semibold mb-2 block text-sm'>Role</label>
                         <select name="role" value={formData.role} onChange={handleChange} required className='border-2 border-gray-300 rounded-md p-2 w-full'>
                             <option value="" disabled>Select One</option>
-                            <option value="operation_manager">Operation Manager</option>
+                            <option value="employee">Employee</option>
                             <option value="mechanic">Mechanic</option>
                             <option value="delivery">Delivery</option>
                             <option value="manager">Manager</option>
-                            <option value="hr">HR</option>
-                            <option value="accountant">Accountant</option>
+                            <option value="operational manager">Operational Manager</option>
+                            <option value="telecaller">Telecaller</option>
                         </select>
                     </div>
                     <div>

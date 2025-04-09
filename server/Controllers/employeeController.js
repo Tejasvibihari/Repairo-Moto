@@ -1,8 +1,9 @@
 import Employee from "../Models/employeeModel.js";
 import { generateReferralCode } from "../Utils/generateReferalCode.js";
+import bcrypt from "bcryptjs";
 
 export const createEmployee = async (req, res) => {
-    const { firstName, lastName, email, phone, role, address, city, state, pincode } = req.body;
+    const { firstName, lastName, email, phone, role, address, city, state, pincode, } = req.body;
     try {
         const employee = await Employee.findOne({ email });
         if (employee) {
@@ -14,6 +15,10 @@ export const createEmployee = async (req, res) => {
         const password = `${firstNameDigits}${lastPhoneDigits}`;
         const hashedPassword = await bcrypt.hash(password, 10);
         const referralCode = generateReferralCode(firstName, phone);
+
+
+        // Handle uploaded file
+        const profilePicture = req.file ? req.file.path : null;
 
         const newEmployee = new Employee({
             firstName,
