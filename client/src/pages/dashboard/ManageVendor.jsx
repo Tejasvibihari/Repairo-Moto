@@ -1,6 +1,7 @@
 import React from 'react';
 import Heading from '../../components/ui/Heading';
 import AddVendorForm from '../../components/AddVendorForm';
+import VendorProfileCard from '../../components/vendorProfileCard';
 
 export default function ManageVendor() {
     return (
@@ -11,7 +12,8 @@ export default function ManageVendor() {
                     <AddVendorForm />
                 </div>
                 <div className="bg-gray-100 p-4 rounded shadow">
-
+                    <Heading heading={"All Vendors"} />
+                    <VendorProfileCard />
                 </div>
             </div>
         </>
