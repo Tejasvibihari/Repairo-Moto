@@ -1,7 +1,8 @@
 import Vendor from "../Models/vendorModel.js";
 import bcrypt from "bcryptjs";
 import { generateReferralCode } from "../Utils/generateReferralCode.js"
-
+import fs from "fs";
+import path from "path";
 export const addVendor = async (req, res) => {
     try {
         const { firstName, lastName, phone, email, address, city, state, pincode, gstNo, businessName } = req.body;
@@ -43,10 +44,10 @@ export const addVendor = async (req, res) => {
         // Save the vendor to the database
         await newVendor.save();
         console.log("Hello ssvae ")
-
+        const allVendor = await Vendor.find();
         res.status(201).json({
             message: "Vendor added successfully",
-            vendor: newVendor,
+            vendor: allVendor,
             generatedPassword: password // Send the generated password in the response (optional)
         });
     } catch (error) {
@@ -67,6 +68,41 @@ export const getAllVendor = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching vendors:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
+export const deleteVendor = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Find the vendor by ID
+        const vendor = await Vendor.findById(id);
+        if (!vendor) {
+            return res.status(404).json({ message: "Vendor not found" });
+        }
+        if (vendor.profileImage) {
+            fs.unlink(vendor.profileImage, (err) => {
+                if (err) {
+                    console.error("Error deleting image:", err);
+                } else {
+                    console.log("Image deleted successfully:", vendor.profileImage);
+                }
+            });
+        }
+        // Delete the vendor from the database
+        await Vendor.findByIdAndDelete(id);
+
+        // Get the updated vendor list
+        const updatedVendors = await Vendor.find();
+
+        res.status(200).json({
+            message: "Vendor deleted successfully",
+            vendors: updatedVendors
+        });
+    } catch (error) {
+        console.error("Error deleting vendor:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };

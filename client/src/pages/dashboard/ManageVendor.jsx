@@ -10,7 +10,7 @@ import { setVendor } from '../../app/slice/vendorSlice';
 export default function ManageVendor() {
     const dispatch = useDispatch();
     const vendors = useSelector((state) => state.vendor.vendors)
-
+    console.log(vendors)
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {

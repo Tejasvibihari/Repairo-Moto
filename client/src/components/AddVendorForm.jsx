@@ -4,6 +4,8 @@ import { Store } from 'lucide-react';
 import axiosClient from '../service/axiosClient';
 import AlertSnackBar from './ui/AlertSnackBar';
 import CircularLoading from './ui/CircularLoading';
+import { useDispatch } from 'react-redux';
+import { setVendor } from '../app/slice/vendorSlice';
 
 export default function AddVendorForm() {
     const [formData, setFormData] = useState({
@@ -23,7 +25,7 @@ export default function AddVendorForm() {
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
     const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
-
+    const dispatch = useDispatch();
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
@@ -53,9 +55,12 @@ export default function AddVendorForm() {
             )
             console.log(response);
             console.log(response.data.message);
+            console.log(response.data.message);
+            dispatch(setVendor(response.data.vendor));
             setSnackBarMessage(response.data.message); // Set the message to display in the Snackbar
             setSnackBarSeverity('success'); // Set severity to success
             setSnackBarOpen(true); // Open the Snackbar
+            setLoading(false)
             setFormData({
                 firstName: '',
                 lastName: '',
