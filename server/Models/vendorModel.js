@@ -29,7 +29,7 @@ const vendorSchema = new mongoose.Schema({
     state: {
         type: String,
     },
-    pinCode: {
+    pincode: {
         type: String,
     },
     rating: {
@@ -38,6 +38,15 @@ const vendorSchema = new mongoose.Schema({
     },
     referralCode: {
         type: String,
+    },
+    businessName: {
+        type: String
+    },
+    gstNo: {
+        type: String
+    },
+    profileImage: {
+        type: String
     }
 })
 
