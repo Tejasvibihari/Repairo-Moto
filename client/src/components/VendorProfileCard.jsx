@@ -105,6 +105,10 @@ export default function VendorProfileCard({ vendor }) {
                             <span className='font-inter font-semibold'>Email:- </span>
                             <span>{vendor.email}</span>
                         </div>
+                        <div>
+                            <span className='font-inter font-semibold'>Referral Code:- </span>
+                            <span>{vendor.referralCode}</span>
+                        </div>
                     </div>
                     <div>
                         <div>

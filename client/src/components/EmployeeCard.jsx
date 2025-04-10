@@ -15,7 +15,7 @@ import AlertSnackBar from './ui/AlertSnackBar';
 import CircularLoading from './ui/CircularLoading';
 import { useDispatch } from 'react-redux';
 import { setEmployee } from '../app/slice/employeeSlice';
-export default function EmployeeCard({ id, firstName, lastName, role, phone, email, profileImage, address, city, state, pinCode }) {
+export default function EmployeeCard({ id, firstName, lastName, role, phone, email, profileImage, address, city, state, pinCode, referralCode }) {
     const [open, setOpen] = React.useState(false);
     const [openDelete, setOpenDelete] = React.useState(false);
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
@@ -81,6 +81,7 @@ export default function EmployeeCard({ id, firstName, lastName, role, phone, ema
                         <span className='text-sm font-inter font-semibold'>{role}</span>
                         <span className='text-sm font-inter'>{phone}</span>
                         <span className='text-sm font-inter'>{email}</span>
+                        <span className='text-sm font-inter'>{referralCode}</span>
                         <span className='text-sm font-inter'>Rating</span>
                     </div>
                     <div className='flex gap-2'>

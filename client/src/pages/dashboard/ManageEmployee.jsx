@@ -39,6 +39,7 @@ export default function ManageEmployee() {
                             city={employee.city}
                             state={employee.state}
                             pinCode={employee.pinCode}
+                            referralCode={employee.referralCode}
                         />
                     )) : <div className='flex items-center justify-center'>Loading...</div>
                 }
