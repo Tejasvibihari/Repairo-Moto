@@ -63,6 +63,10 @@ const userSchema = new mongoose.Schema({
     businessType: {
         type: String,
         default: null
+    },
+    profileImage: {
+        type: String,
+        default: null
     }
 }, {
     timestamps: true
