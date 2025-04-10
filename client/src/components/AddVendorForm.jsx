@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import Heading from './ui/Heading';
 import { Store } from 'lucide-react';
+import axiosClient from '../service/axiosClient';
+import AlertSnackBar from './ui/AlertSnackBar';
+import CircularLoading from './ui/CircularLoading';
 
 export default function AddVendorForm() {
     const [formData, setFormData] = useState({
@@ -16,6 +19,10 @@ export default function AddVendorForm() {
         gstNo: '', // New field
         profileImage: null, // File input
     });
+    const [loading, setLoading] = useState(false);
+    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
+    const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -32,14 +39,61 @@ export default function AddVendorForm() {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         console.log('Form Data:', formData);
-        // Add logic to send formData to the backend
+        setLoading(true);
+        try {
+            const response = await axiosClient.post("/api/vendor/addvendor", formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data', // Ensure correct content type
+                    },
+                }
+            )
+            console.log(response);
+            console.log(response.data.message);
+            setSnackBarMessage(response.data.message); // Set the message to display in the Snackbar
+            setSnackBarSeverity('success'); // Set severity to success
+            setSnackBarOpen(true); // Open the Snackbar
+            setFormData({
+                firstName: '',
+                lastName: '',
+                phone: '',
+                email: '',
+                address: '',
+                city: '',
+                state: '',
+                pincode: '',
+                businessName: '', // New field
+                gstNo: '', // New field
+                profileImage: null, // File input
+            })
+        } catch (error) {
+            console.log(error)
+            setSnackBarMessage(error.message); // Set the message to display in the Snackbar
+            setSnackBarSeverity("error"); // Set the message to display in the Snackbar
+            setSnackBarOpen(true)
+            setLoading(false)
+        }
+
     };
+    const handleCloseSnackBar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+
+        setSnackBarOpen(false);
+    }
 
     return (
         <div>
+            <AlertSnackBar
+                open={snackBarOpen}
+                message={snackBarMessage}
+                severity={snackBarSeverity}
+                onClose={handleCloseSnackBar}
+            />
             <Heading heading={"Add Vendor"} />
             <form className="shadow-sm border border-gray-300 rounded p-4 mt-4" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -178,7 +232,8 @@ export default function AddVendorForm() {
                     type="submit"
                     className="bg-primary text-white hover:bg-transparent hover:text-primary border border-primary font-semibold py-2 px-4 rounded-md mt-4 cursor-pointer"
                 >
-                    <span className='flex flex-row'><Store className='mr-2' />Add Vendor</span>
+                    {loading ? <CircularLoading size={25} /> : <span className='flex flex-row'><Store className='mr-2' />Add Vendor</span>}
+
                 </button>
             </form>
         </div>

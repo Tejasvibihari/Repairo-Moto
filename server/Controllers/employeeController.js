@@ -1,5 +1,5 @@
 import Employee from "../Models/employeeModel.js";
-import { generateReferralCode } from "../Utils/generateReferalCode.js";
+import { generateReferralCode } from "../Utils/generateReferralCode.js";
 import bcrypt from "bcryptjs";
 import fs from "fs";
 

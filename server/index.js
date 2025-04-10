@@ -9,6 +9,7 @@ import adminRoutes from "./Routes/adminRoutes.js";
 import brandRoutes from "./Routes/brandRoutes.js"
 import orderRouter from "./Routes/orderRoutes.js";
 import employeeRouter from "./Routes/employeeRoutes.js"
+import vendorRouter from "./Routes/vendorRoutes.js"
 
 const app = express();
 dotenv.config();
@@ -25,7 +26,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/admin/brands", brandRoutes);
 app.use("/api/admin/order", orderRouter);
 app.use("/api/admin/employee", employeeRouter);
-// app.use("/api/vendor")
+app.use("/api/vendor", vendorRouter);
 // app.use("/api/employee")
 
 
