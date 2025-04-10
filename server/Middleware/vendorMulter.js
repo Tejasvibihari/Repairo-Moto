@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 // Ensure the uploads/employee directory exists
-const uploadDir = path.resolve('uploads/vendors'); // Use an absolute path
+const uploadDir = path.resolve('uploads/vendor'); // Use an absolute path
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true }); // Create the directory if it doesn't exist
 }

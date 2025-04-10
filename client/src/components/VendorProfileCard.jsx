@@ -60,7 +60,7 @@ export default function VendorProfileCard({ vendor }) {
                         <span className='flex flex-row'><UserCog className='mr-2' />Edit</span>
                     </button>
                     <button className='flex flex-row itemms-center justify-center px-4 py-2 bg-red-600 rounded text-white hover:bg-transparent hover:text-red-600 border border-red-600 cursor-pointer'>
-                        <span className='flex flex-row'><Trash className='mr-2' />Edit</span>
+                        <span className='flex flex-row'><Trash className='mr-2' />Delete</span>
                     </button>
                 </div>
             </div>
