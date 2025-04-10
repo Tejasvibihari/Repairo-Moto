@@ -15,7 +15,7 @@ export const addVendor = async (req, res) => {
             profileImage = `uploads/vendor/${req.file.filename}`;
         }
         // create password from first 4 letter from firstname and last 4 digit from phone
-        
+
         // Create a new vendor
         const newVendor = new Vendor({
             firstName,
