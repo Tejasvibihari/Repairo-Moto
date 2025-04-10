@@ -12,11 +12,17 @@ import AlertSnackBar from './ui/AlertSnackBar';
 import CircularLoading from './ui/CircularLoading';
 import { useDispatch } from 'react-redux';
 import { setVendor } from '../app/slice/vendorSlice';
+import Slide from '@mui/material/Slide';
+import EditVendorForm from './EditVendorForm';
 
 
+const Transition = React.forwardRef(function Transition(props, ref) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
 export default function VendorProfileCard({ vendor }) {
     const dispatch = useDispatch();
     const [openDelete, setOpenDelete] = React.useState(false);
+    const [openEdit, setOpenEdit] = React.useState(false);
     const [loading, setLoading] = useState(false);
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
     const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
@@ -27,6 +33,13 @@ export default function VendorProfileCard({ vendor }) {
 
     const handleDeleteClose = () => {
         setOpenDelete(false);
+    };
+    const handleEditOpen = () => {
+        setOpenEdit(true);
+    };
+
+    const handleEditClose = () => {
+        setOpenEdit(false);
     };
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') {
@@ -113,7 +126,7 @@ export default function VendorProfileCard({ vendor }) {
                     </div>
                 </div>
                 <div className='flex flex-row items-center justify-between mt-3'>
-                    <button className='flex flex-row itemms-center justify-center px-4 py-2 bg-primary rounded text-white hover:bg-transparent hover:text-primary border border-primary cursor-pointer'>
+                    <button onClick={handleEditOpen} className='flex flex-row itemms-center justify-center px-4 py-2 bg-primary rounded text-white hover:bg-transparent hover:text-primary border border-primary cursor-pointer'>
                         <span className='flex flex-row'><UserCog className='mr-2' />Edit</span>
                     </button>
                     <button
@@ -128,6 +141,7 @@ export default function VendorProfileCard({ vendor }) {
             <Dialog Dialog
                 open={openDelete}
                 onClose={handleDeleteClose}
+                TransitionComponent={Transition}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
 
@@ -154,6 +168,40 @@ export default function VendorProfileCard({ vendor }) {
 
                         </button>
                     </DialogActions>
+                </div>
+            </Dialog>
+            {/* Edit Vendor Dialoge  */}
+            <Dialog Dialog
+                open={openEdit}
+                onClose={handleEditClose}
+                TransitionComponent={Transition}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+
+            >
+                <div className='p-4'>
+                    {/* <Heading heading={"Edit Vendor"} /> */}
+                    <DialogContent>
+                        {/* <DialogContentText id="alert-dialog-description">
+                            Are You Sure You Want TO Delete This Vendor
+                        </DialogContentText> */}
+                        <EditVendorForm initialData={vendor} />
+                    </DialogContent>
+                    {/* <DialogActions>
+                        <button
+                            onClick={handleDeleteClose}
+                            className='flex flex-row itemms-center justify-center px-4 py-2 bg-primary rounded text-white hover:bg-transparent hover:text-primary border border-primary cursor-pointer'>
+                            <span className='flex flex-row'><X className='mr-2' />No</span>
+                        </button>
+                        <button
+                            onClick={handleDelete(vendor._id)}
+                            type="submit"
+                            className='flex flex-row itemms-center justify-center px-4 py-2 bg-red-600 rounded text-white hover:bg-transparent hover:text-red-600 border border-red-600 cursor-pointer'
+                        >
+                            {loading ? <CircularLoading size={25} /> : <span className='flex flex-row'><Check className='mr-2' />Yes</span>}
+
+                        </button>
+                    </DialogActions> */}
                 </div>
             </Dialog>
         </>

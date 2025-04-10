@@ -106,3 +106,58 @@ export const deleteVendor = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const updateVendorById = async (req, res) => {
+    const { id } = req.params;
+    console.log(id)
+    
+    try {
+
+        // Find the employee by ID
+        const vendor = await Vendor.findById(id);
+        if (!vendor) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+
+        // Handle uploaded file
+        let profileImage = vendor.profileImage; // Keep the existing image by default
+        if (req.file) {
+            // Delete the old image if it exists
+            if (vendor.profileImage) {
+                fs.unlink(vendor.profileImage, (err) => {
+                    if (err) {
+                        console.error("Error deleting old image:", err);
+                    } else {
+                        console.log("Old image deleted successfully:", vendor.profileImage);
+                    }
+                });
+            }
+            // Set the new image path
+            profileImage = `uploads/employee/${req.file.filename}`;
+        }
+
+        // Update employee details
+        const updatedVendor = await Vendor.findByIdAndUpdate(
+            id,
+            {
+                firstName: req.body.firstName,
+                lastName: req.body.lastName,
+                email: req.body.email,
+                phone: req.body.phone,
+                address: req.body.address,
+                city: req.body.city,
+                state: req.body.state,
+                pincode: req.body.pincode,
+                gstNo: req.body.gstNo,
+                businessName: req.body.businessName,
+                profileImage, // Update the profile image
+            },
+            { new: true } // Return the updated document
+        );
+
+        res.status(200).json({ message: "Vendor updated successfully", vendor: updatedVendor });
+    } catch (error) {
+        console.error("Error updating employee:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
