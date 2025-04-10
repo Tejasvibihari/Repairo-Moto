@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { generateReferralCode } from "../Utils/generateReferalCode.js";
 
 export const createUser = async (req, res) => {
-    const { firstName, lastName, email, password, phone, rating } = req.body;
+    const { firstName, lastName, email, password, phone } = req.body;
     try {
         const user = await User.findOne({ email });
         if (user) {
