@@ -21,7 +21,7 @@ export default function AddEmployeeForm() {
         address: '',
         city: '',
         state: '',
-        pincode: '',
+        pinCode: '',
         profileImage: null,
     });
 
@@ -72,7 +72,7 @@ export default function AddEmployeeForm() {
                 address: '',
                 city: '',
                 state: '',
-                pincode: '',
+                pinCode: '',
                 profileImage: null,
             });
         } catch (err) {
@@ -144,7 +144,7 @@ export default function AddEmployeeForm() {
                     <InputField label="Address" name="address" value={formData.address} onChange={handleChange} />
                     <InputField label="City" name="city" value={formData.city} onChange={handleChange} />
                     <InputField label="State" name="state" value={formData.state} onChange={handleChange} />
-                    <InputField label="Pincode" name="pincode" value={formData.pincode} onChange={handleChange} type="number" />
+                    <InputField label="Pincode" name="pinCode" value={formData.pinCode} onChange={handleChange} type="number" />
                 </div>
                 <button
                     type="submit"

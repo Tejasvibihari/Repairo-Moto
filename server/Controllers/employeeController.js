@@ -4,8 +4,8 @@ import bcrypt from "bcryptjs";
 import fs from "fs";
 
 export const createEmployee = async (req, res) => {
-    const { firstName, lastName, email, phone, role, address, city, state, pincode, profileImage } = req.body;
-    console.log(profileImage, "Profile  ");
+    const { firstName, lastName, email, phone, role, address, city, state, pinCode, profileImage } = req.body;
+    // console.log(pinCodAe, "Pincode");
     try {
         const employee = await Employee.findOne({ email });
         if (employee) {
@@ -33,7 +33,7 @@ export const createEmployee = async (req, res) => {
             address,
             city,
             state,
-            pincode,
+            pinCode,
             referralCode,
             profileImage // Placeholder URL
         });
@@ -89,6 +89,58 @@ export const deleteEmployeeById = async (req, res) => {
         res.status(200).json({ employees: getAllEmployees, message: "Employee deleted successfully" });
     } catch (error) {
         console.log(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const updateEmployeeById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Find the employee by ID
+        const employee = await Employee.findById(id);
+        if (!employee) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+
+        // Handle uploaded file
+        let profileImage = employee.profileImage; // Keep the existing image by default
+        if (req.file) {
+            // Delete the old image if it exists
+            if (employee.profileImage) {
+                fs.unlink(employee.profileImage, (err) => {
+                    if (err) {
+                        console.error("Error deleting old image:", err);
+                    } else {
+                        console.log("Old image deleted successfully:", employee.profileImage);
+                    }
+                });
+            }
+            // Set the new image path
+            profileImage = `uploads/employee/${req.file.filename}`;
+        }
+
+        // Update employee details
+        const updatedEmployee = await Employee.findByIdAndUpdate(
+            id,
+            {
+                firstName: req.body.firstName,
+                lastName: req.body.lastName,
+                email: req.body.email,
+                phone: req.body.phone,
+                role: req.body.role,
+                address: req.body.address,
+                city: req.body.city,
+                state: req.body.state,
+                pinCode: req.body.pinCode,
+                profileImage, // Update the profile image
+            },
+            { new: true } // Return the updated document
+        );
+
+        res.status(200).json({ message: "Employee updated successfully", employee: updatedEmployee });
+    } catch (error) {
+        console.error("Error updating employee:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };

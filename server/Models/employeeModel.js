@@ -29,7 +29,7 @@ const empleyeeSchema = new mongoose.Schema({
         type: String,
     },
     pinCode: {
-        type: String,
+        type: Number,
     },
     rating: {
         type: Number,

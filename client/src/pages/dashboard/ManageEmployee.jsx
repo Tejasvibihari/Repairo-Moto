@@ -35,10 +35,14 @@ export default function ManageEmployee() {
                             phone={employee.phone}
                             email={employee.email}
                             profileImage={employee.profileImage}
+                            address={employee.address}
+                            city={employee.city}
+                            state={employee.state}
+                            pinCode={employee.pinCode}
                         />
                     )) : <div className='flex items-center justify-center'>Loading...</div>
                 }
-            </div>
+            </div>c
         </>
     )
 }

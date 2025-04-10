@@ -15,7 +15,7 @@ import AlertSnackBar from './ui/AlertSnackBar';
 import CircularLoading from './ui/CircularLoading';
 import { useDispatch } from 'react-redux';
 import { setEmployee } from '../app/slice/employeeSlice';
-export default function EmployeeCard({ id, firstName, lastName, role, phone, email, profileImage }) {
+export default function EmployeeCard({ id, firstName, lastName, role, phone, email, profileImage, address, city, state, pinCode }) {
     const [open, setOpen] = React.useState(false);
     const [openDelete, setOpenDelete] = React.useState(false);
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
@@ -23,7 +23,7 @@ export default function EmployeeCard({ id, firstName, lastName, role, phone, ema
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
     const [loading, setLoading] = React.useState(false); // State to control loading spinner
     const dispatch = useDispatch()
-    const handleClickOpen = () => {
+    const handleEditOpen = () => {
         setOpen(true);
     };
 
@@ -84,7 +84,7 @@ export default function EmployeeCard({ id, firstName, lastName, role, phone, ema
                         <span className='text-sm font-inter'>Rating</span>
                     </div>
                     <div className='flex gap-2'>
-                        <button onClick={handleClickOpen} className='flex items-center justify-center bg-primary text-white py-2 rounded-md px-8 cursor-pointer hover:bg-transparent hover:text-primary border border-primary'>
+                        <button onClick={handleEditOpen} className='flex items-center justify-center bg-primary text-white py-2 rounded-md px-8 cursor-pointer hover:bg-transparent hover:text-primary border border-primary'>
                             <UserPen size={18} className='mr-2' /> Edit
                         </button>
                         <button onClick={handleDeleteOpen} className='flex items-center justify-center bg-transparent text-red-600 py-2 rounded-md px-8 cursor-pointer hover:bg-red-600 hover:text-white border border-primary'>
@@ -111,7 +111,21 @@ export default function EmployeeCard({ id, firstName, lastName, role, phone, ema
                 }}
             >
                 <DialogContent>
-                    <EditEmployeeForm />
+                    <EditEmployeeForm
+                        initialData={{
+                            id: id,
+                            firstName: firstName,
+                            lastName: lastName,
+                            phone: phone,
+                            email: email,
+                            role: role,
+                            address: address,
+                            city: city,
+                            state: state,
+                            pinCode: pinCode,
+                            profileImage: profileImage
+                        }}
+                    />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>Cancel</Button>
