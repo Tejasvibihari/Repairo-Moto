@@ -1,12 +1,15 @@
 import { Trash, UserCog } from 'lucide-react'
 import React from 'react'
 
-export default function VendorProfileCard() {
+export default function VendorProfileCard({ vendor }) {
+
+    const profileImage = vendor.profileImage;
+
     return (
         <>
             <div className='shadow p-4 rounded-sm'>
                 <div className='flex flex-row gap-4 justify-between items-center'>
-                    <img src='./logo/logo72.png' className='w-40 rounded-xl' />
+                    <img src={`${import.meta.env.VITE_API_URL}/${profileImage}`} className='w-40 rounded-xl' />
                     <div className='flex flex-col gap-1'>
                         <div>
                             <span className='font-inter font-semibold'>Business Name:- </span>
@@ -22,33 +25,33 @@ export default function VendorProfileCard() {
                     <div>
                         <div>
                             <span className='font-inter font-semibold'>Name:- </span>
-                            <span>Tejasvi Kumar</span>
+                            <span>{vendor.firstName} {vendor.lastName}</span>
                         </div>
                         <div>
                             <span className='font-inter font-semibold'>Phone:- </span>
-                            <span>6205731150</span>
+                            <span>{vendor.phone}</span>
                         </div>
                         <div>
                             <span className='font-inter font-semibold'>Email:- </span>
-                            <span>Email</span>
+                            <span>{vendor.email}</span>
                         </div>
                     </div>
                     <div>
                         <div>
                             <span className='font-inter font-semibold'>Address:- </span>
-                            <span>Email</span>
+                            <span>{vendor.address}</span>
                         </div>
                         <div>
                             <span className='font-inter font-semibold'>City:- </span>
-                            <span>Email</span>
+                            <span>{vendor.city}</span>
                         </div>
                         <div>
                             <span className='font-inter font-semibold'>State:- </span>
-                            <span>Email</span>
+                            <span>{vendor.state}</span>
                         </div>
                         <div>
                             <span className='font-inter font-semibold'>Pincode:- </span>
-                            <span>Email</span>
+                            <span>{vendor.pincode}</span>
                         </div>
                     </div>
                 </div>

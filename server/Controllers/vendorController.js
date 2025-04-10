@@ -54,3 +54,19 @@ export const addVendor = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const getAllVendor = async (req, res) => {
+    try {
+        // Fetch all vendors from the database
+        const vendors = await Vendor.find();
+
+        // Return the list of vendors
+        res.status(200).json({
+            message: "Vendors fetched successfully",
+            vendors,
+        });
+    } catch (error) {
+        console.error("Error fetching vendors:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
