@@ -14,6 +14,7 @@ import { useDispatch } from 'react-redux';
 import { setBrands } from './app/slice/brandSlice';
 import AddBlog from './pages/dashboard/AddBlog';
 import ManageBlog from './pages/dashboard/ManageBlog';
+import ManageVendor from './pages/dashboard/ManageVendor';
 export default function App() {
   const dispatch = useDispatch();
   useEffect(() => {
@@ -43,6 +44,8 @@ export default function App() {
             <Route path='/model' element={<BikeModel />} />
             <Route path='/admin-order-form' element={<AdminBookingForm />} />
             <Route path='/manage-employee' element={<ManageEmployee />} />
+            <Route path='/manage-vendor' element={<ManageVendor />} />
+
             {/* Auth Routes */}
             {/* Blog Routes */}
             <Route path='/add-blog' element={<AddBlog />} />
