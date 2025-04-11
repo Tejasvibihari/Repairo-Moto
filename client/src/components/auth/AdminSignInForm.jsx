@@ -1,8 +1,10 @@
 import { Eye, EyeClosed, Lock, Mail } from 'lucide-react';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setError, setLoading } from '../../app/slice/adminAuthSlice';
+import { setAdminSignIn, setError, setLoading } from '../../app/slice/adminAuthSlice';
 import axiosClient from '../../service/axiosClient';
+import AlertSnackBar from '../ui/AlertSnackBar'
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminSignInForm() {
     const [formData, setFormData] = useState({
@@ -13,8 +15,10 @@ export default function AdminSignInForm() {
     const loading = useSelector((state) => state.admin.loading);
     const error = useSelector((state) => state.admin.error);
     const dispatch = useDispatch()
-    console.log(admin);
+    const navigate = useNavigate()
     const [showPassword, setShowPassword] = useState(false);
+    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
 
 
     const handleShowPassword = () => {
@@ -40,36 +44,43 @@ export default function AdminSignInForm() {
             return;
         }
         try {
-            console.log(formData)
-            // Simulate API call
-            const response = await axiosClient.post("", formData);
-            console.log(response);
+            const response = await axiosClient.post("/api/admin/adminsignin", formData);
+            dispatch(setAdminSignIn(response.data))
             dispatch(setLoading(false))
-            console.log('Sign-in successful:', response);
-            alert('Sign-in successful!');
+            navigate('/model')
         } catch (err) {
-            console.error('Sign-in failed:', err);
-            setError('Invalid email or password');
+            if (err.response && err.response.status === 400) {
+                console.log(err);
+                dispatch(setError(err.response.data.message));
+                setSnackBarSeverity("warning");
+                setSnackBarOpen(true);
+                dispatch(setLoading(false));
+
+            } else {
+                dispatch(setError(err.message));
+                setSnackBarSeverity("error");
+                setSnackBarOpen(true);
+                dispatch(setLoading(false));
+            }
         } finally {
             setLoading(false);
         }
     };
+    const handleCloseSnackBar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
 
-    // Simulated API call (replace with actual API call)
-    const fakeSignInAPI = (data) => {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (data.email === 'admin@example.com' && data.password === 'password123') {
-                    resolve({ message: 'Sign-in successful' });
-                } else {
-                    reject(new Error('Invalid credentials'));
-                }
-            }, 1000);
-        });
-    };
-
+        setSnackBarOpen(false);
+    }
     return (
         <>
+            <AlertSnackBar
+                open={snackBarOpen}
+                message={error}
+                severity={snackBarSeverity}
+                onClose={handleCloseSnackBar} // Close function for the Snackbar
+            />
             <div className='h-3xl h-9/12 w-3xl bg-opacity-90 backdrop-blur-lg shadow-2xl rounded-lg p-10'>
                 <div className='flex flex-col items-center justify-center'>
                     <div className='flex flex-col space-y-2'>
@@ -82,11 +93,11 @@ export default function AdminSignInForm() {
                     </div>
 
                     <form className='flex flex-col my-10 w-74 space-y-4' onSubmit={handleSubmit}>
-                        {error && (
+                        {/* {error && (
                             <div className='text-red-500 text-sm font-nunito'>
                                 {error}
                             </div>
-                        )}
+                        )} */}
                         <div>
                             <label className='font-nunito'>Email</label>
                             <div className='relative mt-1'>
