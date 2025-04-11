@@ -5,6 +5,8 @@ import AlertSnackBar from '../ui/AlertSnackBar';
 import { useParams } from 'react-router-dom'; // Import useParams
 import { useDispatch, useSelector } from 'react-redux'
 import { setLoading, setUserSignIn } from '../../app/slice/userSlice';
+import { useNavigate, Link } from 'react-router-dom';
+import CircularLoading from '../ui/CircularLoading';
 
 
 export default function UserSignUpForm() {
@@ -314,12 +316,20 @@ export default function UserSignUpForm() {
                         )}
                         <button
                             type='submit'
-                            className='py-2 bg-primary rounded text-white font-semibold font-nunito mt-6 border border-primary hover:bg-secondary hover:text-primary cursor-pointer'
+                            className='py-2 flex items-center justify-center bg-primary rounded text-white font-semibold font-nunito mt-6 border border-primary hover:bg-secondary hover:text-primary cursor-pointer'
                             disabled={loading}
                         >
-                            {loading ? 'Registering...' : 'Register'}
+                            {loading ? <CircularLoading size={23} /> : 'Register'}
                         </button>
                     </form>
+                    <div>
+                        <span className='text-sm text-center font-nunito text-white'>
+                            Already have an account?{' '}
+                            <Link to='/user-signin' className='text-primary hover:underline'>
+                                Sign In
+                            </Link>
+                        </span>
+                    </div>
                 </div>
             </div>
         </>

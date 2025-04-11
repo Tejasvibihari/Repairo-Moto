@@ -17,7 +17,9 @@ import ManageBlog from './pages/dashboard/ManageBlog';
 import ManageVendor from './pages/dashboard/ManageVendor';
 import AdminSignIn from './pages/auth/AdminSignIn';
 import PrivateRoute from './components/routes/PrivateRoute';
-import UserAuth from './pages/auth/UserAuth';
+import UserAuth from './pages/auth/UserSignUp';
+import UserSignUp from './pages/auth/UserSignUp';
+import UserSigin from './pages/auth/UserSignIn';
 export default function App() {
   const dispatch = useDispatch();
   useEffect(() => {
@@ -43,8 +45,9 @@ export default function App() {
 
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
-          <Route path='/user-auth' element={<UserAuth />} />
-          <Route path="/user-signup/:referralType/:referralId" element={<UserAuth />} />
+          <Route path='/user-signup' element={<UserSignUp />} />
+          <Route path="/user-signup/:referralType/:referralId" element={<UserSignUp />} />
+          <Route path="/user-signin" element={<UserSigin />} />
           {/* Protected Routes with Sidebar */}
           <Route
             path='/dashboard'

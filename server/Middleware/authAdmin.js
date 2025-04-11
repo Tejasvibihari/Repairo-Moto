@@ -9,7 +9,7 @@ const authAdmin = async (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
         const admin = await Admin.findById(decoded.id).select('-password');
 
         if (!admin) {

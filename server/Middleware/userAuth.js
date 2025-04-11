@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
-import Admin from '../Models/adminModel.js';
+import User from '../Models/userModel.js';
 
-const authAdmin = async (req, res, next) => {
+
+const authUser = async (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
@@ -9,18 +10,18 @@ const authAdmin = async (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const admin = await User.findById(decoded.id).select('-password');
+        const decoded = jwt.verify(token, process.env.USER_JWT_SECRET);
+        const user = await User.findById(decoded.id).select('-password');
 
-        if (!admin) {
-            return res.status(401).json({ message: 'Admin not found' });
+        if (!user) {
+            return res.status(401).json({ message: 'User not found' });
         }
 
-        req.admin = admin; // attach admin to request
+        req.user = user; // attach admin to request
         next();
     } catch (error) {
         return res.status(401).json({ message: 'Invalid token' });
     }
 };
 
-export default authAdmin;
+export default authUser;
