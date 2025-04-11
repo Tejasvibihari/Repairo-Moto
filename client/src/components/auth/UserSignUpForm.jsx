@@ -2,14 +2,20 @@ import { Eye, EyeClosed, Lock, Mail, User, Building } from 'lucide-react';
 import React, { useState } from 'react';
 import axiosClient from '../../service/axiosClient';
 import AlertSnackBar from '../ui/AlertSnackBar';
+import { useParams } from 'react-router-dom'; // Import useParams
+
 
 export default function UserSignUpForm() {
+    const { referralType, referralId } = useParams();
+    console.log(referralType)
+    console.log(referralId)
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
         phone: '',
         email: '',
         password: '',
+        referralCode: referralId || '',
         accountType: 'personal', // Default to personal
         businessName: '',
         address: '',
@@ -212,6 +218,7 @@ export default function UserSignUpForm() {
                                         name='referralCode'
                                         value={formData.referralCode}
                                         onChange={handleChange}
+                                        disabled={referralId && "disabled"}
                                         placeholder='Enter Referral ID (Optional)'
                                         className='pl-10 p-2 border border-gray-300 bg-white rounded w-full font-nunito text-sm'
                                     />

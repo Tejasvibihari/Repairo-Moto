@@ -44,7 +44,7 @@ export default function App() {
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
           <Route path='/user-auth' element={<UserAuth />} />
-
+          <Route path="/user-signup/:referralType/:referralId" element={<UserAuth />} />
           {/* Protected Routes with Sidebar */}
           <Route
             path='/dashboard'
