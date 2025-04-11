@@ -15,6 +15,8 @@ import { setBrands } from './app/slice/brandSlice';
 import AddBlog from './pages/dashboard/AddBlog';
 import ManageBlog from './pages/dashboard/ManageBlog';
 import ManageVendor from './pages/dashboard/ManageVendor';
+import AdminSignIn from './pages/auth/AdminSignIn';
+import PrivateRoute from './components/routes/PrivateRoute';
 export default function App() {
   const dispatch = useDispatch();
   useEffect(() => {
@@ -34,24 +36,71 @@ export default function App() {
   return (
     <>
       <BrowserRouter>
-        <Sidebar>
-          <Routes>
-            {/* Landing Page Routes */}
-            <Route path='/' element={<Home />} />
+        <Routes>
+          {/* Landing Route without Sidebar */}
+          <Route path='/' element={<Home />} />
 
-            {/* Dashboard Routes */}
-            <Route path='/dashboard' element={<Dashboard />} />
-            <Route path='/model' element={<BikeModel />} />
-            <Route path='/admin-order-form' element={<AdminBookingForm />} />
-            <Route path='/manage-employee' element={<ManageEmployee />} />
-            <Route path='/manage-vendor' element={<ManageVendor />} />
+          {/* Auth Page (No Sidebar) */}
+          <Route path='/admin-sign-in' element={<AdminSignIn />} />
 
-            {/* Auth Routes */}
-            {/* Blog Routes */}
-            <Route path='/add-blog' element={<AddBlog />} />
-            <Route path='/manage-blog' element={<ManageBlog />} />
-          </Routes>
-        </Sidebar>
+          {/* Protected Routes with Sidebar */}
+          <Route
+            path='/dashboard'
+            element={
+              <PrivateRoute>
+                <Sidebar><Dashboard /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/model'
+            element={
+              <PrivateRoute>
+                <Sidebar><BikeModel /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/admin-order-form'
+            element={
+              <PrivateRoute>
+                <Sidebar><AdminBookingForm /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manage-employee'
+            element={
+              <PrivateRoute>
+                <Sidebar><ManageEmployee /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manage-vendor'
+            element={
+              <PrivateRoute>
+                <Sidebar><ManageVendor /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/add-blog'
+            element={
+              <PrivateRoute>
+                <Sidebar><AddBlog /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manage-blog'
+            element={
+              <PrivateRoute>
+                <Sidebar><ManageBlog /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+        </Routes>
       </BrowserRouter>
     </>
   )

@@ -7,7 +7,8 @@ import { combineReducers } from 'redux';
 import brandReducers from './slice/brandSlice';
 import employeeReducers from './slice/employeeSlice'
 import vendorReducers from "./slice/vendorSlice"
-
+import adminAuthReducers from './slice/adminAuthSlice'
+import userAuthReducers from './slice/userSlice';
 // Persist configuration
 const persistConfig = {
     key: 'root', // Key for the root of the persisted state
@@ -18,7 +19,9 @@ const persistConfig = {
 const rootReducer = combineReducers({
     brand: brandReducers,
     employee: employeeReducers,
-    vendor: vendorReducers // Add your reducers here
+    vendor: vendorReducers,// Add your reducers here
+    admin: adminAuthReducers,
+    user: userAuthReducers,
 });
 
 // Create a persisted reducer
