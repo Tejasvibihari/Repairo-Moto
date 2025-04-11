@@ -90,9 +90,9 @@ export default function UserSignUpForm() {
             });
         } catch (err) {
             console.error(err);
-            // setSnackBarMessage(err.response?.data?.message || 'Registration failed.');
-            // setSnackBarSeverity('error');
-            // setSnackBarOpen(true);
+            setSnackBarMessage(err.response?.data?.message || 'Registration failed.');
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
             dispatch(setLoading(false))
         } finally {
             setLoading(false);
