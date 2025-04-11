@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 
 
 // Admin SignUp Controller
-export const signUp = async (req, res) => {
+export const adminSignUp = async (req, res) => {
     const { firstName, lastName, email, password } = req.body;
     try {
         const admin = await Admin.findOne({ email });
@@ -29,7 +29,7 @@ export const signUp = async (req, res) => {
     }
 }
 // Admin SignIn Controller
-export const signIn = async (req, res) => {
+export const adminSignIn = async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await Admin.findOne({ email });
