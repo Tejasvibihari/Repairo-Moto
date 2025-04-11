@@ -17,6 +17,7 @@ import ManageBlog from './pages/dashboard/ManageBlog';
 import ManageVendor from './pages/dashboard/ManageVendor';
 import AdminSignIn from './pages/auth/AdminSignIn';
 import PrivateRoute from './components/routes/PrivateRoute';
+import UserAuth from './pages/auth/UserAuth';
 export default function App() {
   const dispatch = useDispatch();
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function App() {
 
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
+          <Route path='/user-auth' element={<UserAuth />} />
 
           {/* Protected Routes with Sidebar */}
           <Route
