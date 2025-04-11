@@ -3,19 +3,23 @@ import React, { useState } from 'react';
 import axiosClient from '../../service/axiosClient';
 import AlertSnackBar from '../ui/AlertSnackBar';
 import { useParams } from 'react-router-dom'; // Import useParams
+import { useDispatch, useSelector } from 'react-redux'
+import { setLoading, setUserSignIn } from '../../app/slice/userSlice';
 
 
 export default function UserSignUpForm() {
     const { referralType, referralId } = useParams();
-    console.log(referralType)
-    console.log(referralId)
+    const loading = useSelector((state) => state.user.loading);
+    const error = useSelector((state) => state.user.error);
+    const dispatch = useDispatch();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
         phone: '',
         email: '',
         password: '',
-        referralCode: referralId || '',
+        referredBy: referralId || '',
+        referralType,
         accountType: 'personal', // Default to personal
         businessName: '',
         address: '',
@@ -27,8 +31,6 @@ export default function UserSignUpForm() {
     const [snackBarOpen, setSnackBarOpen] = useState(false);
     const [snackBarMessage, setSnackBarMessage] = useState('');
     const [snackBarSeverity, setSnackBarSeverity] = useState('success');
-    const [loading, setLoading] = useState(false);
-
     const handleShowPassword = () => {
         setShowPassword(!showPassword);
     };
@@ -43,7 +45,7 @@ export default function UserSignUpForm() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        dispatch(setLoading(true))
         setSnackBarMessage('');
         setSnackBarOpen(false);
 
@@ -65,10 +67,14 @@ export default function UserSignUpForm() {
         }
 
         try {
-            const response = await axiosClient.post('/api/user/register', formData);
-            setSnackBarMessage('User registered successfully!');
+            console.log(formData)
+            const response = await axiosClient.post('api/user/auth/user-sign-up', formData);
+            console.log(response);
+            dispatch(setUserSignIn(response.data.user))
+            setSnackBarMessage(response.data.message);
             setSnackBarSeverity('success');
             setSnackBarOpen(true);
+            dispatch(setLoading(false))
             setFormData({
                 firstName: '',
                 lastName: '',
@@ -84,9 +90,10 @@ export default function UserSignUpForm() {
             });
         } catch (err) {
             console.error(err);
-            setSnackBarMessage(err.response?.data?.message || 'Registration failed.');
-            setSnackBarSeverity('error');
-            setSnackBarOpen(true);
+            // setSnackBarMessage(err.response?.data?.message || 'Registration failed.');
+            // setSnackBarSeverity('error');
+            // setSnackBarOpen(true);
+            dispatch(setLoading(false))
         } finally {
             setLoading(false);
         }
@@ -216,7 +223,7 @@ export default function UserSignUpForm() {
                                     <input
                                         type='text'
                                         name='referralCode'
-                                        value={formData.referralCode}
+                                        value={formData.referredBy}
                                         onChange={handleChange}
                                         disabled={referralId && "disabled"}
                                         placeholder='Enter Referral ID (Optional)'

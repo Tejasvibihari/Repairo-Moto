@@ -20,11 +20,8 @@ export const createUser = async (req, res) => {
             pincode,
             businessType
         } = req.body;
+        console.log(req.body)
 
-        // Validate required fields
-        if (!firstName || !phone || !email || !password || !accountType || !address || !city || !state || !pincode) {
-            return res.status(400).json({ message: "Required fields are missing" });
-        }
 
         // Check for existing user
         const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
