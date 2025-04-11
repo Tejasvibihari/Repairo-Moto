@@ -35,6 +35,9 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null // store referralCode of the referrer
     },
+    referralType: {
+        type: String
+    },
     accountType: {
         type: String,
         enum: ['personal', 'business'],

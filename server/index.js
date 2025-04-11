@@ -27,6 +27,7 @@ app.use("/api/admin/brands", brandRoutes);
 app.use("/api/admin/order", orderRouter);
 app.use("/api/admin/employee", employeeRouter);
 app.use("/api/vendor", vendorRouter);
+app.use("/api/user/", vendorRouter);
 // app.use("/api/employee")
 
 
