@@ -18,6 +18,7 @@ import UserAuth from './pages/auth/UserSignUp';
 import UserSignUp from './pages/auth/UserSignUp';
 import UserSigin from './pages/auth/UserSignIn';
 import ManageQr from './pages/dashboard/ManageQr';
+import NavBar from './components/ui/NavBar';
 
 
 
@@ -36,6 +37,12 @@ export default function App() {
           <Route path='/user-signup' element={<UserSignUp />} />
           <Route path="/user-signup/:referralType/:referralId" element={<UserSignUp />} />
           <Route path="/user-signin" element={<UserSigin />} />
+
+
+          {/* User Page  */}
+          <Route path='/user-dashboard' element={<NavBar />} />
+
+
           {/* Protected Routes with Sidebar */}
           <Route
             path='/dashboard'
