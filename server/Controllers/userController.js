@@ -109,6 +109,10 @@ export const usrSignIn = async (req, res) => {
 
         // Return success response with token
         res.status(200).json({
+            token,
+            user: { id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email }
+        });
+        res.status(200).json({
             message: "Sign-in successful",
             token, // Include the token in the response
             user: {

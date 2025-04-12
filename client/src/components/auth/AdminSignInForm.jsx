@@ -5,6 +5,7 @@ import { setAdminSignIn, setError, setLoading } from '../../app/slice/adminAuthS
 import axiosClient from '../../service/axiosClient';
 import AlertSnackBar from '../ui/AlertSnackBar'
 import { useNavigate } from 'react-router-dom';
+import { setAdminToken } from '../../app/slice/authSlice';
 
 export default function AdminSignInForm() {
     const [formData, setFormData] = useState({
@@ -45,9 +46,10 @@ export default function AdminSignInForm() {
         }
         try {
             const response = await axiosClient.post("/api/admin/adminsignin", formData);
+            dispatch(setAdminToken(response.data.token))
             dispatch(setAdminSignIn(response.data))
             dispatch(setLoading(false))
-            navigate('/model')
+            navigate('/dashboard')
         } catch (err) {
             if (err.response && err.response.status === 400) {
                 console.log(err);
