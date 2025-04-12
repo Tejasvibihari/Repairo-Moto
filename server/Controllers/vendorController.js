@@ -110,7 +110,7 @@ export const deleteVendor = async (req, res) => {
 export const updateVendorById = async (req, res) => {
     const { id } = req.params;
     console.log(id)
-    
+
     try {
 
         // Find the employee by ID

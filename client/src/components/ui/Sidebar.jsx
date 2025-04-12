@@ -17,7 +17,8 @@ import {
     NotebookPen,
     User2,
     ClipboardList,
-    ShoppingCart
+    ShoppingCart,
+    QrCode
 
 
 } from 'lucide-react';
@@ -38,6 +39,7 @@ const Sidebar = ({ children }) => {
         { id: 'AddBlog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
         { id: 'manageBlog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
         { id: 'managevendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
+        { id: 'manageqr', path: '/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },
 
 
 

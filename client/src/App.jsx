@@ -17,6 +17,7 @@ import PrivateRoute from './components/routes/PrivateRoute';
 import UserAuth from './pages/auth/UserSignUp';
 import UserSignUp from './pages/auth/UserSignUp';
 import UserSigin from './pages/auth/UserSignIn';
+import ManageQr from './pages/dashboard/ManageQr';
 
 
 
@@ -24,7 +25,7 @@ export default function App() {
 
   return (
     <>
-     
+
       <BrowserRouter>
         <Routes>
           {/* Landing Route without Sidebar */}
@@ -89,6 +90,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><ManageBlog /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manage-qr'
+            element={
+              <PrivateRoute>
+                <Sidebar><ManageQr /></Sidebar>
               </PrivateRoute>
             }
           />

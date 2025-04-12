@@ -47,6 +47,10 @@ const vendorSchema = new mongoose.Schema({
     },
     profileImage: {
         type: String
+    },
+    role: {
+        type: String,
+        default: "vendor"
     }
 })
 

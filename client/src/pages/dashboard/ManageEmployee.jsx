@@ -66,7 +66,7 @@ export default function ManageEmployee() {
                         />
                     )) : <div className='flex items-center justify-center'>Loading...</div>
                 }
-            </div>c
+            </div>
         </>
     )
 }

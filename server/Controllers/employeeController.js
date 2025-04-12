@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import fs from "fs";
 
 export const createEmployee = async (req, res) => {
-    const { firstName, lastName, email, phone, role, address, city, state, pinCode, profileImage } = req.body;
+    const { firstName, lastName, email, phone, position, address, city, state, pinCode, profileImage } = req.body;
     // console.log(pinCodAe, "Pincode");
     try {
         const employee = await Employee.findOne({ email });
@@ -28,7 +28,7 @@ export const createEmployee = async (req, res) => {
             lastName,
             email,
             phone,
-            role,
+            position,
             password: hashedPassword,
             address,
             city,
@@ -46,10 +46,11 @@ export const createEmployee = async (req, res) => {
 }
 
 export const getAllEmployee = async (req, res) => {
+    console.log(req);
     try {
         const employees = await Employee.find({}).select("-password");
         console.log(employees)
-        res.status(200).json({ employees });
+        res.status(200).json({ message: "Emploee Fetched Successfully", employees });
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal server error" });
@@ -128,7 +129,7 @@ export const updateEmployeeById = async (req, res) => {
                 lastName: req.body.lastName,
                 email: req.body.email,
                 phone: req.body.phone,
-                role: req.body.role,
+                position: req.body.position,
                 address: req.body.address,
                 city: req.body.city,
                 state: req.body.state,

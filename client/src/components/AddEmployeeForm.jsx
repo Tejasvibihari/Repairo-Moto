@@ -17,7 +17,7 @@ export default function AddEmployeeForm() {
         lastName: '',
         phone: '',
         email: '',
-        role: '',
+        position: '',
         address: '',
         city: '',
         state: '',
@@ -68,7 +68,7 @@ export default function AddEmployeeForm() {
                 lastName: '',
                 phone: '',
                 email: '',
-                role: '',
+                position: '',
                 address: '',
                 city: '',
                 state: '',
@@ -118,8 +118,8 @@ export default function AddEmployeeForm() {
                     <InputField label="Phone Number" type='number' name="phone" value={formData.phone} onChange={handleChange} />
                     <InputField label="Email" name="email" value={formData.email} type="email" onChange={handleChange} />
                     <div>
-                        <label className='text-gray-700 font-semibold mb-2 block text-sm'>Role</label>
-                        <select name="role" value={formData.role} onChange={handleChange} required className='border-2 border-gray-300 rounded-md p-2 w-full'>
+                        <label className='text-gray-700 font-semibold mb-2 block text-sm'>Position</label>
+                        <select name="position" value={formData.position} onChange={handleChange} required className='border-2 border-gray-300 rounded-md p-2 w-full'>
                             <option value="" disabled>Select One</option>
                             <option value="employee">Employee</option>
                             <option value="mechanic">Mechanic</option>
