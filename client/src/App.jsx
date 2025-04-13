@@ -20,6 +20,7 @@ import UserSigin from './pages/auth/UserSignIn';
 import ManageQr from './pages/dashboard/ManageQr';
 import NavBar from './components/ui/NavBar';
 import UserOrderBooking from './pages/landing/UserOrderBooking';
+import ManageOrder from './pages/dashboard/ManageOrder';
 
 
 
@@ -68,6 +69,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><AdminBookingForm /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manage-order'
+            element={
+              <PrivateRoute>
+                <Sidebar><ManageOrder /></Sidebar>
               </PrivateRoute>
             }
           />

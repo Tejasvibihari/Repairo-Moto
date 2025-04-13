@@ -91,11 +91,40 @@ export default function ManualBookingForm() {
             setSnackBarSeverity('success');
             setSnackBarOpen(true); // Open the Snackbar
             setLoading(false); // Stop loading state
+            setFormData({
+                name: '',
+                contactNo: '',
+                city: 'Patna',
+                selectedBrand: '',
+                selectedModel: '',
+                // modelName: '',
+                cc: '',
+                services: [],
+                otherService: '',
+                preferredDate: null,
+                preferredTime: null,
+                estimatedBudget: '',
+                issues: '',
+            }); // Reset form data
         } catch (error) {
             console.log('Error submitting form:', error);
-            setSnackBarMessage(error.message); // Set the message to display in the Snackbar
+
+            // Check if the error is an AxiosError and has a response
+            if (error.response) {
+                // Extract the error message from the response
+                const errorMessage = error.response.data.message || `Error: ${error.response.status}`;
+                setSnackBarMessage(errorMessage); // Set the message to display in the Snackbar
+            } else if (error.request) {
+                // Handle errors where the request was made but no response was received
+                setSnackBarMessage('No response from the server. Please try again later.');
+            } else {
+                // Handle other errors (e.g., network issues)
+                setSnackBarMessage(error.message || 'An unexpected error occurred.');
+            }
+
             setSnackBarSeverity('error'); // Set severity to error
-            setLoading(false)
+            setSnackBarOpen(true); // Open the Snackbar
+            setLoading(false); // Stop loading state
         }
         // Submit the form data to the server
     };

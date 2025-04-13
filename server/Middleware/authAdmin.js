@@ -19,7 +19,7 @@ const authAdmin = async (req, res, next) => {
         req.admin = admin; // attach admin to request
         next();
     } catch (error) {
-        return res.status(401).json({ message: 'Invalid token' });
+        return res.status(401).json({ message: 'Invalid token Please Login Again' });
     }
 };
 

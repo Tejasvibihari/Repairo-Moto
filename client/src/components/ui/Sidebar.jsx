@@ -35,6 +35,7 @@ const Sidebar = ({ children }) => {
         { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
         { id: 'bikebrand', path: '/model', label: 'Bike Model', icon: <Bike size={20} /> },
         { id: 'adminorderbooking', path: '/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
+        { id: 'manageorder', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
         { id: 'manageemployee', path: '/manage-employee', label: 'Manage Employee', icon: <User2 size={20} /> },
         { id: 'AddBlog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
         { id: 'manageBlog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },

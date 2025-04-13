@@ -57,8 +57,8 @@ export const createManualOrder = async (req, res) => {
 // (Optional) @desc Get all bookings
 export const getAllBookings = async (req, res) => {
     try {
-        const bookings = await ServiceBooking.find().sort({ createdAt: -1 });
-        return res.status(200).json(bookings);
+        const orders = await Order.find().sort({ createdAt: -1 });
+        return res.status(200).json(orders);
     } catch (error) {
         console.error("Error fetching bookings:", error);
         return res.status(500).json({ message: 'Server error while fetching bookings' });
