@@ -64,7 +64,26 @@ const orderSchema = new mongoose.Schema({
         type: String,
         default: '',
         trim: true,
-    }
+    },
+    status: {
+        type: String,
+        default: 'Pending',
+        enum: ['Pending', 'In Progress', 'Completed', 'Cancelled'],
+    },
+    assignedMechanic: {
+        type: String,
+        default: '',
+        trim: true,
+    },
+    mechanicId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Mechanic', // Reference to the Mechanic model
+        default: null,
+    },
+    partsUsed: {
+        type: [String],
+        default: [], // List of parts used in the repair
+    },
 }, {
     timestamps: true,
 });

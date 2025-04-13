@@ -116,46 +116,43 @@ export default function ManualBookingForm() {
             />
             <div>
                 <Heading heading={'Booking Form'} />
-                <form className='my-6 p-4 border shadow border-gray-300' onSubmit={handleSubmit}>
+                <form className='my-6 p-4 border shadow border-gray-300 max-w-full' onSubmit={handleSubmit}>
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
-                        <div>
-                            <TextField
-                                fullWidth
-                                name="name"
-                                label="Name"
-                                variant="outlined"
-                                placeholder="Enter Name"
-                                required
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                slotProps={{
-                                    input: {
-                                        startAdornment: (
-                                            <AccountCircle sx={{ color: 'action.active', mr: 1 }} />
-                                        ),
-                                    },
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <TextField
-                                fullWidth
-                                name="contactNo"
-                                label="Contact No."
-                                variant="outlined"
-                                placeholder="Contact No."
-                                required
-                                value={formData.contactNo}
-                                onChange={handleInputChange}
-                                slotProps={{
-                                    input: {
-                                        startAdornment: (
-                                            <Phone className='mr-1 text-gray-600' />
-                                        ),
-                                    },
-                                }}
-                            />
-                        </div>
+                        <TextField
+                            fullWidth
+                            name="name"
+                            label="Name"
+                            variant="outlined"
+                            placeholder="Enter Name"
+                            required
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <AccountCircle sx={{ color: 'action.active', mr: 1 }} />
+                                    ),
+                                },
+                            }}
+                        />
+                        <TextField
+                            fullWidth
+                            name="contactNo"
+                            label="Contact No."
+                            variant="outlined"
+                            placeholder="Contact No."
+                            required
+                            value={formData.contactNo}
+                            onChange={handleInputChange}
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <Phone className='mr-1 text-gray-600' />
+                                    ),
+                                },
+                            }}
+                        />
+
                     </div>
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
                         <div>

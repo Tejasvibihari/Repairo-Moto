@@ -19,6 +19,7 @@ import UserSignUp from './pages/auth/UserSignUp';
 import UserSigin from './pages/auth/UserSignIn';
 import ManageQr from './pages/dashboard/ManageQr';
 import NavBar from './components/ui/NavBar';
+import UserOrderBooking from './pages/landing/UserOrderBooking';
 
 
 
@@ -30,6 +31,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           {/* Landing Route without Sidebar */}
+
           <Route path='/' element={<Home />} />
 
           {/* Auth Page (No Sidebar) */}
@@ -37,10 +39,11 @@ export default function App() {
           <Route path='/user-signup' element={<UserSignUp />} />
           <Route path="/user-signup/:referralType/:referralId" element={<UserSignUp />} />
           <Route path="/user-signin" element={<UserSigin />} />
+          <Route path="/user-order-booking" element={<UserOrderBooking />} />
 
 
           {/* User Page  */}
-          <Route path='/user-dashboard' element={<NavBar />} />
+          {/* <Route path='/user-dashboard' element={<NavBar />} /> */}
 
 
           {/* Protected Routes with Sidebar */}

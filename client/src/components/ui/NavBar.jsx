@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function NavBar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -7,8 +8,21 @@ export default function NavBar() {
         setIsMenuOpen(!isMenuOpen);
     };
 
+    // Array of navigation links
+    const navLinks = [
+        { name: 'Home', path: '/' },
+        { name: 'About', path: '/about' },
+        { name: 'Services', path: '/services' },
+        { name: 'Contact', path: '/contact' },
+        { name: 'Blog', path: '/blog' },
+        { name: 'Gallery', path: '/gallery' },
+        {
+            name: 'Referral & Earning', path: '/referral'
+        },
+    ];
+
     return (
-        <nav className="bg-white shadow-md">
+        <nav className="bg-white shadow-md w-full">
             <div className="container mx-auto px-4 py-3 flex items-center justify-between md:w-7xl">
                 {/* Logo */}
                 <div className="text-xl font-bold text-primary">
@@ -16,15 +30,22 @@ export default function NavBar() {
                 </div>
 
                 {/* Desktop Menu */}
-                <div className="hidden md:flex items-center space-x-6">
-                    <a href="#home" className="text-gray-700 hover:text-primary">Home</a>
-                    <a href="#about" className="text-gray-700 hover:text-primary">About</a>
-                    <a href="#services" className="text-gray-700 hover:text-primary">Services</a>
-                    <a href="#contact" className="text-gray-700 hover:text-primary">Contact</a>
-                    <button className="bg-primary text-white px-4 py-2 rounded hover:bg-secondary">
-                        Dashboard
-                    </button>
+                <div className="hidden md:flex items-center space-x-6 mx-auto">
+                    {navLinks.map((link, index) => (
+                        <Link
+                            key={index}
+                            to={link.path}
+                            className="text-gray-700 hover:text-primary font-semibold font-nunito hover:border-b-2 pb-1"
+                        >
+                            {link.name}
+                        </Link>
+                    ))}
                 </div>
+                <Link to="/user-order-booking">
+                    <button className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary hidden md:block">
+                        Book Appointment
+                    </button>
+                </Link>
 
                 {/* Hamburger Icon for Mobile */}
                 <div className="md:hidden">
@@ -55,7 +76,6 @@ export default function NavBar() {
                 <div className="flex items-center justify-between px-4 py-3 border-b">
                     <div className="text-xl font-bold text-primary">
                         <img src="/logo/textlogo150.png" alt="Logo" className="h-12 inline-block mr-2" />
-
                     </div>
                     <button onClick={toggleMenu} className="text-gray-700 focus:outline-none">
                         <svg
@@ -75,11 +95,16 @@ export default function NavBar() {
                     </button>
                 </div>
                 <div className="flex flex-col space-y-4 px-4 py-6">
-                    <a href="#home" className="text-gray-700 hover:text-primary">Home</a>
-                    <a href="#about" className="text-gray-700 hover:text-primary">About</a>
-                    <a href="#services" className="text-gray-700 hover:text-primary">Services</a>
-                    <a href="#contact" className="text-gray-700 hover:text-primary">Contact</a>
-                    <button className="bg-primary text-white px-4 py-2 rounded hover:bg-secondary">
+                    {navLinks.map((link, index) => (
+                        <Link
+                            key={index}
+                            to={link.path}
+                            className="text-gray-700 hover:text-primary"
+                        >
+                            {link.name}
+                        </Link>
+                    ))}
+                    <button className="bg-primary text-white cursor-pointer px-4 py-2 hover:bg-secondary">
                         Sign In
                     </button>
                 </div>
