@@ -16,7 +16,6 @@ const axiosClient = axios.create({
 
 axiosClient.interceptors.request.use((config) => {
     const state = store.getState();
-    console.log(state.auth)
     // Choose one based on your app logic — here we prioritize admin > employee > vendor > user
     const token =
         state.auth.adminToken ||

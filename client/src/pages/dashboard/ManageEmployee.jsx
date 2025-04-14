@@ -54,7 +54,7 @@ export default function ManageEmployee() {
                             id={employee._id}
                             firstName={employee.firstName}
                             lastName={employee.lastName}
-                            role={employee.role}
+                            position={employee.position}
                             phone={employee.phone}
                             email={employee.email}
                             profileImage={employee.profileImage}

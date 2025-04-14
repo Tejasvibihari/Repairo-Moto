@@ -11,7 +11,7 @@ export default function EditEmployeeForm({ initialData, onSuccess }) {
         lastName: initialData?.lastName || '',
         phone: initialData?.phone || '',
         email: initialData?.email || '',
-        role: initialData?.role || '',
+        position: initialData?.position || '',
         address: initialData?.address || '',
         city: initialData?.city || '',
         state: initialData?.state || '',
@@ -141,8 +141,8 @@ export default function EditEmployeeForm({ initialData, onSuccess }) {
                     <div>
                         <label className="text-gray-700 font-semibold mb-2 block text-sm">Role</label>
                         <select
-                            name="role"
-                            value={formData.role}
+                            name="position"
+                            value={formData.position}
                             onChange={handleChange}
                             className="border-2 border-gray-300 rounded-md p-2 w-full"
                             required

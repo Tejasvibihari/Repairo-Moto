@@ -66,14 +66,15 @@ export const getAllBookings = async (req, res) => {
 };
 
 // (Optional) @desc Get single booking by ID
-export const getBookingById = async (req, res) => {
+export const getOrderById = async (req, res) => {
+    console.log(req.params.id)
     try {
-        const booking = await ServiceBooking.findById(req.params.id);
-        if (!booking) return res.status(404).json({ message: 'Booking not found' });
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        return res.status(200).json(booking);
+        return res.status(200).json(order);
     } catch (error) {
         console.error("Error fetching booking:", error);
-        return res.status(500).json({ message: 'Server error while fetching booking' });
+        return res.status(500).json({ message: 'Server error while fetching order' });
     }
 };

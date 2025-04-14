@@ -84,8 +84,6 @@ export const deleteEmployeeById = async (req, res) => {
 
         // Fetch all remaining employees
         const getAllEmployees = await Employee.find({}).select("-password");
-        console.log(getAllEmployees);
-
         // Return the updated list of employees
         res.status(200).json({ employees: getAllEmployees, message: "Employee deleted successfully" });
     } catch (error) {

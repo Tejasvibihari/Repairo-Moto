@@ -17,7 +17,6 @@ export default function ManageOrder() {
                 SetAllOrders(response.data); // Update state with the fetched orders
             } catch (error) {
                 console.log(error);
-
                 // Check if the error is an AxiosError and has a response
                 if (error.response) {
                     // Extract the error message from the response

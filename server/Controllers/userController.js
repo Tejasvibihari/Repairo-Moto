@@ -21,7 +21,7 @@ export const createUser = async (req, res) => {
             pincode,
             businessType
         } = req.body;
-        console.log(req.body)
+
 
 
         // Check for existing user
@@ -86,7 +86,7 @@ export const createUser = async (req, res) => {
 
 export const usrSignIn = async (req, res) => {
     const { email, password } = req.body;
-    console.log(req.body);
+
     try {
         // Check if the user exists
         const user = await User.findOne({ email });

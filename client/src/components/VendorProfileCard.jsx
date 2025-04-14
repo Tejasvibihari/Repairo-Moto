@@ -83,11 +83,11 @@ export default function VendorProfileCard({ vendor }) {
                     <div className='flex flex-col gap-1'>
                         <div>
                             <span className='font-inter font-semibold'>Business Name:- </span>
-                            <span>Tejasvi Kumar</span>
+                            <span>{vendor.businessName}</span>
                         </div>
                         <div>
                             <span className='font-inter font-semibold'>GST No.:- </span>
-                            <span>Tejasvi Kumar</span>
+                            <span>{vendor.gstNo}</span>
                         </div>
                     </div>
                 </div>
