@@ -6,7 +6,7 @@ export default function Feature() {
             <div className='mt-10'>
                 {/* Header Section */}
                 <div className='flex flex-col gap-2'>
-                    <h1 className='font-roboto text-secondary text-4xl font-bold text-center'>
+                    <h1 className='font-roboto text-secondary text-4xl  font-bold text-center'>
                         Our Featured Services
                     </h1>
                     <p className='text-center font-roboto font-semibold text-gray-600'>

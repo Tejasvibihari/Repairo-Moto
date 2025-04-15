@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
 
@@ -21,6 +21,7 @@ import ManageQr from './pages/dashboard/ManageQr';
 import NavBar from './components/ui/NavBar';
 import UserOrderBooking from './pages/landing/UserOrderBooking';
 import ManageOrder from './pages/dashboard/ManageOrder';
+import ContactUs from './pages/landing/ContactUs';
 
 
 
@@ -34,6 +35,7 @@ export default function App() {
           {/* Landing Route without Sidebar */}
 
           <Route path='/' element={<Home />} />
+          <Route path='/contact' element={<ContactUs />} />
 
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
