@@ -5,7 +5,7 @@ const EmployeePrivateRoute = ({ children }) => {
     const isAuthenticated = useSelector((state) => state.employeeAuth.isAuthenticated)
     console.log(isAuthenticated)
 
-    return isAuthenticated ? children : <Navigate to="/employee-sign-in" replace />;
+    return isAuthenticated ? children : <Navigate to="/employee/sign-in" replace />;
 };
 
 export default EmployeePrivateRoute;

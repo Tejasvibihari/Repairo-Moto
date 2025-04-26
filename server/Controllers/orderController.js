@@ -216,3 +216,49 @@ export const updateOrderStatus = async (req, res) => {
         return res.status(500).json({ message: "Server error while updating order status" });
     }
 };
+
+
+export const getAllBookingsByEmployee = async (req, res) => {
+    const { employeeId } = req.params;
+    console.log(req.params)
+    try {
+        // Fetch all bookings assigned to the given employee ID (mechanicId, deliveryId, or vendorId)
+        const orders = await Order.find({
+            $or: [
+                { mechanicId: employeeId },
+                { deliveryId: employeeId },
+                { vendorId: employeeId }
+            ]
+        });
+
+        if (!orders || orders.length === 0) {
+            return res.status(404).json({ message: "No bookings found for this employee." });
+        }
+
+        res.status(200).json({ message: "Orders fetched successfully", data: orders });
+    } catch (error) {
+        console.error("Error fetching bookings:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
+export const updatePartsUsed = async (req, res) => {
+    const { id } = req.params;
+    const { partsUsed } = req.body;
+
+    try {
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        order.partsUsed = partsUsed;
+        await order.save();
+
+        res.status(200).json({ message: 'Parts updated successfully', order });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error while updating parts' });
+    }
+};

@@ -11,4 +11,5 @@ router.get("/getallemployee", authAdmin, getAllEmployee);
 router.delete("/deleteemployee/:id", authAdmin, deleteEmployeeById);
 router.put("/updateemployee/:id", authAdmin, employeeUpload.single("profileImage"), updateEmployeeById);
 
+
 export default router;

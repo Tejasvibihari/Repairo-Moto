@@ -63,7 +63,7 @@ export default function EmployeeSignInForm() {
                 email: '',
                 password: '',
             });
-            navigate('/employee-dashboard')
+            navigate('/employee/dashboard')
         } catch (err) {
             console.error(err);
             setSnackBarMessage(err.response?.data?.message || 'Login failed.');

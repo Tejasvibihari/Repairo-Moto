@@ -28,6 +28,9 @@ import EmployeeSignIn from './pages/auth/EmployeeSignIn';
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
 import EmployeePrivateRoute from './components/routes/EmployeeRoute';
 import EmployeeNavbar from './components/ui/EmployeeNavbar';
+import EmployeeBooking from './pages/employee/EmployeeBooking';
+import EmployeeReferral from './pages/employee/EmployeeReferral';
+import EmpolyeeProfile from './pages/employee/EmpolyeeProfile';
 
 
 
@@ -52,14 +55,38 @@ export default function App() {
 
 
           {/* Employee Route */}
-          <Route path="/employee-sign-in" element={<EmployeeSignIn />} />
+          <Route path="/employee/sign-in" element={<EmployeeSignIn />} />
 
           {/* Protected Route With Employee Navbar  */}
           <Route
-            path='/employee-dashboard'
+            path='/employee/dashboard'
             element={
               <EmployeePrivateRoute>
-                <EmployeeNavbar><EmployeeDashboard /></EmployeeNavbar>
+                <EmployeeNavbar /><EmployeeDashboard />
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/all-booking'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeNavbar /><EmployeeBooking />
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/profile'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeNavbar /><EmpolyeeProfile />
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/referral'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeNavbar /><EmployeeReferral />
               </EmployeePrivateRoute>
             }
           />
