@@ -10,7 +10,7 @@ import vendorReducers from "./slice/vendorSlice"
 import adminAuthReducers from './slice/adminAuthSlice'
 import userAuthReducers from './slice/userSlice';
 import authReducers from './slice/authSlice'
-
+import employeeAuthReducers from './slice/employeeAuth'
 // Persist configuration
 const persistConfig = {
     key: 'root', // Key for the root of the persisted state
@@ -25,6 +25,7 @@ const rootReducer = combineReducers({
     vendor: vendorReducers,// Add your reducers here
     admin: adminAuthReducers,
     user: userAuthReducers,
+    employeeAuth: employeeAuthReducers,
 });
 
 // Create a persisted reducer

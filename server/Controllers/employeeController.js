@@ -2,6 +2,7 @@ import Employee from "../Models/employeeModel.js";
 import { generateReferralCode } from "../Utils/generateReferralCode.js";
 import bcrypt from "bcryptjs";
 import fs from "fs";
+import jwt from "jsonwebtoken";
 
 export const createEmployee = async (req, res) => {
     const { firstName, lastName, email, phone, position, address, city, state, pinCode, profileImage } = req.body;
@@ -44,6 +45,51 @@ export const createEmployee = async (req, res) => {
 
     }
 }
+
+// Employee Sign In 
+
+export const employeeSignIn = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        // Check if the employee exists
+        const employee = await Employee.findOne({ email });
+        if (!employee) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+
+        // Verify the password
+        const isPasswordValid = await bcrypt.compare(password, employee.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Generate a JWT token
+        const token = jwt.sign(
+            { id: employee._id, role: employee.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "1d" } // Token expires in 1 day
+        );
+
+        // Send the response
+        res.status(200).json({
+            message: "Sign-in successful",
+            token,
+            employee: {
+                id: employee._id,
+                firstName: employee.firstName,
+                lastName: employee.lastName,
+                email: employee.email,
+                role: employee.role,
+                profileImage: employee.profileImage,
+            },
+        });
+    } catch (error) {
+        console.error("Error during employee sign-in:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
 
 export const getAllEmployee = async (req, res) => {
     try {

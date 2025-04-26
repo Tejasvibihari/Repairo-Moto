@@ -1,0 +1,11 @@
+import express from "express";
+import { employeeSignIn } from "../Controllers/employeeController.js";
+import { employeeUpload } from "../Middleware/employeeMulter.js";
+import authAdmin from "../Middleware/authAdmin.js";
+
+
+const router = express.Router();
+
+router.post("/employee-sign-in", employeeSignIn);
+
+export default router;

@@ -32,12 +32,15 @@ axiosClient.interceptors.request.use((config) => {
 axiosClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        if (
+            error.response?.status === 401 && 
+            error.response?.data?.message === "Invalid token Please Login Again"
+        ) {
             // Optional: clear localStorage or redux tokens here
-            // localStorage.removeItem("token");
-            // store.dispatch(logoutAction()); // optional
+            localStorage.removeItem("token"); // Clear the token from localStorage
+            // store.dispatch(logoutAction()); // Optional: Dispatch a logout action if using Redux
 
-            window.location.href = "/signin"; // Redirect to sign-in
+            window.location.href = "/admin-sign-in"; // Redirect to the sign-in page
         }
 
         return Promise.reject(error);

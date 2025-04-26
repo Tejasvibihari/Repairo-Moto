@@ -11,12 +11,16 @@ import orderRouter from "./Routes/orderRoutes.js";
 import employeeRouter from "./Routes/employeeRoutes.js"
 import vendorRouter from "./Routes/vendorRoutes.js"
 import userRouter from './Routes/userRoutes.js'
+import employeeAuthRouter from "./Routes/employeeAuth.js"
+
+
 const app = express();
 dotenv.config();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
+app.use('/static', express.static('static'));
 
 const PORT = process.env.PORT || 5000;
 
@@ -28,7 +32,7 @@ app.use("/api/admin/order", orderRouter);
 app.use("/api/admin/employee", employeeRouter);
 app.use("/api/vendor", vendorRouter);
 app.use("/api/user", userRouter);
-// app.use("/api/employee")
+app.use("/api/employee/auth", employeeAuthRouter)
 
 
 app.get("/", (req, res) => {

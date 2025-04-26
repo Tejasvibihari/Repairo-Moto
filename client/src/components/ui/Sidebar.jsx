@@ -1,6 +1,8 @@
 // components/CRMLayout.jsx
+import Badge from '@mui/material/Badge';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Users,
     BarChart2,
@@ -18,7 +20,8 @@ import {
     User2,
     ClipboardList,
     ShoppingCart,
-    QrCode
+    QrCode,
+    Bell,
 
 
 } from 'lucide-react';
@@ -33,22 +36,15 @@ const Sidebar = ({ children }) => {
 
     const menuItems = [
         { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-        { id: 'bikebrand', path: '/model', label: 'Bike Model', icon: <Bike size={20} /> },
-        { id: 'adminorderbooking', path: '/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
-        { id: 'manageorder', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
-        { id: 'manageemployee', path: '/manage-employee', label: 'Manage Employee', icon: <User2 size={20} /> },
-        { id: 'AddBlog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
-        { id: 'manageBlog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
-        { id: 'managevendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
-        { id: 'manageqr', path: '/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },
-
-
-
-        { id: 'calendar', path: '/calendar', label: 'Calendar', icon: <Calendar size={20} /> },
-        { id: 'messages', path: '/messages', label: 'Messages', icon: <MessageSquare size={20} /> },
-        { id: 'analytics', path: '/analytics', label: 'Analytics', icon: <BarChart2 size={20} /> },
-        { id: 'database', path: '/database', label: 'Database', icon: <Database size={20} /> },
-        { id: 'settings', path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
+        { id: 'invoice', path: '/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
+        { id: 'model', path: '/model', label: 'Bike Model', icon: <Bike size={20} /> },
+        { id: 'admin-order-form', path: '/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
+        { id: 'manage-order', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
+        { id: 'manage-employee', path: '/manage-employee', label: 'Manage Employee', icon: <User2 size={20} /> },
+        { id: 'manage-vendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
+        { id: 'manage-qr', path: '/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },
+        { id: 'add-blog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
+        { id: 'manage-blog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
     ];
 
     const handleNavigation = (path) => {
@@ -101,10 +97,12 @@ const Sidebar = ({ children }) => {
                             JS
                         </div>
                         {!collapsed && (
-                            <div className="ml-3">
-                                <p className="text-sm font-medium font-nunito text-semibold">John Smith</p>
-                                <p className="text-xs text-gray-400">Sales Manager</p>
-                            </div>
+                            <Link to="/admin-profile">
+                                <div className="ml-3">
+                                    <p className="text-sm font-medium font-nunito text-semibold">John Smith</p>
+                                    <p className="text-xs text-gray-400">Sales Manager</p>
+                                </div>
+                            </Link>
                         )}
                     </div>
                 </div>
@@ -114,10 +112,16 @@ const Sidebar = ({ children }) => {
             <div className="flex-1 overflow-auto">
                 {/* Header Bar */}
                 <header className="bg-white shadow-sm">
-                    <div className="px-6 py-4">
+                    <div className="px-6 py-4 flex items-center justify-between">
                         <h2 className="text-xl font-semibold text-gray-800">
                             {menuItems.find(item => item.id === currentPath)?.label || 'Dashboard'}
                         </h2>
+                        <span className='bg-gray-200 border border-gray-300 rounded cursor-pointer p-1'>
+                            <Badge badgeContent={4} color="success">
+                                <NotificationsIcon color="action" />
+                            </Badge>
+                        </span>
+
                     </div>
                 </header>
 

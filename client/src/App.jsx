@@ -22,6 +22,12 @@ import NavBar from './components/ui/NavBar';
 import UserOrderBooking from './pages/landing/UserOrderBooking';
 import ManageOrder from './pages/dashboard/ManageOrder';
 import ContactUs from './pages/landing/ContactUs';
+import Profile from './pages/dashboard/Profile';
+import Invoice from './pages/dashboard/Invoice';
+import EmployeeSignIn from './pages/auth/EmployeeSignIn';
+import EmployeeDashboard from './pages/employee/EmployeeDashboard';
+import EmployeePrivateRoute from './components/routes/EmployeeRoute';
+import EmployeeNavbar from './components/ui/EmployeeNavbar';
 
 
 
@@ -45,6 +51,18 @@ export default function App() {
           <Route path="/user-order-booking" element={<UserOrderBooking />} />
 
 
+          {/* Employee Route */}
+          <Route path="/employee-sign-in" element={<EmployeeSignIn />} />
+
+          {/* Protected Route With Employee Navbar  */}
+          <Route
+            path='/employee-dashboard'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeNavbar><EmployeeDashboard /></EmployeeNavbar>
+              </EmployeePrivateRoute>
+            }
+          />
           {/* User Page  */}
           {/* <Route path='/user-dashboard' element={<NavBar />} /> */}
 
@@ -122,8 +140,25 @@ export default function App() {
               </PrivateRoute>
             }
           />
+          <Route
+            path='/invoice'
+            element={
+              <PrivateRoute>
+                <Sidebar><Invoice /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path='/admin-profile'
+            element={
+              <PrivateRoute>
+                <Sidebar><Profile /></Sidebar>
+              </PrivateRoute>
+            }
+          />
         </Routes>
-      </BrowserRouter>
+      </BrowserRouter >
     </>
   )
 }
