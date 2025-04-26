@@ -46,16 +46,25 @@ export const createEmployee = async (req, res) => {
 }
 
 export const getAllEmployee = async (req, res) => {
-    console.log(req);
     try {
-        const employees = await Employee.find({}).select("-password");
-        console.log(employees)
-        res.status(200).json({ message: "Emploee Fetched Successfully", employees });
+        // Extract query parameters from the request
+        const query = req.query;
+
+        // Fetch employees based on the query, or fetch all if no query is provided
+        const employees = await Employee.find(query).select("-password");
+
+        // Check if employees exist
+        if (!employees.length) {
+            return res.status(404).json({ message: "No employees found" });
+        }
+
+        // Send the filtered or full employee data
+        res.status(200).json({ message: "Employees fetched successfully", employees });
     } catch (error) {
-        console.log(error);
+        console.error("Error fetching employees:", error);
         res.status(500).json({ message: "Internal server error" });
     }
-}
+};
 
 export const deleteEmployeeById = async (req, res) => {
     try {

@@ -72,7 +72,7 @@ const orderSchema = new mongoose.Schema({
     },
     assignedMechanic: {
         type: String,
-        default: '',
+        default: null,
         trim: true,
     },
     mechanicId: {
@@ -84,6 +84,26 @@ const orderSchema = new mongoose.Schema({
         type: [String],
         default: [], // List of parts used in the repair
     },
+    assignedVendor: {
+        type: String,
+        default: null,
+        trim: true,
+    },
+    vendorId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Vendor', // Reference to the Mechanic model
+        default: null,
+    },
+    assignedDelivery: {
+        type: String,
+        default: null,
+        trim: true,
+    },
+    deliveryId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee', // Reference to the Mechanic model
+        default: null,
+    }
 }, {
     timestamps: true,
 });

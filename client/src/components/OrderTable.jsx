@@ -20,7 +20,7 @@ export default function OrderTable({ orders }) {
     const handleClickOpen = (id) => {
         setOrderId(id);         // Set the ID for JobAssignForm
         setOpen(true);          // Open the Dialog
-     
+
     };
 
 
@@ -32,7 +32,7 @@ export default function OrderTable({ orders }) {
 
     })
 
- 
+
     const handleMechanicChange = (orderId, mechanicId) => {
         // You can update your backend here, or local state
         console.log(`Assigning mechanic ${mechanicId} to order ${orderId}`);

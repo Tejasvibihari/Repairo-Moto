@@ -6,7 +6,7 @@ export default function AlertSnackBar({ open, message, severity = 'success', onC
     return (
         <Snackbar
             open={open}
-            autoHideDuration={6000}
+            autoHideDuration={1000}
             onClose={onClose}
             anchorOrigin={{ vertical: 'top', horizontal: 'right' }} // Position in the top-right corner
         >

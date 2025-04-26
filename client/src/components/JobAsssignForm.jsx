@@ -6,31 +6,65 @@ import CircularLoading from './ui/CircularLoading';
 import DialogActions from '@mui/material/DialogActions';
 import { UserPen, Plus } from 'lucide-react';
 import AssignMechanic from './ui/AssignMechanic';
+import { formatDate, formatTime } from '../utils/DateFormate';
+import SelectMechanicDialog from './ui/SelectMechanicDialog';
+import SelectDeliveryDialog from './ui/SelectDeliveryDialog';
+import SelectVendorDialog from './ui/SelectVendorDialog';
+
 
 export default function JobAsssignForm({ id }) {
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
     const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
     const [snackBarSeverity, setSnackBarSeverity] = useState('success');
     const [vendors, setVendors] = useState([])
-    const [employee, setEmployee] = useState([])
+    const [mechanic, setMechanic] = useState([])
+    const [delivery, setDelivery] = useState([])
     const [orderId, setOrderById] = useState({})
     const [modalloading, setModalLoading] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    console.log(id, "job assign id")
+
+
+    const [selectedMechanic, setSelectedMechanic] = useState(""); // State to store the selected mechanic ID
+    const [mechanicDialogOpen, setMechanicDialogOpen] = useState(false);
+    const [deliveryDialogOpen, setDeliveryDialogOpen] = useState(false);
+    const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
+
+    const handleMechanicDialogOpen = () => {
+        setMechanicDialogOpen(true);
+    };
+    const handleMechanicDialogClose = () => {
+        setMechanicDialogOpen(false);
+
+    };
+    const handleDeliveryDialogOpen = () => {
+        setDeliveryDialogOpen(true);
+    };
+    const handleDeliveryDialogClose = () => {
+        setDeliveryDialogOpen(false);
+
+    };
+    const handleVendorDialogOpen = () => {
+        setVendorDialogOpen(true);
+    };
+    const handleVendorDialogClose = () => {
+        setVendorDialogOpen(false);
+
+    };
     useEffect(() => {
         const fetchDetails = async () => {
             try {
                 setModalLoading(true)
-                const [vendorsData, employeesData, orderDetail] = await Promise.all([
+                const [vendorsData, employeesData, deliveryData, orderDetail] = await Promise.all([
                     axiosClient.get('/api/vendor/getallvendor'),
-                    axiosClient.get('/api/admin/employee/getallemployee'),
+                    axiosClient.get('/api/admin/employee/getallemployee?position=mechanic'),
+                    axiosClient.get('/api/admin/employee/getallemployee?position=delivery'),
                     axiosClient.get(`/api/admin/order/getorderbyid/${id}`),
                 ]);
-                console.log(orderDetail);
                 setOrderById(orderDetail.data);
                 setVendors(vendorsData.data.vendors);
-                setEmployee(employeesData.data.employees);
+                setMechanic(employeesData.data.employees);
+                setDelivery(deliveryData.data.employees)
                 setModalLoading(false);
             } catch (error) {
                 const msg = error.response?.data?.message || 'Something went wrong.';
@@ -43,17 +77,6 @@ export default function JobAsssignForm({ id }) {
 
         fetchDetails();
     }, [id]);
-    const updateMechanicInOrder = async (data) => {
-        // Optional: update in MongoDB via API
-        await axiosClient.put(`/api/orders/${orderId._id}`, data);
-
-        // Update local state
-        // setOrder(prev => ({
-        //     ...prev,
-        //     ...data
-        // }));
-    };
-
 
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') {
@@ -70,6 +93,22 @@ export default function JobAsssignForm({ id }) {
                 severity={snackBarSeverity}
                 onClose={handleCloseSnackBar} // Close function for the Snackbar
             />
+            <SelectMechanicDialog
+                open={mechanicDialogOpen}
+                onClose={handleMechanicDialogClose}
+                data={mechanic}
+                bookingId={orderId._id}
+            />
+            <SelectDeliveryDialog
+                open={deliveryDialogOpen}
+                onClose={handleDeliveryDialogClose}
+                data={delivery}
+                bookingId={orderId._id} />
+            <SelectVendorDialog
+                open={vendorDialogOpen}
+                onClose={handleVendorDialogClose}
+                data={vendors}
+                bookingId={orderId._id} />
             {modalloading ?
                 <div className='flex items-center justify-center p-10'>
                     <CircularLoading />
@@ -132,37 +171,42 @@ export default function JobAsssignForm({ id }) {
                                         <div>
                                             <span className='font-semibold'>CC:- </span><span>{orderId.cc}</span>
                                         </div>
-                                        <AssignMechanic
-                                            employees={employee}
-                                            orderData={orderId}
-                                            onUpdateMechanic={updateMechanicInOrder}
-                                        />
-
-
+                                        <div>
+                                            <span className='font-semibold'>Assigned Mechanic:- </span><span>{orderId.assignedMechanic ? orderId.assignedMechanic : "N/A"}</span>
+                                        </div>
+                                        <button onClick={() => handleMechanicDialogOpen()} className='my-2 p-1 bg-primary rounded text-white cursor-pointer border border-primary hover:bg-transparent hover:text-black'>
+                                            Select Mechanic
+                                        </button>
                                     </div>
                                 </div>
                             </fieldset>
                             <fieldset className='border border-gray-300 rounded p-4 my-4'>
                                 <legend className="text-md font-semibold">Vendor & Parts Required</legend>
                                 <div className='flex flex-row flex-wrap items-start justify-between gap-4'>
-                                    <div className='flex flex-col gap-1'>
+                                    <div className='flex flex-col gap-2'>
                                         <div>
-                                            <span className='font-semibold'>Parts:- </span><span>Tejasvi Kumar</span>
+                                            <span className='font-semibold'>Parts:- </span>
+                                            <span>
+
+                                                {orderId?.partsUsed?.join(", ") || "N/A"}
+                                            </span>
+
                                         </div>
+                                        <div>
+                                            <span className='font-semibold'>Assigned Vendor:- </span><span>{orderId.assignedVendor ? orderId.assignedVendor : "N/A"}</span>
+                                        </div>
+                                        <button onClick={() => handleVendorDialogOpen()} className='my-2 p-1 bg-primary rounded text-white cursor-pointer border border-primary hover:bg-transparent hover:text-black'>
+                                            Select Vendor
+                                        </button>
                                     </div>
                                     <div className='flex flex-col gap-1'>
-                                        <select className='p-1 border border-gray-400'>
-                                            <option selected>Assign Vendor</option>
-                                            <option>Option 1</option>
-                                            <option>Option 2 </option>
-                                            <option>Assign Mechanic</option>
-                                        </select>
-                                        <select className='p-1 border border-gray-400'>
-                                            <option selected>Assign Delivery Boy</option>
-                                            <option>Option 1</option>
-                                            <option>Option 2 </option>
-                                            <option>Assign Mechanic</option>
-                                        </select>
+
+                                        <div>
+                                            <span className='font-semibold'>Assigned Delivery Boy:- </span><span>{orderId.assignedDelivery ? orderId.assignedDelivery : "N/A"}</span>
+                                        </div>
+                                        <button onClick={() => handleDeliveryDialogOpen()} className='my-2 p-1 bg-primary rounded text-white cursor-pointer border border-primary hover:bg-transparent hover:text-black'>
+                                            Select Delivery Boy
+                                        </button>
                                     </div>
                                 </div>
                             </fieldset>
@@ -171,93 +215,97 @@ export default function JobAsssignForm({ id }) {
                                 <div className='flex flex-row flex-wrap items-start justify-between gap-4'>
                                     <div className='flex flex-col gap-1'>
                                         <div>
-                                            <span className='font-semibold'>Prefered Date:- </span><span>Tejasvi Kumar</span>
+
+                                            <span className='font-semibold'>Prefered Date:- </span>
+                                            <span>{formatDate(orderId.preferredDate)}</span>
                                         </div>
                                         <div>
-                                            <span className='font-semibold'>Prefered Time:- </span><span>Tejasvi Kumar</span>
+                                            <span className='font-semibold'>Prefered Time:- </span><span>{formatTime(orderId.preferredTime)}</span>
                                         </div>
                                     </div>
                                     <div className='flex flex-col gap-1'>
                                         <div>
-                                            <span className='font-semibold'>Estimated Budget:- </span><span>Tejasvi Kumar</span>
+                                            <span className='font-semibold'>Estimated Budget:- </span><span>{orderId.estimatedBudget}</span>
                                         </div>
-                                        <select className='p-1 border border-gray-400'>
-                                            <option selected>Change Status</option>
-                                            <option>Option 1</option>
-                                            <option>Option 2 </option>
-                                            <option>Assign Mechanic</option>
+                                        <select
+                                            className={`p-1 border ${orderId.status === "Pending"
+                                                ? "border-yellow-500 text-yellow-500"
+                                                : orderId.status === "In Progress"
+                                                    ? "border-orange-500 text-orange-500"
+                                                    : orderId.status === "Completed"
+                                                        ? "border-green-500 text-green-500"
+                                                        : "border-red-500 text-red-500"
+                                                }`}
+                                            value={orderId.status || "Pending"} // Set the current status as the selected value
+                                            onChange={(e) => {
+                                                const updatedStatus = e.target.value;
+                                                setOrderById((prev) => ({
+                                                    ...prev,
+                                                    status: updatedStatus, // Update the status in the local state
+                                                }));
+                                            }}
+                                        >
+                                            <option value="Pending" className='text-yellow-500'>Pending</option>
+                                            <option value="In Progress" className='text-orange-500'>In Progress</option>
+                                            <option value="Completed" className='text-green-500'>Completed</option>
+                                            <option value="Cancelled" className='text-red-500'>Cancelled</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div>
                                     <span className='font-semibold'>
                                         Issue :-
-
                                     </span>
                                     <span>
-                                        This is issue
+                                        {orderId.issues}
                                     </span>
                                 </div>
-                            </fieldset>
-                            <fieldset className='border border-gray-300 rounded p-4 my-4'>
-                                <legend className="text-md font-semibold">Action</legend>
-                                <div className='flex flex-row flex-wrap items-start justify-between gap-4'>
-                                    <div className='flex flex-col gap-1'>
-                                        <div className='flex flex-row gap-2 items-center justify-center'>
-                                            <label>Mechanic</label>
-                                            <select className='p-1 border border-gray-400'>
-                                                <option selected>Choose Mechanic</option>
-                                                {employee
-                                                    .filter(emp => emp.position === 'mechanic')
-                                                    .map(emp => (
-                                                        <option key={emp._id}>
-                                                            {emp.firstName} {emp.lastName}
-                                                        </option>
-                                                    ))}
-                                            </select>
-
-                                        </div>
-                                        <div className='flex flex-row gap-2 items-center justify-center'>
-                                            <label>Vendor</label>
-
-                                            <select className='p-1 border border-gray-400'>
-                                                <option selected>Choose Vendor</option>
-                                                {
-                                                    vendors.map((v, i) =>
-                                                        <option key={i}>
-                                                            {v.firstName + " " + v.lastName}
-                                                        </option>
-                                                    )
+                                <div className='flex items-center justify-end'>
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                setLoading(true);
+                                                if (!orderId.status) {
+                                                    setSnackBarMessage("Please select a valid status before updating."); // Set the message to display in the Snackbar
+                                                    setSnackBarSeverity('warning'); // Set severity to warning
+                                                    setSnackBarOpen(true);
+                                                    setLoading(false);
+                                                    return;
                                                 }
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className='flex flex-col gap-1'>
-                                        <div className='flex flex-row gap-2 items-center justify-center'>
-                                            <label>hello</label>
-                                            <select className='p-1 border border-gray-400'>
-                                                <option selected>Change Status</option>
-                                                <option>Option 1</option>
-                                                <option>Option 2 </option>
-                                                <option>Assign Mechanic</option>
-                                            </select>
-                                        </div>
-                                        <div className='flex flex-row gap-2 items-center justify-center'>
-                                            <label>hello</label>
-                                            <select className='p-1 border border-gray-400'>
-                                                <option selected>Change Status</option>
-                                                <option>Option 1</option>
-                                                <option>Option 2 </option>
-                                                <option>Assign Mechanic</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
 
+                                                const response = await axiosClient.put(`/api/admin/order/updateStatus/${orderId._id}`, {
+                                                    status: orderId.status, // Send the updated status to the server
+                                                });
+
+                                                if (response.status === 200) {
+                                                    setSnackBarMessage("Order status updated successfully!"); // Set the message to display in the Snackbar
+                                                    setSnackBarSeverity('success'); // Set severity to success
+                                                    setSnackBarOpen(true);
+                                                    setLoading(false);
+                                                } else {
+                                                    setSnackBarMessage("Failed to update order status. Please try again."); // Set the message to display in the Snackbar
+                                                    setSnackBarSeverity('error'); // Set severity to error
+                                                    setSnackBarOpen(true);
+                                                    setLoading(false);
+                                                }
+                                            } catch (error) {
+                                                console.error("Error updating order status:", error);
+                                                setSnackBarMessage(error.message || "An error occurred while updating the order status."); // Set the message to display in the Snackbar
+                                                setSnackBarSeverity('error'); // Set severity to error
+                                                setSnackBarOpen(true);
+                                                setLoading(false);
+                                            }
+                                        }}
+                                        className='my-2 p-1 px-2 bg-primary rounded text-white cursor-pointer border border-primary hover:bg-transparent hover:text-black'
+                                    >
+                                        {loading ? <CircularLoading size={25} /> : "Update Status"}
+                                    </button>
+                                </div>
                             </fieldset>
+
                         </div>
                     </div>
-                    <DialogActions>
+                    {/* <DialogActions>
                         <button
                             // onClick={handleClose}
                             type="submit"
@@ -277,7 +325,7 @@ export default function JobAsssignForm({ id }) {
                                 <span className='flex flex-row items-center justify-center'><Plus className='mr-2' /> Update Order</span>
                             )}
                         </button>
-                    </DialogActions>
+                    </DialogActions> */}
                 </div >
             }
 
