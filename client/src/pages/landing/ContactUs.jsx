@@ -5,109 +5,143 @@ import { MapPin, Phone, Mail, Clock } from 'lucide-react'
 
 export default function ContactUs() {
     return (
-        <div >
+        < >
             <NavBar />
 
 
-            <div className="min-h-screen bg-white">
-                {/* Breadcrumbs */}
-                <div className="relative bg-cover bg-center bg-no-repeat h-[300px] flex items-center justify-center text-white"
+            <div className="min-h-screen">
+                {/* Hero Banner with Breadcrumbs */}
+                <div className="relative bg-cover bg-center bg-no-repeat h-64 flex items-center justify-center text-white"
                     style={{ backgroundImage: "url('/images/bike-repair-image.png')" }}
                 >
-                    {/* <div className="absolute inset-0 bg-black opacity-60 z-0" /> */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent z-0" />
-                    {/* Centered Content */}
                     <div className="relative z-10 text-center px-4">
-                        <h2 className="text-5xl font-bold mb-2">Contacts</h2>
+                        <h2 className="text-4xl md:text-5xl font-bold mb-2">Contacts</h2>
                         <div className="flex justify-center">
-                            <Breadcrumbs />
+                            <nav className="flex" aria-label="Breadcrumb">
+                                <ol className="flex items-center space-x-1 md:space-x-3">
+                                    <li className="inline-flex items-center">
+                                        <a href="/" className="text-sm text-gray-200 hover:text-white">Home</a>
+                                    </li>
+                                    <li>
+                                        <div className="flex items-center">
+                                            <span className="mx-1 text-gray-200">/</span>
+                                            <span className="text-sm text-gray-200">Contact</span>
+                                        </div>
+                                    </li>
+                                </ol>
+                            </nav>
                         </div>
                     </div>
                 </div>
 
-
-
-                {/* contact form  and info */}
-                <div className="grid md:grid-cols-2 gap-12 px-6 md:px-30 py-16 items-start ">
+                {/* Contact Form and Info */}
+                <div className="grid md:grid-cols-2 gap-8 px-4 md:px-8 lg:px-16 py-12 w-full mx-auto ">
                     {/* Left - Form */}
+                    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+                        <h3 className="text-3xl font-bold mb-2" style={{ color: '#e2a731' }}>Get In Touch!</h3>
+                        <p className="text-gray-600 mb-6">Got any questions? Send us a message.</p>
 
-                    <div className=''>
-                        <div className='shadow-sm  border-gray-300 rounded p-4'>
-                            <h3 className="text-4xl font-bold mb-2">Get In Touch!</h3>
-                            <p className="text-gray-600 mb-6">Got any questions? Send us a message.</p>
-
-                            <form className=" p-4 ">
-                                <div className="flex flex-col md:flex-row gap-4 mb-10">
-                                    <input
-                                        type="text"
-                                        placeholder="Your name"
-                                        className="w-full border border-gray-300 p-3 rounded outline-none focus:ring-2 focus:ring-primary"
-                                    />
-                                    <input
-                                        type="email"
-                                        placeholder="address@youremail.com"
-                                        className="w-full border border-gray-300 p-3 rounded outline-none focus:ring-2 focus:ring-primary"
-                                    />
-                                </div>
-                                <textarea
-                                    rows={10}
-                                    placeholder="Your Question"
-                                    className="w-full border border-gray-300 p-3 rounded outline-none focus:ring-2 focus:ring-primary"
-                                ></textarea>
-                                <div className='flex  mt-4'>
-                                    <button
-                                        type="submit"
-                                        className="bg-primary mt-4  font-semibold hover:bg-transparent hover:text-primary  border-primary border text-white px-6 py-2  cursor-pointer hover:bg-primary-dark"
-                                    >
-                                        Contact
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
+                        <form className="space-y-6">
+                            <div className="flex flex-col md:flex-row gap-4">
+                                <input
+                                    type="text"
+                                    placeholder="Your name"
+                                    className="w-full border border-gray-300 p-3 rounded outline-none focus:ring-1 focus:ring-opacity-50"
+                                    style={{ focusRing: '#e2a731' }}
+                                />
+                                <input
+                                    type="email"
+                                    placeholder="address@youremail.com"
+                                    className="w-full border border-gray-300 p-3 rounded outline-none focus:ring-1 focus:ring-opacity-50"
+                                    style={{ focusRing: '#e2a731' }}
+                                />
+                            </div>
+                            <textarea
+                                rows={8}
+                                placeholder="Your Question"
+                                className="w-full border border-gray-300 p-3 rounded outline-none focus:ring-1 focus:ring-opacity-50"
+                                style={{ focusRing: '#e2a731' }}
+                            ></textarea>
+                            <div>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-3 text-white font-medium rounded transition-all duration-200 hover:bg-opacity-90 hover:shadow-md"
+                                    style={{ backgroundColor: '#e2a731' }}
+                                >
+                                    Contact
+                                </button>
+                            </div>
+                        </form>
                     </div>
+
                     {/* Right - Info */}
-                    <div className="flex flex-col justify-center ">
-                        <div className='shadow-sm items-center border-gray-300 rounded p-4 ' >
-                            <div className="items-start gap-4">
-                                <MapPin className="text-primary mt-1" size={28} />
+                    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+                        <div className="space-y-8">
+                            <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0">
+                                    <MapPin style={{ color: '#e2a731' }} size={24} />
+                                </div>
                                 <div>
-                                    <h4 className="font-semibold text-xl mb-1">Post Address</h4>
-                                    <p className="text-gray-700">
-                                        123 Main Street, City, State, Zip Code
-                                    </p>
+                                    <h4 className="font-semibold text-lg mb-1">Post Address</h4>
+                                    <p className="text-gray-700">123 Main Street, City, State, Zip Code</p>
                                 </div>
                             </div>
 
-                            <div className=" items-start gap-4">
-                                <Phone className="text-primary mt-1" size={28} />
+                            <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0">
+                                    <Phone style={{ color: '#e2a731' }} size={24} />
+                                </div>
                                 <div>
-                                    <h4 className="font-semibold text-xl mb-1">Contact Phone</h4>
+                                    <h4 className="font-semibold text-lg mb-1">Contact Phone</h4>
                                     <p className="text-gray-700">+1-909-123-4567</p>
                                 </div>
                             </div>
 
-                            <div className=" items-start gap-4">
-                                <Mail className="text-primary mt-1" size={28} />
+                            <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0">
+                                    <Mail style={{ color: '#e2a731' }} size={24} />
+                                </div>
                                 <div>
-                                    <h4 className="font-semibold text-xl mb-1">E-mail Address</h4>
+                                    <h4 className="font-semibold text-lg mb-1">E-mail Address</h4>
                                     <p className="text-gray-700">office@emaildomain.com</p>
                                 </div>
                             </div>
 
-                            <div className=" items-start gap-4">
-                                <Clock className="text-primary mt-1" size={28} />
+                            <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0">
+                                    <Clock style={{ color: '#e2a731' }} size={24} />
+                                </div>
                                 <div>
-                                    <h4 className="font-semibold text-xl mb-1">Opening Hours</h4>
+                                    <h4 className="font-semibold text-lg mb-1">Opening Hours</h4>
                                     <p className="text-gray-700">Mon-Fri: 9:00 AM - 6:00 PM</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                 </div>
 
+                {/* Optional: Map Section */}
+                <div className="w-full ">
+                    <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16 pb-12">
+
+                        <h3 className="text-2xl font-bold mb-6" style={{ color: '#e2a731' }}>Find Us</h3>
+
+                        {/* Map placeholder */}
+                        <div className="w-full h-96 rounded-lg overflow-hidden shadow-md">
+                            <iframe
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12345.67890!2d-73.9878584!3d40.7411509!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zM40zMCcyOC4xIk4gNzPCsDU5JzE2LjMiVw!5e0!3m2!1sen!2sus!4v1619485896257!5m2!1sen!2sus"
+                                width="100%"
+                                height="100%"
+                                style={{ border: 0 }}
+                                allowFullScreen=""
+                                loading="lazy"
+                                title="Our Location"
+                            ></iframe>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </>
     )
 }
