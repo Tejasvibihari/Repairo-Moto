@@ -12,6 +12,7 @@ import employeeRouter from "./Routes/employeeRoutes.js"
 import vendorRouter from "./Routes/vendorRoutes.js"
 import userRouter from './Routes/userRoutes.js'
 import employeeAuthRouter from "./Routes/employeeAuth.js"
+import vendorAuthRouter from "./Routes/vendorAuth.js"
 
 
 const app = express();
@@ -33,6 +34,7 @@ app.use("/api/admin/employee", employeeRouter);
 app.use("/api/vendor", vendorRouter);
 app.use("/api/user", userRouter);
 app.use("/api/employee/auth", employeeAuthRouter)
+app.use("/api/vendor/auth", vendorAuthRouter)
 
 
 app.get("/", (req, res) => {

@@ -36,6 +36,8 @@ import VendorDashboard from './pages/vendor/VendorDashboard';
 import VendorOrder from './pages/vendor/VendorOrder';
 import VendorProfile from './pages/vendor/VendorProfile';
 import VendorReferral from './pages/vendor/VendorReferral';
+import VendorSignIn from './pages/auth/VendorSignIn';
+import VendorNavbar from './components/ui/VendorNavbar';
 
 
 
@@ -97,13 +99,13 @@ export default function App() {
           />
 
           {/* Vendor Page and Routes  */}
-          <Route path="/vendor/sign-in" element={<EmployeeSignIn />} />
+          <Route path="/vendor/sign-in" element={<VendorSignIn />} />
           {/* Protected Route With Vendor Navbar  */}
           <Route
             path='/vendor/dashboard'
             element={
               <VendorPrivateRoute>
-                <EmployeeNavbar /><VendorDashboard />
+                <VendorNavbar /><VendorDashboard />
               </VendorPrivateRoute>
             }
           />
@@ -111,7 +113,7 @@ export default function App() {
             path='/vendor/all-order'
             element={
               <VendorPrivateRoute>
-                <EmployeeNavbar /><VendorOrder />
+                <VendorNavbar /><VendorOrder />
               </VendorPrivateRoute>
             }
           />
@@ -119,7 +121,7 @@ export default function App() {
             path='/vendor/profile'
             element={
               <VendorPrivateRoute>
-                <EmployeeNavbar /><VendorProfile />
+                <VendorNavbar /><VendorProfile />
               </VendorPrivateRoute>
             }
           />
@@ -127,7 +129,7 @@ export default function App() {
             path='/vendor/referral'
             element={
               <VendorPrivateRoute>
-                <EmployeeNavbar /><VendorReferral />
+                <VendorNavbar /><VendorReferral />
               </VendorPrivateRoute>
             }
           />

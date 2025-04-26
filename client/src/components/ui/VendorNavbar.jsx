@@ -15,11 +15,11 @@ export default function VendorNavbar() {
 
     // Array of navigation links
     const navLinks = [
-        { name: 'Dashboard', path: '/employee/dashboard' },
-        { name: 'All Booking', path: '/employee/all-booking' },
-        { name: 'Profile', path: '/employee/profile' },
+        { name: 'Dashboard', path: '/vendor/dashboard' },
+        { name: 'All Order', path: '/vendor/all-order' },
+        { name: 'Profile', path: '/vendor/profile' },
         {
-            name: 'Referral & Earning', path: '/employee/referral'
+            name: 'Referral & Earning', path: '/vendor/referral'
         },
     ];
 

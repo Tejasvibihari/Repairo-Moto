@@ -3,6 +3,9 @@ import bcrypt from "bcryptjs";
 import { generateReferralCode } from "../Utils/generateReferralCode.js"
 import fs from "fs";
 import path from "path";
+import jwt from "jsonwebtoken";
+
+
 export const addVendor = async (req, res) => {
     try {
         const { firstName, lastName, phone, email, address, city, state, pincode, gstNo, businessName } = req.body;
@@ -52,6 +55,45 @@ export const addVendor = async (req, res) => {
         });
     } catch (error) {
         console.error("Error adding vendor:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// Employee Sign In 
+export const vendorSignIn = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        // Check if the employee exists
+        const vendor = await Vendor.findOne({ email });
+        if (!vendor) {
+            return res.status(404).json({ message: "Vendor not found" });
+        }
+
+        // Verify the password
+        const isPasswordValid = await bcrypt.compare(password, vendor.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Generate a JWT token
+        const token = jwt.sign(
+            { id: vendor._id, role: vendor.role },
+            process.env.VENDOR_JWT_SECRET,
+            { expiresIn: "1d" } // Token expires in 1 day
+        );
+
+        // Exclude the password from the response
+        const { password: _, ...vendorData } = vendor._doc;
+
+        // Send the response
+        res.status(200).json({
+            message: "Sign-in successful",
+            token,
+            vendor: vendorData, // Send all employee data excluding the password
+        });
+    } catch (error) {
+        console.error("Error during vendor sign-in:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
