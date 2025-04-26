@@ -1,25 +1,27 @@
 import { User, MapPin, Phone, Mail, Star, Copy, CheckCheck } from "lucide-react";
 import { useState } from "react";
+import { useSelector } from "react-redux";
 
 export default function EmployeeProfileCard() {
     const [copied, setCopied] = useState(false);
+    const employee = useSelector((state) => state.employeeAuth.employee)
 
     // This would normally come from a context or props
-    // Sample employee data from your JSON
-    const employee = {
-        firstName: "Tejasvi",
-        lastName: "Kumar",
-        email: "tejasvi.90804@mygyanvihar.com",
-        phone: "06205731150",
-        address: "Shiv Nagar 2",
-        city: "Jaipur",
-        state: "Rajasthan",
-        pinCode: 302017,
-        rating: 0,
-        referralCode: "T115011",
-        profileImage: "/api/placeholder/150/150", // Using placeholder image
-        position: "employee"
-    };
+    // // Sample employee data from your JSON
+    // const employee = {
+    //     firstName: "Tejasvi",
+    //     lastName: "Kumar",
+    //     email: "tejasvi.90804@mygyanvihar.com",
+    //     phone: "06205731150",
+    //     address: "Shiv Nagar 2",
+    //     city: "Jaipur",
+    //     state: "Rajasthan",
+    //     pinCode: 302017,
+    //     rating: 0,
+    //     referralCode: "T115011",
+    //     profileImage: "/api/placeholder/150/150", // Using placeholder image
+    //     position: "employee"
+    // };
 
     const copyReferralCode = () => {
         navigator.clipboard.writeText(employee.referralCode);
@@ -41,7 +43,7 @@ export default function EmployeeProfileCard() {
                 >
                     <div className="relative">
                         <img
-                            src={employee.profileImage}
+                            src={`${import.meta.env.VITE_API_URL}/${employee.profileImage}`}
                             alt={`${employee.firstName} ${employee.lastName}`}
                             className="h-24 w-24 rounded-full border-4 border-white object-cover"
                         />
@@ -49,7 +51,7 @@ export default function EmployeeProfileCard() {
 
                     <div className="mt-4 sm:mt-0 sm:ml-4 text-center sm:text-left">
                         <h1 className="text-xl font-bold text-white">{employee.firstName} {employee.lastName}</h1>
-                        <p className="text-white text-opacity-90 text-sm capitalize">{employee.position}</p>
+                        <p className="text-white text-opacity-90 text-sm capitalize">{employee.role}</p>
                         <div className="flex items-center justify-center sm:justify-start mt-1">
                             <div className="flex">
                                 {[...Array(5)].map((_, i) => (

@@ -31,6 +31,11 @@ import EmployeeNavbar from './components/ui/EmployeeNavbar';
 import EmployeeBooking from './pages/employee/EmployeeBooking';
 import EmployeeReferral from './pages/employee/EmployeeReferral';
 import EmpolyeeProfile from './pages/employee/EmpolyeeProfile';
+import VendorPrivateRoute from './components/routes/VenodrRoutes';
+import VendorDashboard from './pages/vendor/VendorDashboard';
+import VendorOrder from './pages/vendor/VendorOrder';
+import VendorProfile from './pages/vendor/VendorProfile';
+import VendorReferral from './pages/vendor/VendorReferral';
 
 
 
@@ -90,6 +95,45 @@ export default function App() {
               </EmployeePrivateRoute>
             }
           />
+
+          {/* Vendor Page and Routes  */}
+          <Route path="/vendor/sign-in" element={<EmployeeSignIn />} />
+          {/* Protected Route With Vendor Navbar  */}
+          <Route
+            path='/vendor/dashboard'
+            element={
+              <VendorPrivateRoute>
+                <EmployeeNavbar /><VendorDashboard />
+              </VendorPrivateRoute>
+            }
+          />
+          <Route
+            path='/vendor/all-order'
+            element={
+              <VendorPrivateRoute>
+                <EmployeeNavbar /><VendorOrder />
+              </VendorPrivateRoute>
+            }
+          />
+          <Route
+            path='/vendor/profile'
+            element={
+              <VendorPrivateRoute>
+                <EmployeeNavbar /><VendorProfile />
+              </VendorPrivateRoute>
+            }
+          />
+          <Route
+            path='/vendor/referral'
+            element={
+              <VendorPrivateRoute>
+                <EmployeeNavbar /><VendorReferral />
+              </VendorPrivateRoute>
+            }
+          />
+
+
+
           {/* User Page  */}
           {/* <Route path='/user-dashboard' element={<NavBar />} /> */}
 

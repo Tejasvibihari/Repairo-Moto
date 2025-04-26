@@ -47,7 +47,6 @@ export const createEmployee = async (req, res) => {
 }
 
 // Employee Sign In 
-
 export const employeeSignIn = async (req, res) => {
     const { email, password } = req.body;
 
@@ -71,18 +70,14 @@ export const employeeSignIn = async (req, res) => {
             { expiresIn: "1d" } // Token expires in 1 day
         );
 
+        // Exclude the password from the response
+        const { password: _, ...employeeData } = employee._doc;
+
         // Send the response
         res.status(200).json({
             message: "Sign-in successful",
             token,
-            employee: {
-                id: employee._id,
-                firstName: employee.firstName,
-                lastName: employee.lastName,
-                email: employee.email,
-                role: employee.role,
-                profileImage: employee.profileImage,
-            },
+            employee: employeeData, // Send all employee data excluding the password
         });
     } catch (error) {
         console.error("Error during employee sign-in:", error);

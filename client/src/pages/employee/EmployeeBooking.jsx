@@ -7,7 +7,7 @@ import CircularLoading from '../../components/ui/CircularLoading';
 
 export default function EmployeeBooking() {
     const employee = useSelector((state) => state.employeeAuth.employee)
-    console.log(employee.id);
+    console.log(employee._id);
     const [loading, setLoading] = useState(true)
     const [bookings, setBookings] = useState([])
     // Sample booking data - replace with your actual data source
@@ -38,7 +38,7 @@ export default function EmployeeBooking() {
         const getAllBookingByEmpId = async () => {
             try {
                 setLoading(true); // Set loading state to true
-                const response = await axiosClient.get(`/api/admin/order/getorder/${employee.id}`); // Use the employee's _id
+                const response = await axiosClient.get(`/api/admin/order/getorder/${employee._id}`); // Use the employee's _id
                 if (response.status === 200) {
                     console.log("Bookings fetched successfully:", response);
                     setBookings(response.data.data); // Update the bookings state with the fetched data

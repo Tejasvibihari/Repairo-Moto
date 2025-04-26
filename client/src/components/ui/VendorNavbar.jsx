@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axiosClient from '../../service/axiosClient';
 
-export default function EmployeeNavbar() {
+export default function VendorNavbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const employee = useSelector((state) => state.employeeAuth.employee)
     console.log(employee)
@@ -11,17 +11,7 @@ export default function EmployeeNavbar() {
         setIsMenuOpen(!isMenuOpen);
     };
 
-    const getAllbooking = async () => {
-        try {
-            const response = await axiosClient.get(`/api/employee/bookings/${employee.id}`); // Use the employee's ID
-            if (response.status === 200) {
-                console.log("Bookings fetched successfully:", response.data.data);
-                // Handle the bookings data (e.g., store it in state or display it)
-            }
-        } catch (error) {
-            console.error("Error fetching bookings:", error.response?.data?.message || error.message);
-        }
-    };
+
 
     // Array of navigation links
     const navLinks = [
