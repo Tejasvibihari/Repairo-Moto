@@ -18,17 +18,7 @@ const VendorSidebar = ({ children }) => {
 
     const currentPath = location.pathname === '/' ? 'dashboard' : location.pathname.substring(1);
 
-    // const menuItems = [
-    //     { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-    //     { id: 'invoice', path: '/employee/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
-    //     { id: 'model', path: '/employee/model', label: 'Bike Model', icon: <Bike size={20} /> },
-    //     { id: 'admin-order-form', path: '/employee/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
-    //     { id: 'manage-order', path: '/employee/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
-    //     { id: 'manage-vendor', path: '/employee/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
-    //     { id: 'manage-qr', path: '/employee/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },
-    //     { id: 'add-blog', path: '/employee/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
-    //     { id: 'manage-blog', path: '/employee/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
-    // ];
+
     const menuItems = [
         { id: 'vendor/dashboard', path: '/vendor/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
         { id: 'vendor/all-order', path: '/vendor/all-order', label: 'All Order', icon: <Home size={20} /> },
@@ -70,7 +60,7 @@ const VendorSidebar = ({ children }) => {
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                     {(!collapsed || isMobile) && (
-                        <img src="./logo/textlogo72.png" className="w-28" />
+                        <img src="/logo/textlogo72.png" className="w-28" />
                     )}
                     <button
                         onClick={() => isMobile ? setIsMobileMenuOpen(!isMobileMenuOpen) : setCollapsed(!collapsed)}
