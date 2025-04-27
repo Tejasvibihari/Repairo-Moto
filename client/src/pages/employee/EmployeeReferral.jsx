@@ -1,5 +1,5 @@
 import React from 'react'
-import ReferralEarnings from '../../components/empolyee/ReferralEarnings'
+import ReferralEarnings from '../../components/ReferralEarnings'
 
 export default function EmployeeReferral() {
     return (
