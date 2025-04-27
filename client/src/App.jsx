@@ -38,6 +38,14 @@ import VendorReferral from './pages/vendor/VendorReferral';
 import VendorSignIn from './pages/auth/VendorSignIn';
 import EmployeeSidebar from './components/ui/EmployeeSidebar';
 import VendorSidebar from './components/ui/VendorSidebar';
+import EmployeeBikeModel from './pages/employee/EmployeeBikeModel';
+import EmployeeAdminBookingForm from './pages/employee/EmployeeAdminBookingForm';
+import EmployeeManageOrder from './pages/employee/EmployeeManageOrder';
+import EmployeeManageVendor from './pages/employee/EmployeeManageVendor';
+import EmployeeAddBlog from './pages/employee/EmployeeAddBlog';
+import EmployeeManageBlog from './pages/employee/EmployeeManageBlog';
+import EmployeeManageQr from './pages/employee/EmployeeManageQr';
+import EmployeeInvoice from './pages/employee/EmployeeInvoice';
 
 
 
@@ -105,6 +113,71 @@ export default function App() {
               </EmployeePrivateRoute>
             }
           />
+          <Route
+            path='/employee/model'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeBikeModel /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/admin-order-form'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeAdminBookingForm /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/manage-order'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeManageOrder /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/manage-vendor'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeManageVendor /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/add-blog'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeAddBlog /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/manage-blog'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeManageBlog /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/manage-qr'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeManageQr /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/invoice'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeInvoice /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+
 
           {/* Vendor Page and Routes  */}
           <Route path="/vendor/sign-in" element={<VendorSignIn />} />
