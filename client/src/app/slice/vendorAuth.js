@@ -12,11 +12,11 @@ export const vendorAuthSlice = createSlice({
     initialState,
     reducers: {
         setVendorSignIn: (state, action) => {
-            state.employee = action.payload;
+            state.vendor = action.payload;
             state.isAuthenticated = true;
         },
         setVendorLogout: (state) => {
-            state.employee = null;
+            state.vendor = null;
             state.isAuthenticated = false;
         },
         setLoading: (state, action) => {

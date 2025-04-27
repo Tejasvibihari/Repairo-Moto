@@ -8,28 +8,33 @@ import {
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
-const Sidebar = ({ children }) => {
+const EmployeeSidebar = ({ children }) => {
+    const employee = useSelector((state) => state.employeeAuth.employee)
+    const position = employee.position;
     const [collapsed, setCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const admin = useSelector((state) => state.admin.admin.user);
-    console.log(admin)
 
     const currentPath = location.pathname === '/' ? 'dashboard' : location.pathname.substring(1);
 
-    const menuItems = [
-        { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-        { id: 'invoice', path: '/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
-        { id: 'model', path: '/model', label: 'Bike Model', icon: <Bike size={20} /> },
-        { id: 'admin-order-form', path: '/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
-        { id: 'manage-order', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
-        { id: 'manage-employee', path: '/manage-employee', label: 'Manage Employee', icon: <User2 size={20} /> },
-        { id: 'manage-vendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
-        { id: 'manage-qr', path: '/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },
-        { id: 'add-blog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
-        { id: 'manage-blog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
+    const highmenuItems = [
+        { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
+        { id: 'invoice', path: '/employee/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
+        { id: 'model', path: '/employee/model', label: 'Bike Model', icon: <Bike size={20} /> },
+        { id: 'admin-order-form', path: '/employee/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
+        { id: 'manage-order', path: '/employee/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
+        { id: 'manage-vendor', path: '/employee/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
+        { id: 'manage-qr', path: '/employee/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },
+        { id: 'add-blog', path: '/employee/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
+        { id: 'manage-blog', path: '/employee/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
+    ];
+    const lowmenuItems = [
+        { id: 'employee/dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
+        { id: 'employee/all-booking', path: '/employee/all-booking', label: 'All Booking', icon: <Home size={20} /> },
+        { id: 'employee/referral', path: '/employee/referral', label: 'Referrai & Earnings', icon: <Home size={20} /> },
+        // { id: 'employeeall-booking', path: '/employee/profile', label: 'Profile', icon: <Home size={20} /> },
     ];
 
     const handleNavigation = (path) => {
@@ -80,22 +85,41 @@ const Sidebar = ({ children }) => {
                 {/* Navigation */}
                 <nav className="mt-6">
                     <ul>
-                        {menuItems.map((item) => (
-                            <li key={item.id}>
-                                <button
-                                    onClick={() => handleNavigation(item.path)}
-                                    className={`group flex ${collapsed && !isMobile ? 'justify-center' : 'items-center'} w-full p-2 text-sm hover:bg-gray-700 transition-all ${currentPath === item.id ? 'bg-primary text-secondary' : ''}`}
-                                >
-                                    <span className={`flex-shrink-0 ${collapsed && !isMobile ? 'mx-auto' : 'text-gray-400 group-hover:text-primary'} ${currentPath === item.id ? 'text-secondary' : ''}`}>
-                                        {item.icon}
-                                    </span>
-                                    {/* Show label in mobile and expanded */}
-                                    {(!collapsed || isMobile) && (
-                                        <span className="ml-4 font-nunito">{item.label}</span>
-                                    )}
-                                </button>
-                            </li>
-                        ))}
+                        {(position === "operational manager" || position === "telecaller") ?
+                            highmenuItems.map((item) => (
+                                <li key={item.id}>
+                                    <button
+                                        onClick={() => handleNavigation(item.path)}
+                                        className={`group flex ${collapsed && !isMobile ? 'justify-center' : 'items-center'} w-full p-2 text-sm hover:bg-gray-700 transition-all ${currentPath === item.id ? 'bg-primary text-secondary' : ''}`}
+                                    >
+                                        <span className={`flex-shrink-0 ${collapsed && !isMobile ? 'mx-auto' : 'text-gray-400 group-hover:text-primary'} ${currentPath === item.id ? 'text-secondary' : ''}`}>
+                                            {item.icon}
+                                        </span>
+                                        {/* Show label in mobile and expanded */}
+                                        {(!collapsed || isMobile) && (
+                                            <span className="ml-4 font-nunito">{item.label}</span>
+                                        )}
+                                    </button>
+                                </li>
+                            ))
+                            :
+                            lowmenuItems.map((item) => (
+                                <li key={item.id}>
+                                    <button
+                                        onClick={() => handleNavigation(item.path)}
+                                        className={`group flex ${collapsed && !isMobile ? 'justify-center' : 'items-center'} w-full p-2 text-sm hover:bg-gray-700 transition-all ${currentPath === item.id ? 'bg-primary text-secondary' : ''}`}
+                                    >
+                                        <span className={`flex-shrink-0 ${collapsed && !isMobile ? 'mx-auto' : 'text-gray-400 group-hover:text-primary'} ${currentPath === item.id ? 'text-secondary' : ''}`}>
+                                            {item.icon}
+                                        </span>
+                                        {/* Show label in mobile and expanded */}
+                                        {(!collapsed || isMobile) && (
+                                            <span className="ml-4 font-nunito">{item.label}</span>
+                                        )}
+                                    </button>
+                                </li>
+                            ))
+                        }
                     </ul>
                 </nav>
 
@@ -107,10 +131,10 @@ const Sidebar = ({ children }) => {
                                 JS
                             </div>
                             {!collapsed && (
-                                <Link to="/admin-profile">
+                                <Link to="/employee/profile">
                                     <div className="ml-3">
-                                        <p className="text-sm font-medium font-nunito">{admin.firstName} {admin.lastName}</p>
-                                        <p className="text-xs text-gray-400">{admin.role.toUpperCase()}</p>
+                                        <p className="text-sm font-medium font-nunito">{employee.firstName} {employee.lastName}</p>
+                                        <p className="text-xs text-gray-400">{employee.position.toUpperCase()}</p>
                                     </div>
                                 </Link>
                             )}
@@ -125,7 +149,11 @@ const Sidebar = ({ children }) => {
                 <header className="bg-white shadow-sm">
                     <div className="px-6 py-4 flex items-center justify-between">
                         <h2 className="text-xl font-semibold text-gray-800">
-                            {menuItems.find(item => item.id === currentPath)?.label || 'Dashboard'}
+                            {(position === "operational manager" || position === "telecaller") ?
+                                highmenuItems.find(item => item.id === currentPath)?.label || 'Dashboard'
+                                :
+                                lowmenuItems.find(item => item.id === currentPath)?.label || 'Dashboard'
+                            }
                         </h2>
 
                         {/* Notifications + Mobile Menu Toggle */}
@@ -159,4 +187,4 @@ const Sidebar = ({ children }) => {
     );
 };
 
-export default Sidebar;
+export default EmployeeSidebar;

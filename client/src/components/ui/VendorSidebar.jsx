@@ -8,28 +8,31 @@ import {
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
-const Sidebar = ({ children }) => {
+const VendorSidebar = ({ children }) => {
+    const vendor = useSelector((state) => state.vendorAuth.vendor)
     const [collapsed, setCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const admin = useSelector((state) => state.admin.admin.user);
-    console.log(admin)
 
     const currentPath = location.pathname === '/' ? 'dashboard' : location.pathname.substring(1);
 
+    // const menuItems = [
+    //     { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
+    //     { id: 'invoice', path: '/employee/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
+    //     { id: 'model', path: '/employee/model', label: 'Bike Model', icon: <Bike size={20} /> },
+    //     { id: 'admin-order-form', path: '/employee/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
+    //     { id: 'manage-order', path: '/employee/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
+    //     { id: 'manage-vendor', path: '/employee/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
+    //     { id: 'manage-qr', path: '/employee/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },
+    //     { id: 'add-blog', path: '/employee/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
+    //     { id: 'manage-blog', path: '/employee/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
+    // ];
     const menuItems = [
-        { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-        { id: 'invoice', path: '/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
-        { id: 'model', path: '/model', label: 'Bike Model', icon: <Bike size={20} /> },
-        { id: 'admin-order-form', path: '/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
-        { id: 'manage-order', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
-        { id: 'manage-employee', path: '/manage-employee', label: 'Manage Employee', icon: <User2 size={20} /> },
-        { id: 'manage-vendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
-        { id: 'manage-qr', path: '/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },
-        { id: 'add-blog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
-        { id: 'manage-blog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
+        { id: 'vendor/dashboard', path: '/vendor/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
+        { id: 'vendor/all-order', path: '/vendor/all-order', label: 'All Order', icon: <Home size={20} /> },
+        { id: 'vendor/referral', path: '/vendor/referral', label: 'Referrai & Earnings', icon: <Home size={20} /> },
     ];
 
     const handleNavigation = (path) => {
@@ -95,7 +98,8 @@ const Sidebar = ({ children }) => {
                                     )}
                                 </button>
                             </li>
-                        ))}
+                        ))
+                        }
                     </ul>
                 </nav>
 
@@ -107,10 +111,10 @@ const Sidebar = ({ children }) => {
                                 JS
                             </div>
                             {!collapsed && (
-                                <Link to="/admin-profile">
+                                <Link to="/vendor/profile">
                                     <div className="ml-3">
-                                        <p className="text-sm font-medium font-nunito">{admin.firstName} {admin.lastName}</p>
-                                        <p className="text-xs text-gray-400">{admin.role.toUpperCase()}</p>
+                                        <p className="text-sm font-medium font-nunito">{vendor.firstName} {vendor.lastName}</p>
+                                        <p className="text-xs text-gray-400">{vendor.role.toUpperCase()}</p>
                                     </div>
                                 </Link>
                             )}
@@ -159,4 +163,4 @@ const Sidebar = ({ children }) => {
     );
 };
 
-export default Sidebar;
+export default VendorSidebar;

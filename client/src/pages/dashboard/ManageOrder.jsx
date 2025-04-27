@@ -52,7 +52,12 @@ export default function ManageOrder() {
                 severity={snackBarSeverity}
                 onClose={handleCloseSnackBar} // Close function for the Snackbar
             />
-            <OrderTable orders={allOrders} />
+            {allOrders <= 0 ?
+                <div className='flex text-center justify-center font-semibold'>No Order Found</div> :
+
+                <OrderTable orders={allOrders} />
+            }
+
         </>
     )
 }

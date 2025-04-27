@@ -220,7 +220,6 @@ export const updateOrderStatus = async (req, res) => {
 
 export const getAllBookingsByEmployee = async (req, res) => {
     const { employeeId } = req.params;
-    console.log(req.params)
     try {
         // Fetch all bookings assigned to the given employee ID (mechanicId, deliveryId, or vendorId)
         const orders = await Order.find({

@@ -28,6 +28,7 @@ export default function BikeModel() {
         }
         fetchBrands()
     }, [])
+
     return (
         <>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -45,7 +46,11 @@ export default function BikeModel() {
                             <CircularLoading size={30} />
                         </div>
                     ) : (
-                        <BrandCard brands={brands} />
+                        brands <= 0 ?
+                            <div className='flex text-center justify-center my-4 font-semibold'>No Brand Found<br /> Add Brand and Model</div>
+                            :
+                            <BrandCard brands={brands} />
+
                     )}
                 </div>
             </div>

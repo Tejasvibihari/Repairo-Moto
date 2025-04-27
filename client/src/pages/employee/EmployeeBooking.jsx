@@ -3,6 +3,7 @@ import AllBookingCard from '../../components/empolyee/AllBookingCard'
 import axiosClient from '../../service/axiosClient';
 import { useDispatch, useSelector } from 'react-redux';
 import CircularLoading from '../../components/ui/CircularLoading';
+import Heading from '../../components/ui/Heading';
 
 
 export default function EmployeeBooking() {
@@ -59,8 +60,10 @@ export default function EmployeeBooking() {
     }
     return (
         <div className="container mx-auto px-4 py-8">
-            <h1 className="text-2xl font-bold mb-6">Employee Bookings</h1>
-
+            {/* <h1 className="text-2xl font-bold mb-6">Recent Order</h1> */}
+            <div className='my-4'>
+                <Heading heading="Recent Order" />
+            </div>
             {/* Responsive grid layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {bookings.map(booking => (

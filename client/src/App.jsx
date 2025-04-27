@@ -27,7 +27,6 @@ import Invoice from './pages/dashboard/Invoice';
 import EmployeeSignIn from './pages/auth/EmployeeSignIn';
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
 import EmployeePrivateRoute from './components/routes/EmployeeRoute';
-import EmployeeNavbar from './components/ui/EmployeeNavbar';
 import EmployeeBooking from './pages/employee/EmployeeBooking';
 import EmployeeReferral from './pages/employee/EmployeeReferral';
 import EmpolyeeProfile from './pages/employee/EmpolyeeProfile';
@@ -37,7 +36,8 @@ import VendorOrder from './pages/vendor/VendorOrder';
 import VendorProfile from './pages/vendor/VendorProfile';
 import VendorReferral from './pages/vendor/VendorReferral';
 import VendorSignIn from './pages/auth/VendorSignIn';
-import VendorNavbar from './components/ui/VendorNavbar';
+import EmployeeSidebar from './components/ui/EmployeeSidebar';
+import VendorSidebar from './components/ui/VendorSidebar';
 
 
 
@@ -69,7 +69,9 @@ export default function App() {
             path='/employee/dashboard'
             element={
               <EmployeePrivateRoute>
-                <EmployeeNavbar /><EmployeeDashboard />
+                <EmployeeSidebar>
+                  <EmployeeDashboard />
+                </EmployeeSidebar>
               </EmployeePrivateRoute>
             }
           />
@@ -77,7 +79,9 @@ export default function App() {
             path='/employee/all-booking'
             element={
               <EmployeePrivateRoute>
-                <EmployeeNavbar /><EmployeeBooking />
+                <EmployeeSidebar>
+                  <EmployeeBooking />
+                </EmployeeSidebar>
               </EmployeePrivateRoute>
             }
           />
@@ -85,7 +89,9 @@ export default function App() {
             path='/employee/profile'
             element={
               <EmployeePrivateRoute>
-                <EmployeeNavbar /><EmpolyeeProfile />
+                <EmployeeSidebar>
+                  <EmpolyeeProfile />
+                </EmployeeSidebar>
               </EmployeePrivateRoute>
             }
           />
@@ -93,7 +99,9 @@ export default function App() {
             path='/employee/referral'
             element={
               <EmployeePrivateRoute>
-                <EmployeeNavbar /><EmployeeReferral />
+                <EmployeeSidebar>
+                  <EmployeeReferral />
+                </EmployeeSidebar>
               </EmployeePrivateRoute>
             }
           />
@@ -105,7 +113,9 @@ export default function App() {
             path='/vendor/dashboard'
             element={
               <VendorPrivateRoute>
-                <VendorNavbar /><VendorDashboard />
+                <VendorSidebar>
+                  <VendorDashboard />
+                </VendorSidebar >
               </VendorPrivateRoute>
             }
           />
@@ -113,7 +123,9 @@ export default function App() {
             path='/vendor/all-order'
             element={
               <VendorPrivateRoute>
-                <VendorNavbar /><VendorOrder />
+                <VendorSidebar>
+                  <VendorOrder />
+                </VendorSidebar>
               </VendorPrivateRoute>
             }
           />
@@ -121,7 +133,9 @@ export default function App() {
             path='/vendor/profile'
             element={
               <VendorPrivateRoute>
-                <VendorNavbar /><VendorProfile />
+                <VendorSidebar>
+                  <VendorProfile />
+                </VendorSidebar>
               </VendorPrivateRoute>
             }
           />
@@ -129,7 +143,9 @@ export default function App() {
             path='/vendor/referral'
             element={
               <VendorPrivateRoute>
-                <VendorNavbar /><VendorReferral />
+                <VendorSidebar>
+                  <VendorReferral />
+                </VendorSidebar>
               </VendorPrivateRoute>
             }
           />

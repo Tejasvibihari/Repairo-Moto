@@ -47,7 +47,11 @@ export default function ManageEmployee() {
             />
             <AddEmployeeForm />
             <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-                {
+                {employees <= 0 ?
+                    <div className='flex text-center my-8 justify-center items-center font-semibold'>
+                        No Employee Found
+                    </div>
+                    :
                     employees ? employees.map((employee) => (
                         <EmployeeCard
                             key={employee._id}
