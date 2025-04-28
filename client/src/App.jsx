@@ -46,6 +46,7 @@ import EmployeeAddBlog from './pages/employee/EmployeeAddBlog';
 import EmployeeManageBlog from './pages/employee/EmployeeManageBlog';
 import EmployeeManageQr from './pages/employee/EmployeeManageQr';
 import EmployeeInvoice from './pages/employee/EmployeeInvoice';
+import AboutUs from './pages/landing/AboutUs';
 
 
 
@@ -60,6 +61,7 @@ export default function App() {
 
           <Route path='/' element={<Home />} />
           <Route path='/contact' element={<ContactUs />} />
+          <Route path='/about' element={<AboutUs/>} />
 
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />

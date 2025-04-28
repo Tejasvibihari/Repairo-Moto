@@ -19,7 +19,7 @@ export default function ContactUs() {
                 >
                     <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-transparent z-0" />
                     <div className="relative z-10 text-center">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4">Contacts</h2>
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h2>
                         <Breadcrumbs
                             items={[
                                 { label: 'Home', href: '/' },
@@ -63,7 +63,7 @@ export default function ContactUs() {
                     </div>
                 </div>
 
-                {/* Contact Form and Info */}
+                {/* Contact Form  */}
                 <div >
                     <ContactForm />
                 </div>
