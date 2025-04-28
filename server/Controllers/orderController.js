@@ -241,23 +241,39 @@ export const getAllBookingsByEmployee = async (req, res) => {
     }
 };
 
-
 export const updatePartsUsed = async (req, res) => {
     const { id } = req.params;
     const { partsUsed } = req.body;
-
     try {
+        // Basic validation
+        if (!Array.isArray(partsUsed) || partsUsed.some(part =>
+            !part.name || typeof part.name !== 'string' ||
+            typeof part.quantity !== 'number' || part.quantity < 1
+        )) {
+            return res.status(400).json({ message: 'Invalid parts data format' });
+
+        }
+
         const order = await Order.findById(id);
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        order.partsUsed = partsUsed;
+        // Push each new part into existing partsUsed array
+        partsUsed.forEach(part => {
+            order.partsUsed.push({
+                partName: part.name,
+                quantity: part.quantity,
+                price: 0, // Set price to 0 for every new part
+            });
+        });
+
         await order.save();
 
-        res.status(200).json({ message: 'Parts updated successfully', order });
+        res.status(200).json({ message: 'Parts added successfully', order });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error while updating parts' });
     }
 };
+

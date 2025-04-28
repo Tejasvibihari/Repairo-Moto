@@ -85,7 +85,10 @@ export default function OrderTable({ orders }) {
                                     </td>
                                     <td className="px-3 py-2">{order.estimatedBudget}</td>
                                     <td className="px-3 py-2">{order.assignedMechanic || "Unassigned"}</td>
-                                    <td className="px-3 py-2">{order.partsUsed.length > 0 ? order.partsUsed.join(", ") : "N/A"}</td>
+                                    <td className="px-3 py-2">
+                                        {order.partsUsed.length > 0 ? order.partsUsed.map(part => part.partName).join(", ") : "N/A"}
+                                    </td>
+
                                     <td className="px-3 py-2" style={{ minWidth: "120px" }}>
                                         <span
                                             className={`px-2 py-1 rounded text-xs font-medium ${order.status === "Completed"

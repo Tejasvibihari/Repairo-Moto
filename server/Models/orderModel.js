@@ -77,13 +77,14 @@ const orderSchema = new mongoose.Schema({
     },
     mechanicId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Mechanic', // Reference to the Mechanic model
+        ref: 'Mechanic',
         default: null,
     },
-    partsUsed: {
-        type: [String],
-        default: [], // List of parts used in the repair
-    },
+    partsUsed: [{
+        partName: { type: String, required: true, trim: true },
+        quantity: { type: Number, required: true, min: 1 },
+        price: { type: Number, required: true, min: 0 },
+    }],
     assignedVendor: {
         type: String,
         default: null,
@@ -91,7 +92,7 @@ const orderSchema = new mongoose.Schema({
     },
     vendorId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Vendor', // Reference to the Mechanic model
+        ref: 'Vendor',
         default: null,
     },
     assignedDelivery: {
@@ -101,7 +102,7 @@ const orderSchema = new mongoose.Schema({
     },
     deliveryId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee', // Reference to the Mechanic model
+        ref: 'Employee',
         default: null,
     }
 }, {
