@@ -7,7 +7,7 @@ export default function AboutUs() {
     return (
         <>
             <NavBar />
-            <div className="bg-background text-white">
+            <div className="min-h-screen">
 
                 {/* Hero Section */}
                 <div className="relative bg-cover bg-center bg-no-repeat h-72 flex items-center justify-center text-white"
@@ -266,8 +266,8 @@ export default function AboutUs() {
 
 
             </div>
-            {/* footer */}
 
+            {/* footer */}
             <Footer />
         </>
     )
