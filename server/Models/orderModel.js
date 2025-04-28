@@ -80,11 +80,14 @@ const orderSchema = new mongoose.Schema({
         ref: 'Mechanic',
         default: null,
     },
-    partsUsed: [{
-        partName: { type: String, required: true, trim: true },
-        quantity: { type: Number, required: true, min: 1 },
-        price: { type: Number, required: true, min: 0 },
-    }],
+    partsUsed: [
+        {
+            partName: { type: String, required: true, trim: true },
+            quantity: { type: Number, required: true, min: 1 },
+            price: { type: Number, required: true, min: 0 },
+            discountPrice: { type: Number, default: 0, min: 0 }, // New field for discount price
+        }
+    ],
     assignedVendor: {
         type: String,
         default: null,

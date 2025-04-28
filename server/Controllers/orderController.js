@@ -241,6 +241,23 @@ export const getAllBookingsByEmployee = async (req, res) => {
     }
 };
 
+export const getAllBookingsByVendor = async (req, res) => {
+    const { vendorId } = req.params;
+    try {
+        // Fetch all bookings assigned to the given vendor ID
+        const orders = await Order.find({ vendorId: vendorId });
+
+        if (!orders || orders.length === 0) {
+            return res.status(404).json({ message: "No bookings found for this vendor." });
+        }
+
+        res.status(200).json({ message: "Bookings fetched successfully", data: orders });
+    } catch (error) {
+        console.error("Error fetching bookings by vendor:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
 export const updatePartsUsed = async (req, res) => {
     const { id } = req.params;
     const { partsUsed } = req.body;
@@ -274,6 +291,39 @@ export const updatePartsUsed = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error while updating parts' });
+    }
+};
+
+
+export const updatePartsPrice = async (req, res) => {
+    const { id } = req.params; // Get orderId from URL params
+    const { partsUsed } = req.body; // Get partsUsed from the request body
+    console.log(id)
+
+
+    try {
+        // Find the order by ID
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Update the partsUsed array
+        order.partsUsed = partsUsed.map(part => ({
+            partName: part.partName,
+            quantity: part.quantity,
+            price: part.price,
+            discountPrice: part.discountPrice
+        }));
+
+        // Save the updated order
+        await order.save();
+
+        // Return success response
+        res.status(200).json({ message: 'Parts pricing updated successfully', data: order });
+    } catch (error) {
+        console.error('Error updating parts pricing:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 
