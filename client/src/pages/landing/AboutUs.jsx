@@ -84,15 +84,14 @@ export default function AboutUs() {
                         </div>
                     </div>
                 </div>
-                {/* testimonial section */}
 
                 {/* Testimonial Section */}
                 <div className="w-full mx-auto px-4 py-20 bg-gray-100">
-                    <div className="max-w-6xl mx-auto text-center">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="max-w-7xl mx-auto text-center">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
 
                             {/* Testimonial 1 */}
-                            <div className="flex flex-col items-center p-8">
+                            <div className="flex flex-col items-center p-8 bg-gray-50 rounded-2xl">
                                 <div className="w-24 h-24 rounded-full border-4 border-gray-300 overflow-hidden mb-4">
                                     <img
                                         src="/api/placeholder/80/80"
@@ -100,9 +99,9 @@ export default function AboutUs() {
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
-                                <h3 className="text-lg text-gray-800 font-bold mb-1">DUSTIN MOCK</h3>
+                                <h3 className="text-lg text-gray-500 font-bold mb-1">DUSTIN MOCK</h3>
                                 <p className="text-gray-500 mb-4">Chief Engineer</p>
-                                <p className="italic text-gray-600 mb-6">
+                                <p className="italic text-gray-600 mb-6 text-center">
                                     Lorem ipsum dolor sit amet, consectetur adipisic elit, sed do eiusmod tempor incid ut labore et dolore magna aliqua.
                                 </p>
                                 <div className="flex items-center justify-center">
@@ -117,8 +116,7 @@ export default function AboutUs() {
                             </div>
 
                             {/* Testimonial 2 - Highlighted */}
-                            <div className="flex flex-col items-center p-8 bg-white rounded-3xl shadow-md relative">
-
+                            <div className="flex flex-col items-center p-8 bg-white rounded-2xl shadow-lg">
                                 <div className="w-24 h-24 rounded-full border-4 border-primary overflow-hidden mb-4">
                                     <img
                                         src="/api/placeholder/80/80"
@@ -126,10 +124,9 @@ export default function AboutUs() {
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
-                                <h3 className="text-lg text-gray-800 font-bold mb-1">ELMER SCHMIDT</h3>
+                                <h3 className="text-lg text-gray-500 font-bold mb-1">ELMER SCHMIDT</h3>
                                 <p className="text-gray-500 mb-4">Chief Engineer</p>
-
-                                <p className="italic text-gray-600 mb-6">
+                                <p className="italic text-gray-600 mb-6 text-center">
                                     Lorem ipsum dolor sit amet, consectetur adipisic elit, sed do eiusmod tempor incid ut labore et dolore magna aliqua.
                                 </p>
                                 <div className="flex items-center justify-center">
@@ -144,7 +141,7 @@ export default function AboutUs() {
                             </div>
 
                             {/* Testimonial 3 */}
-                            <div className="flex flex-col items-center p-8">
+                            <div className="flex flex-col items-center p-8 bg-gray-50 rounded-2xl">
                                 <div className="w-24 h-24 rounded-full border-4 border-gray-300 overflow-hidden mb-4">
                                     <img
                                         src="/api/placeholder/80/80"
@@ -152,9 +149,9 @@ export default function AboutUs() {
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
-                                <h3 className="text-lg text-gray-800 font-bold mb-1">AZUL BALDWIN</h3>
+                                <h3 className="text-lg text-gray-500 font-bold mb-1">AZUL BALDWIN</h3>
                                 <p className="text-gray-500 mb-4">Chief Engineer</p>
-                                <p className="italic text-gray-600 mb-6">
+                                <p className="italic text-gray-600 mb-6 text-center">
                                     Lorem ipsum dolor sit amet, consectetur adipisic elit, sed do eiusmod tempor incid ut labore et dolore magna aliqua.
                                 </p>
                                 <div className="flex items-center justify-center">
@@ -178,7 +175,73 @@ export default function AboutUs() {
                         </div> */}
                     </div>
                 </div>
+                {/* Vision and Mission Section */}
+                <div className="w-full bg-white py-16">
+                    <div className="container mx-auto px-4 max-w-7xl">
+                        {/* Vision Section - Text Right, Image Left */}
+                        <div className="flex flex-col md:flex-row items-center mb-20">
+                            {/* Left Side - Image */}
+                            <div className="w-full md:w-2/3 mb-8 md:mb-0 md:pr-8">
+                                <div className="rounded-lg overflow-hidden shadow-lg h-96 md:h-[28rem]">
+                                    <img
+                                        src="/images/bikers_04.jpg"
+                                        alt="Our Vision"
+                                        className="w-full h-full object-cover rounded-2xl shadow-xl transition-transform duration-500 hover:scale-105"
+                                    />
+                                </div>
+                            </div>
 
+                            {/* Right Side - Text */}
+                            <div className="w-full md:w-1/2 md:pl-8">
+                                <h2 className="text-3xl font-bold text-primary mb-6">OUR VISION</h2>
+                                <div className="w-16 h-1 bg-primary mb-6"></div>
+                                <p className="text-gray-700 mb-4">
+                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis,
+                                    pulvinar dapibus leo. Sed non mauris vitae erat consequat auctor eu in elit.
+                                </p>
+                                <p className="text-gray-700 mb-6">
+                                    Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
+                                    Mauris in erat justo. Nullam ac urna eu felis dapibus condimentum sit amet a augue.
+                                </p>
+                                <button className="bg-primary text-white px-6 py-3 rounded transition duration-300">
+                                    Learn More
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Mission Section - Text Left, Image Right */}
+                        <div className="flex flex-col-reverse md:flex-row items-center">
+                            {/* Left Side - Text */}
+                            <div className="w-full md:w-1/2 md:pr-8">
+                                <h2 className="text-3xl font-bold text-primary mb-6">OUR MISSION</h2>
+                                <div className="w-16 h-1 bg-primary mb-6"></div>
+                                <p className="text-gray-700 mb-4">
+                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis,
+                                    pulvinar dapibus leo. Sed non mauris vitae erat consequat auctor eu in elit.
+                                </p>
+                                <p className="text-gray-700 mb-6">
+                                    Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
+                                    Mauris in erat justo. Nullam ac urna eu felis dapibus condimentum sit amet a augue.
+                                </p>
+                                <button className="bg-primary hover:bg-primary text-white px-6 py-3 rounded transition duration-300">
+                                    Learn More
+                                </button>
+                            </div>
+
+                            {/* Right Side - Image */}
+                            <div className="w-full md:w-1/2 mb-8 md:mb-0 md:pl-8">
+                                <div className="rounded-lg overflow-hidden shadow-lg h-96 md:h-[28rem]">
+                                    <img
+                                        src="/images/bikemaintenance.jpg"
+                                        alt="Our Mission"
+                                        className="w-full h-full object-cover rounded-2xl shadow-xl transition-transform duration-500 hover:scale-105"
+
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Meet the Team */}
                 {/* <div className="py-20 max-w-7xl mx-auto px-6">
