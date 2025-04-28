@@ -11,7 +11,7 @@ export default function Home() {
             <NavBar />
             <Hero />
             <Feature />
-            {/* <Footer/> */}
+            <Footer/>
           
         </div>
     )
