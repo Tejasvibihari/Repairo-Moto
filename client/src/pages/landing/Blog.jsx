@@ -15,7 +15,11 @@ export default function Blog() {
         return words.slice(0, maxWords).join(' ') + '...';
     }
    
-
+    const posts = [
+        { id: 1, img: '/images/tery.webp', title: 'Blog Image Post' },
+        { id: 2, img: '/images/bikerepair.jpg', title: 'Second Gallery Post' },
+        { id: 3, img: '/images/helmet.webp', title: 'Motorcycle Safety Tips' }
+    ];
 
     return (
         <>
@@ -42,10 +46,7 @@ export default function Blog() {
                 <div className="container mx-auto p-10">
                     <div className="max-w-6xl mx-auto grid gap-16">
                         {/* Blog Posts Loop */}
-                        {[{ img: '/images/tery.webp', title: 'Blog Image Post', link: '/blog/post-1' },
-                        { img: '/images/bikerepair.jpg', title: 'Blog Second Gallery Post', link: '/blog/post-2' },
-                        { img: '/images/helmet.webp', title: 'Motorcycle Safety Tips', link: '/blog/post-3' }
-                        ].map((post, idx) => (
+                        {posts.map((post, idx) => (
                             <div key={idx} className="flex flex-col md:flex-row items-center  shadow-md rounded-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
                                 <div className="md:w-2/5 w-full overflow-hidden">
                                     <img
