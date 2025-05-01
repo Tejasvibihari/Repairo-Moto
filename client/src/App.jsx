@@ -18,7 +18,7 @@ import UserAuth from './pages/auth/UserSignUp';
 import UserSignUp from './pages/auth/UserSignUp';
 import UserSigin from './pages/auth/UserSignIn';
 import ManageQr from './pages/dashboard/ManageQr';
-import NavBar from './components/ui/NavBar';
+import NavBar from './components/ui/Navbar';
 import UserOrderBooking from './pages/landing/UserOrderBooking';
 import ManageOrder from './pages/dashboard/ManageOrder';
 import ContactUs from './pages/landing/ContactUs';
@@ -50,6 +50,7 @@ import AboutUs from './pages/landing/AboutUs';
 import Blog from './pages/landing/Blog';
 import BlogDetail from './pages/landing/BlogDetail';
 import Gallery from './pages/landing/Gallery';
+import Services from './pages/landing/Service';
 
 
 
@@ -68,6 +69,7 @@ export default function App() {
           <Route path='/blog' element={<Blog />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path='/gallery' element={<Gallery />} />
+          <Route path='/services' element={<Services />} />
 
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
