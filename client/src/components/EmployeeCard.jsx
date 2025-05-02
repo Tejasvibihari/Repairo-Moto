@@ -15,14 +15,16 @@ import AlertSnackBar from './ui/AlertSnackBar';
 import CircularLoading from './ui/CircularLoading';
 import { useDispatch } from 'react-redux';
 import { setEmployee } from '../app/slice/employeeSlice';
+
 export default function EmployeeCard({ id, firstName, lastName, position, phone, email, profileImage, address, city, state, pinCode, referralCode }) {
     const [open, setOpen] = React.useState(false);
     const [openDelete, setOpenDelete] = React.useState(false);
-    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
-    const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
-    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
-    const [loading, setLoading] = React.useState(false); // State to control loading spinner
+    const [snackBarOpen, setSnackBarOpen] = useState(false);
+    const [snackBarMessage, setSnackBarMessage] = useState('');
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success');
+    const [loading, setLoading] = React.useState(false);
     const dispatch = useDispatch()
+
     const handleEditOpen = () => {
         setOpen(true);
     };
@@ -30,6 +32,7 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
     const handleClose = () => {
         setOpen(false);
     };
+
     const handleDeleteOpen = () => {
         setOpenDelete(true);
     };
@@ -41,59 +44,86 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
     const handleDelete = async (id) => {
         try {
             console.log(id)
-            setLoading(true); // Start loading state
+            setLoading(true);
             const response = await axiosClient.delete(`/api/admin/employee/deleteemployee/${id}`);
             console.log(response.data.employees);
-            setSnackBarMessage(response.data.message); // Set the message to display in the Snackbar
-            setSnackBarSeverity('success'); // Set severity to success
-            setSnackBarOpen(true); // Open the Snackbar
-            setLoading(false); // Stop loading state
+            setSnackBarMessage(response.data.message);
+            setSnackBarSeverity('success');
+            setSnackBarOpen(true);
+            setLoading(false);
             handleDeleteClose()
-            dispatch(setEmployee(response.data.employees)); // Update the employees in the Redux store
+            dispatch(setEmployee(response.data.employees));
         } catch (error) {
             console.log(error);
-            setSnackBarMessage(error.message); // Set the message to display in the Snackbar
-            setSnackBarSeverity('error'); // Set severity to error
+            setSnackBarMessage(error.message);
+            setSnackBarSeverity('error');
         }
     }
+
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') {
             return;
         }
-
         setSnackBarOpen(false);
     };
+
     return (
         <>
             <AlertSnackBar
                 open={snackBarOpen}
                 message={snackBarMessage}
                 severity={snackBarSeverity}
-                onClose={handleCloseSnackBar} // Close function for the Snackbar
+                onClose={handleCloseSnackBar}
             />
-            <div className='border border-primary shadow-sm rounded-md p-4 mt-6 w-full'>
-                <div className='flex flex-col gap-2 items-center justify-between'>
-                    <div>
-                        <img src={`${import.meta.env.VITE_API_URL}/${profileImage}`} alt={profileImage} className='w-24 h-24 rounded-full border border-primary shadow-md' />
+
+            {/* Redesigned Employee Card */}
+            <div className='bg-white rounded-lg shadow-lg overflow-hidden border-t-4 border-primary my-4'>
+                <div className='flex flex-col p-6'>
+                    {/* Profile Image Section */}
+                    <div className='flex justify-center mb-4'>
+                        <div className='relative'>
+                            <img
+                                src={`${import.meta.env.VITE_API_URL}/${profileImage}`}
+                                alt={`${firstName} ${lastName}`}
+                                className='w-28 h-28 rounded-full object-cover border-4 border-primary shadow-md'
+                            />
+                            <div className='absolute bottom-0 right-0 bg-primary text-white rounded-full p-1'>
+                                <UserPen size={16} />
+                            </div>
+                        </div>
                     </div>
-                    <div className='flex flex-col gap-1 items-center justify-center'>
-                        <span className='text-sm font-inter font-semibold'>{firstName} {lastName}</span>
-                        <span className='text-sm font-inter font-semibold'>{position}</span>
-                        <span className='text-sm font-inter'>{phone}</span>
-                        <span className='text-sm font-inter'>{email}</span>
-                        <span className='text-sm font-inter'>{referralCode}</span>
-                        <span className='text-sm font-inter'>Rating</span>
+
+                    {/* Employee Details Section */}
+                    <div className='text-center mb-4'>
+                        <h3 className='text-lg font-bold text-primary mb-1'>{firstName} {lastName}</h3>
+                        <span className='inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-2'>{position}</span>
+
+                        <div className='grid grid-cols-1 gap-2 mt-3'>
+                            <div className='text-sm text-gray-700'>{phone}</div>
+                            <div className='text-sm text-gray-700'>{email}</div>
+                            <div className='text-sm font-semibold text-primary'>{referralCode}</div>
+                        </div>
                     </div>
-                    <div className='flex gap-2'>
-                        <button onClick={handleEditOpen} className='flex items-center justify-center bg-primary text-white py-2 rounded-md px-8 cursor-pointer hover:bg-transparent hover:text-primary border border-primary'>
-                            <UserPen size={18} className='mr-2' /> Edit
+
+                    {/* Action Buttons */}
+                    <div className='flex gap-3 mt-2'>
+                        <button
+                            onClick={handleEditOpen}
+                            className='flex-1 flex items-center justify-center bg-primary text-white py-2 rounded-md text-sm font-medium transition-all duration-300 hover:bg-transparent hover:text-primary border border-primary'
+                        >
+                            <UserPen size={16} className='mr-2' /> Edit
                         </button>
-                        <button onClick={handleDeleteOpen} className='flex items-center justify-center bg-transparent text-red-600 py-2 rounded-md px-8 cursor-pointer hover:bg-red-600 hover:text-white border border-primary'>
-                            <Trash size={18} className='mr-2' />    Delete
+                        <button
+                            onClick={handleDeleteOpen}
+                            className='flex-1 flex items-center justify-center bg-transparent text-red-600 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:bg-red-600 hover:text-white border border-red-600'
+                        >
+                            <Trash size={16} className='mr-2' /> Delete
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* Dialog - No changes to functionality */}
             <Dialog
                 open={open}
                 onClose={handleClose}
@@ -132,6 +162,7 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
                     <Button onClick={handleClose}>Cancel</Button>
                 </DialogActions>
             </Dialog>
+
             <Dialog
                 open={openDelete}
                 onClose={handleDeleteClose}
@@ -154,10 +185,10 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
                         autoFocus
                         className='flex flex-row cursor-pointer bg-red-600 text-white border hover:border-red-600 px-4 py-2 rounded hover:text-red-600 hover:bg-transparent'
                     >
-                        {loading ? <CircularLoading /> : <span className='flex flex-row'>      <Check className='mr-2' /> Yes</span>}
+                        {loading ? <CircularLoading /> : <span className='flex flex-row'><Check className='mr-2' /> Yes</span>}
                     </button>
                 </DialogActions>
-            </Dialog >
+            </Dialog>
         </>
     )
 }

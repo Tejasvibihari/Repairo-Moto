@@ -1,6 +1,7 @@
 import Order from "../Models/orderModel.js";
 import Employee from "../Models/employeeModel.js";
 import Vendor from '../Models/vendorModel.js'
+import VendorOrder from "../Models/vendorOrderModel.js";
 // @desc Create a new service booking
 // @route POST /api/bookings
 // @access Public
@@ -257,37 +258,27 @@ export const getAllBookingsByVendor = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
-
 export const updatePartsUsed = async (req, res) => {
     const { id } = req.params;
     const { partsUsed } = req.body;
+    console.log(id)
     try {
-        // Basic validation
-        if (!Array.isArray(partsUsed) || partsUsed.some(part =>
-            !part.name || typeof part.name !== 'string' ||
-            typeof part.quantity !== 'number' || part.quantity < 1
-        )) {
-            return res.status(400).json({ message: 'Invalid parts data format' });
-
-        }
-
         const order = await Order.findById(id);
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        // Push each new part into existing partsUsed array
-        partsUsed.forEach(part => {
-            order.partsUsed.push({
-                partName: part.name,
-                quantity: part.quantity,
-                price: 0, // Set price to 0 for every new part
-            });
-        });
+        // Replace the entire partsUsed array with new data
+        order.partsUsed = partsUsed.map(part => ({
+            partName: part.partName,
+            quantity: part.quantity,
+            price: 0, // Default price 0
+            discountPrice: 0 // Optional: include if your schema allows it
+        }));
 
         await order.save();
 
-        res.status(200).json({ message: 'Parts added successfully', order });
+        res.status(200).json({ message: 'Parts updated successfully', order });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error while updating parts' });
@@ -296,19 +287,17 @@ export const updatePartsUsed = async (req, res) => {
 
 
 export const updatePartsPrice = async (req, res) => {
-    const { id } = req.params; // Get orderId from URL params
-    const { partsUsed } = req.body; // Get partsUsed from the request body
-    console.log(id)
-
+    const { id } = req.params; // Order ID
+    const { partsUsed } = req.body; // Array of partsUsed
 
     try {
-        // Find the order by ID
+        // 1. Find the order
         const order = await Order.findById(id);
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        // Update the partsUsed array
+        // 2. Update order's partsUsed
         order.partsUsed = partsUsed.map(part => ({
             partName: part.partName,
             quantity: part.quantity,
@@ -316,11 +305,27 @@ export const updatePartsPrice = async (req, res) => {
             discountPrice: part.discountPrice
         }));
 
-        // Save the updated order
+        // 3. Save the updated order
         await order.save();
 
-        // Return success response
-        res.status(200).json({ message: 'Parts pricing updated successfully', data: order });
+        // 4. Create a new VendorOrder document
+        const vendorOrder = new VendorOrder({
+            partsUsed: order.partsUsed,
+            vendorId: order.vendorId,
+            deliveryBoyId: order.deliveryId,
+            deliveryBoyName: order.assignedDelivery,
+            orderDate: new Date() // Optional, defaults to now
+        });
+
+        await vendorOrder.save();
+
+        // 5. Send response
+        res.status(200).json({
+            message: 'Parts pricing updated successfully and vendor order saved.',
+            order,
+            vendorOrder
+        });
+
     } catch (error) {
         console.error('Error updating parts pricing:', error);
         res.status(500).json({ message: 'Internal server error' });

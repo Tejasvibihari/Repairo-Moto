@@ -102,7 +102,7 @@ export default function OrderTable({ orders }) {
                                             {order.status}
                                         </span>
                                     </td>
-                                    <td className="px-3 py-2 flex gap-2 flex-wrap justify-end">
+                                    <td className="px-3 py-2 flex gap-2 flex-wrap justify-end ">
                                         <button onClick={() => handleClickOpen(order._id)} className="flex items-center justify-center bg-primary text-white py-2 rounded-md px-3 cursor-pointer hover:bg-transparent hover:text-primary border border-primary">
                                             <UserPen size={18} className="mr-0 md:mr-2" />
                                             <span className="hidden md:inline">Manage</span>

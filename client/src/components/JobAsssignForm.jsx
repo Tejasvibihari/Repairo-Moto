@@ -8,6 +8,7 @@ import { formatDate, formatTime } from '../utils/DateFormate';
 import SelectMechanicDialog from './ui/SelectMechanicDialog';
 import SelectDeliveryDialog from './ui/SelectDeliveryDialog';
 import SelectVendorDialog from './ui/SelectVendorDialog';
+import { Link } from 'react-router-dom';
 
 export default function JobAsssignForm({ id }) {
     const [snackBarOpen, setSnackBarOpen] = useState(false);
@@ -604,29 +605,29 @@ export default function JobAsssignForm({ id }) {
 
                         {/* Bottom Action Bar */}
                         <div className="mt-6 flex justify-end gap-4">
-                            <button
+                            {/* <button
                                 onClick={() => {
                                     // Reset form or navigate back logic here
                                 }}
                                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors border border-gray-300 shadow-sm"
                             >
                                 Cancel
-                            </button>
-                            <button
-                                onClick={updateOrderStatus}
+                            </button> */}
+                            <Link to="/generate-invoice-form"
+                                // onClick={updateOrderStatus}
                                 className="px-6 py-2 rounded-md flex items-center justify-center text-white shadow-sm transition-all hover:shadow-md"
                                 style={{ backgroundColor: '#e2a731' }}
-                                disabled={loading}
+                            // disabled={loading}
                             >
                                 {loading ? (
                                     <CircularLoading size={24} color="white" />
                                 ) : (
                                     <>
                                         <RefreshCw size={16} className="mr-2" />
-                                        Save Changes
+                                        Generate Invoice
                                     </>
                                 )}
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div >

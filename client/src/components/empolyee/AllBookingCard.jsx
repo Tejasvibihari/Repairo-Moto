@@ -1,80 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Phone, Edit, Plus, X } from 'lucide-react';
 import axiosClient from '../../service/axiosClient';
 
 export default function AllBookingCard({ booking, onSaveParts }) {
-
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [parts, setParts] = useState([]);
 
-    // Now each part is an object: { name: "", quantity: 1 }
-    const [newParts, setNewParts] = useState([{ name: '', quantity: 1 }]);
-
-    console.log(newParts);
+    useEffect(() => {
+        if (booking && booking._id) {
+            console.log("Booking data loaded:", booking);
+        }
+    }, [booking]);
 
     const handleCall = () => {
         window.location.href = `tel:${booking.contactNo.replace(/\s+/g, '')}`;
     };
 
-    const addPartInput = () => {
-        setNewParts([...newParts, { name: '', quantity: 1 }]);
+    const openPartsDialog = () => {
+        const initialParts = (booking.partsUsed && booking.partsUsed.length > 0)
+            ? booking.partsUsed.map(part => ({
+                partName: part.partName || part.name || '',
+                quantity: parseInt(part.quantity) || 1
+            }))
+            : [{ partName: '', quantity: 1 }];
+
+        setParts(initialParts);
+        setIsDialogOpen(true);
     };
 
     const updatePartInput = (index, field, value) => {
-        const updatedParts = [...newParts];
-        updatedParts[index][field] = field === 'quantity' ? parseInt(value) : value;
-        setNewParts(updatedParts);
+        const updatedParts = [...parts];
+        updatedParts[index][field] = field === 'quantity' ? parseInt(value) || 1 : value;
+        setParts(updatedParts);
+    };
+
+    const addPartInput = () => {
+        setParts([...parts, { partName: '', quantity: 1 }]);
     };
 
     const removePartInput = (index) => {
-        const updatedParts = newParts.filter((_, i) => i !== index);
-        setNewParts(updatedParts);
+        const updatedParts = parts.filter((_, i) => i !== index);
+        setParts(updatedParts);
     };
 
     const saveParts = async () => {
-        const filteredParts = newParts.filter(part => part.name.trim() !== "");
-
         try {
-            const response = await axiosClient.put(`/api/admin/order/bookings/${booking._id}/update-parts`, { partsUsed: filteredParts });
-            console.log(response);
-            booking.partsUsed = filteredParts;
+            await axiosClient.put(`/api/admin/order/bookings/${booking._id}/update-parts`, {
+                partsUsed: parts
+            });
+
             setIsDialogOpen(false);
+            onSaveParts?.(); // Optional callback if needed
         } catch (error) {
             console.error('Failed to update parts', error);
             alert('Failed to update parts!');
         }
     };
 
-    const openPartsDialog = () => {
-        if (booking.partsUsed.length > 0) {
-            setNewParts(booking.partsUsed.map(part => ({
-                name: typeof part === 'string' ? part : part.name,
-                quantity: part.quantity || 1
-            })));
-        } else {
-            setNewParts([{ name: '', quantity: 1 }]);
-        }
-        setIsDialogOpen(true);
-    };
-
     const getStatusStyle = () => {
         switch (booking.status) {
-            case "Pending":
-                return "bg-yellow-100 text-yellow-800";
-            case "In Progress":
-                return "bg-blue-100 text-blue-800";
-            case "Completed":
-                return "bg-green-100 text-green-800";
-            case "Cancelled":
-                return "bg-red-100 text-red-800";
-            default:
-                return "bg-gray-100 text-gray-800";
+            case "Pending": return "bg-yellow-100 text-yellow-800";
+            case "In Progress": return "bg-blue-100 text-blue-800";
+            case "Completed": return "bg-green-100 text-green-800";
+            case "Cancelled": return "bg-red-100 text-red-800";
+            default: return "bg-gray-100 text-gray-800";
         }
     };
+
+    if (!booking) {
+        return <div>Loading booking data...</div>;
+    }
 
     return (
         <>
             <div className="w-full bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 relative">
-
                 <div className="absolute top-2 right-2">
                     <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle()}`}>
                         {booking.status}
@@ -116,7 +115,9 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                                 </div>
                                 <div className="bg-gray-100 p-2 rounded">
                                     <span className="text-xs text-gray-500">Bike Model</span>
-                                    <p className="font-medium">{booking.selectedModel === "Other" ? booking.modelName : booking.selectedModel}</p>
+                                    <p className="font-medium">
+                                        {booking.selectedModel === "Other" ? booking.modelName : booking.selectedModel}
+                                    </p>
                                 </div>
                                 <div className="bg-gray-100 p-2 rounded">
                                     <span className="text-xs text-gray-500">Engine CC</span>
@@ -138,19 +139,15 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                                 </button>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                {booking.partsUsed.length > 0 ? booking.partsUsed.map((part, index) => (
-                                    <span
-                                        key={index}
-                                        className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded"
-                                    >
-                                        {typeof part === 'string' ? part : `${part.name} (x${part.quantity})`}
+                                {booking.partsUsed && booking.partsUsed.length > 0 ? booking.partsUsed.map((part, index) => (
+                                    <span key={index} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                                        {part.partName || part.name}{` x${part.quantity}`}
                                     </span>
                                 )) : (
                                     <span className="text-gray-400 text-xs">No parts added</span>
                                 )}
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -170,12 +167,12 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                         </div>
 
                         <div className="space-y-3 mb-4">
-                            {newParts.map((part, index) => (
-                                <div key={index} className="flex items-center gap-2">
+                            {parts.map((part, index) => (
+                                <div key={`part-${index}`} className="flex items-center gap-2">
                                     <input
                                         type="text"
-                                        value={part.name}
-                                        onChange={(e) => updatePartInput(index, 'name', e.target.value)}
+                                        value={part.partName}
+                                        onChange={(e) => updatePartInput(index, 'partName', e.target.value)}
                                         placeholder="Part name"
                                         className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
@@ -184,7 +181,6 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                                         min="1"
                                         value={part.quantity}
                                         onChange={(e) => updatePartInput(index, 'quantity', e.target.value)}
-                                        placeholder="Qty"
                                         className="w-20 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                     <button

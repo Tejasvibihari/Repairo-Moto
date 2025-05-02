@@ -51,6 +51,7 @@ import Blog from './pages/landing/Blog';
 import BlogDetail from './pages/landing/BlogDetail';
 import Gallery from './pages/landing/Gallery';
 import Services from './pages/landing/Service';
+import GenerateInvoiceForm from './components/GenerateInvoiceForm';
 
 
 
@@ -326,6 +327,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><Profile /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/generate-invoice-form'
+            element={
+              <PrivateRoute>
+                <Sidebar><GenerateInvoiceForm /></Sidebar>
               </PrivateRoute>
             }
           />
