@@ -28,7 +28,11 @@ export default function Feature() {
         <div className="bg-gray-50 py-16 px-6 md:px-20">
             {/* Header */}
             <div className="text-center mb-12">
-                <p className="text-primary uppercase tracking-widest font-semibold text-sm mb-2">Latest Service</p>
+                <div className="flex items-center justify-center">
+                    <div className="w-6 md:w-8 h-0.5 bg-primary mr-2 md:mr-3"></div>
+                    <p className="text-primary uppercase tracking-widest font-semibold text-sm mb-2">Latest Service</p>
+                </div>
+              
                 <h2 className="text-3xl md:text-5xl font-bold text-gray-900">
                     Professional Bike Repair The<br />Best Services
                 </h2>
