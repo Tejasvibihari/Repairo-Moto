@@ -3,18 +3,22 @@ import NavBar from '../../components/ui/NavBar'
 import Breadcrumbs from '../../components/ui/Breadcrumbs'
 import { MapPin, Phone, Mail, Clock, Home } from 'lucide-react'
 import ContactForm from '../../components/landing/ContactForm'
-import {IconCard} from '../../components/landing/IconCard'
+import { IconCard } from '../../components/landing/IconCard'
 import Footer from '../../components/landing/Footer'
+import { motion } from 'framer-motion'
 
 export default function ContactUs() {
     return (
-        < >
+        <>
             <NavBar />
-
 
             <div className="min-h-screen">
                 {/* Hero Banner with Breadcrumbs */}
-                <div className="relative bg-cover bg-center bg-no-repeat h-72 flex items-center justify-center text-white"
+                <motion.div
+                    initial={{ opacity: 0, y: -50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1 }}
+                    className="relative bg-cover bg-center bg-no-repeat h-72 flex items-center justify-center text-white"
                     style={{ backgroundImage: "url('/images/Breadcrums.png')" }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-transparent z-0" />
@@ -27,50 +31,58 @@ export default function ContactUs() {
                             ]}
                         />
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Contact Information Section */}
-                <div className="container mx-auto px-4 py-12">
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1 }}
+                    className="container mx-auto px-4 py-12"
+                >
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-
-                        {/* Phone */}
                         <IconCard
                             icon={<Phone className="text-white" size={24} />}
                             title="Phone"
                             text="0123456789"
                         />
-
-                        {/* Email */}
                         <IconCard
                             icon={<Mail className="text-white" size={24} />}
                             title="Email"
                             text="demo@example.com"
                         />
-
-                        {/* Address */}
                         <IconCard
                             icon={<Home className="text-white" size={24} />}
                             title="Address"
                             text="Your address goes here"
                         />
-                        {/* Working hours */}
                         <IconCard
                             icon={<Clock className="text-white" size={24} />}
                             title="Opening Hours"
                             text="Mon - Fri: 9:00 AM - 5:00 PM"
-
                         />
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Contact Form  */}
-                <div >
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                >
                     <ContactForm />
-                </div>
+                </motion.div>
 
                 {/* Map Section */}
-                <div className=" mx-auto">
-                
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1 }}
+                    className="mx-auto"
+                >
                     <div className="rounded-sm overflow-hidden shadow-lg">
                         <iframe
                             src="https://www.google.com/maps/embed?...your-map-link..."
@@ -82,7 +94,7 @@ export default function ContactUs() {
                             title="Location Map"
                         ></iframe>
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             <Footer />
