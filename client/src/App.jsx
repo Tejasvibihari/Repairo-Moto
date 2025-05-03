@@ -18,7 +18,7 @@ import UserAuth from './pages/auth/UserSignUp';
 import UserSignUp from './pages/auth/UserSignUp';
 import UserSigin from './pages/auth/UserSignIn';
 import ManageQr from './pages/dashboard/ManageQr';
-import NavBar from './components/ui/Navbar';
+
 import UserOrderBooking from './pages/landing/UserOrderBooking';
 import ManageOrder from './pages/dashboard/ManageOrder';
 import ContactUs from './pages/landing/ContactUs';
@@ -54,6 +54,7 @@ import Services from './pages/landing/Service';
 import GenerateInvoiceForm from './components/GenerateInvoiceForm';
 import InvoiceTemplate from './components/InvoiceTemplate';
 import Terms from './pages/landing/Terms';
+import ReferralEarning from './pages/landing/ReferralEarning';
 
 
 
@@ -73,7 +74,8 @@ export default function App() {
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path='/gallery' element={<Gallery />} />
           <Route path='/services' element={<Services />} />
-          <Route path='/terms' element={<Terms/>}/>
+          <Route path='/terms' element={<Terms />} />
+          <Route path='/referral' element={<ReferralEarning />} />
 
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
