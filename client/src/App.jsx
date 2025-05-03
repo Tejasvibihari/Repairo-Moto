@@ -53,6 +53,7 @@ import Gallery from './pages/landing/Gallery';
 import Services from './pages/landing/Service';
 import GenerateInvoiceForm from './components/GenerateInvoiceForm';
 import InvoiceTemplate from './components/InvoiceTemplate';
+import Terms from './pages/landing/Terms';
 
 
 
@@ -72,6 +73,7 @@ export default function App() {
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path='/gallery' element={<Gallery />} />
           <Route path='/services' element={<Services />} />
+          <Route path='/terms' element={<Terms/>}/>
 
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
