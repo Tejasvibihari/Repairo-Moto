@@ -34,26 +34,45 @@ export default function Footer() {
                     <div>
                         <h2 className="text-xl font-bold text-primary mb-6 border-l-4 border-primary pl-3">Important Links</h2>
                         <ul className="space-y-4 text-gray-300">
-                            <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <House className="mr-3" size={20} /> Home
+                            <li>
+                                <a href="/" className="flex items-center hover:text-primary transition">
+                                    <House className="mr-3" size={20} /> Home
+                                </a>
                             </li>
-                            <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <Store className="mr-3" size={20} /> About
+                            <li>
+                                <a href="/about" className="flex items-center hover:text-primary transition">
+                                    <Store className="mr-3" size={20} /> About
+                                </a>
                             </li>
-                            <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <Wrench className="mr-3" size={20} /> Services
+                            <li>
+                                <a href="/services" className="flex items-center hover:text-primary transition">
+                                    <Wrench className="mr-3" size={20} /> Services
+                                </a>
                             </li>
-                            <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <ContactRound className="mr-3" size={20} /> Contact
+                            <li>
+                                <a href="/contact" className="flex items-center hover:text-primary transition">
+                                    <ContactRound className="mr-3" size={20} /> Contact
+                                </a>
                             </li>
-                            <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <Rss className="mr-3" size={20} /> Blog
+                            <li>
+                                <a href="/blog" className="flex items-center hover:text-primary transition">
+                                    <Rss className="mr-3" size={20} /> Blog
+                                </a>
                             </li>
-                            <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <Images className="mr-3" size={20} /> Gallery
+                            <li>
+                                <a href="/gallery" className="flex items-center hover:text-primary transition">
+                                    <Images className="mr-3" size={20} /> Gallery
+                                </a>
                             </li>
-                            <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <HandCoins className="mr-3" size={20} /> Referral & Earning
+                            <li>
+                                <a href="/referral" className="flex items-center hover:text-primary transition">
+                                    <HandCoins className="mr-3" size={20} /> Referral & Earning
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/terms" className="flex items-center hover:text-primary transition">
+                                    <ContactRound className="mr-3" size={20} /> Terms & Conditions
+                                </a>
                             </li>
                         </ul>
                     </div>
@@ -82,16 +101,15 @@ export default function Footer() {
                         <h2 className="text-xl font-bold text-primary mb-6 border-l-4 border-primary pl-3">Contact Us</h2>
                         <ul className="space-y-4 text-gray-300">
                             <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <MapPin className="mr-3" size={20} /> Address: New Delhi, India
+                                <MapPin className="mr-3 mt-1" size={20} /> Address: 5c/12 Manna Singh Lane, Vivekanand Marg, North S.K Puri, Boring Road, Patna - 13.
                             </li>
                             <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <Phone className="mr-3" size={20} /> Phone: +91 1234567890
+                                <Phone className="mr-3" size={20} />
+                                Phone: +91 9229207021
                             </li>
                             <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <Mail className="mr-3" size={20} /> Email: support@example.com
-                            </li>
-                            <li className="flex items-center cursor-pointer hover:text-primary transition">
-                                <Clock className="mr-3" size={20} /> Working Hours: 9AM - 7PM
+                                <Mail className="mr-3" size={20} />
+                                Email: Contact@repairomoto.in
                             </li>
                         </ul>
                     </div>
@@ -100,7 +118,7 @@ export default function Footer() {
 
                 {/* Bottom Footer */}
                 <div className="mt-12 border-t border-gray-700 pt-6 text-center text-gray-500 text-sm">
-                    © {new Date().getFullYear()} Your Company Name. Made with ❤️ by You.
+                    © {new Date().getFullYear()}  Repairo Moto Made with ❤️ by You.
                 </div>
             </div>
         </footer>
