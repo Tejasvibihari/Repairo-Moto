@@ -31,3 +31,13 @@ export const createBlog = async (req, res) => {
         res.status(500).json({ message: "Failed to create blog", error: err.message });
     }
 };
+
+export const getAllBlogs = async (req, res) => {
+    try {
+        const blogs = await Blog.find().sort({ createdAt: -1 }); // latest first
+        res.status(200).json({ success: true, blogs });
+    } catch (error) {
+        console.error("Error fetching blogs:", error);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+};

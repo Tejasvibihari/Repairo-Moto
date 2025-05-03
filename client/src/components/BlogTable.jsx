@@ -1,29 +1,9 @@
 import { UserPen, Trash2 } from 'lucide-react';
 
-const mockBlogs = [
-    {
-        id: 1,
-        title: "Understanding React Context",
-        image: "/logo/logo72.png",
-        description: "A brief intro to using Context API in React for global state.",
-        author: "Guriya Kumari",
-        status: "Published",
-        date: "2025-04-09",
-    },
-    {
-        id: 2,
-        title: "Jodit Editor Tips",
-        image: "/logo/logo72.png",
-        description: "Tips for customizing and handling Jodit Editor in your apps.",
-        author: "Guriya Kumari",
-        status: "Draft",
-        date: "2025-04-08",
-    },
-];
 
 const currentDate = new Date().toLocaleDateString();
 
-export default function BlogTable() {
+export default function BlogTable({ blogs }) {
     return (
         <div className="p-4 border border-gray-200 rounded shadow-sm">
             <div className="overflow-x-auto">
@@ -33,7 +13,6 @@ export default function BlogTable() {
                             <th className="px-4 py-2 text-left">No.</th>
                             <th className="px-4 py-2 text-left">Title</th>
                             <th className="px-4 py-2 text-left">Image</th>
-                            <th className="px-4 py-2 text-left">Description</th>
                             <th className="px-4 py-2 text-left">Author</th>
                             <th className="px-4 py-2 text-left">Status</th>
                             <th className="px-4 py-2 text-left">Date</th>
@@ -41,17 +20,12 @@ export default function BlogTable() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {mockBlogs.map((blog, index) => (
-                            <tr key={blog.id} className="hover:bg-gray-50 border-b border-gray-200">
+                        {blogs.map((blog, index) => (
+                            <tr key={blog._id} className="hover:bg-gray-50 border-b border-gray-200" >
                                 <td className="px-3 py-2">{index + 1}</td>
                                 <td className="px-3 py-2">{blog.title}</td>
                                 <td className="px-3 py-2">
-                                    <img src={blog.image} alt={blog.title} className="w-16 h-10 object-cover rounded" />
-                                </td>
-                                <td className="px-3 py-2 text-gray-600">
-                                    {blog.description.length > 50
-                                        ? `${blog.description.substring(0, 30)}...`
-                                        : blog.description}
+                                    <img src={`${import.meta.env.VITE_API_URL}/${blog.banner}`} alt={blog.banner} className="w-16 h-10 object-cover rounded" />
                                 </td>
                                 <td className="px-3 py-2">{blog.author}</td>
                                 <td className="px-3 py-2">
@@ -76,6 +50,6 @@ export default function BlogTable() {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 }
