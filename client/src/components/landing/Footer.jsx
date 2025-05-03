@@ -1,5 +1,5 @@
 import { ContactRound, HandCoins, House, Images, Rss, Store, Wrench, Facebook, Instagram, Twitter, Youtube, Phone, Mail, Clock, MapPin } from 'lucide-react';
-
+import { Link } from "react-router-dom";
 import React from 'react';
 
 export default function Footer() {
@@ -15,18 +15,18 @@ export default function Footer() {
                             Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus labore itaque quas, sed deleniti.
                         </p>
                         <div className="flex space-x-5 ">
-                            <a href="#" className="hover:text-primary  hover:scale-110 hover:opacity-80 transition-all duration-300">
+                            <Link to="#" className="hover:text-primary  hover:scale-110 hover:opacity-80 transition-all duration-300">
                                 <Twitter size={20} />
-                            </a>
-                            <a href="#" className="hover:text-primary hover:scale-110 hover:opacity-80 transition-all duration-300 ">
+                            </Link>
+                            <Link to="#" className="hover:text-primary hover:scale-110 hover:opacity-80 transition-all duration-300 ">
                                 <Facebook size={20} />
-                            </a>
-                            <a href="#" className="hover:text-primary hover:scale-110 hover:opacity-80 transition-all duration-300">
+                            </Link>
+                            <Link to="#" className="hover:text-primary hover:scale-110 hover:opacity-80 transition-all duration-300">
                                 <Instagram size={20} />
-                            </a>
-                            <a href="#" className="hover:text-primary hover:scale-110 hover:opacity-80 transition-all duration-300">
+                            </Link>
+                            <Link to="#" className="hover:text-primary hover:scale-110 hover:opacity-80 transition-all duration-300">
                                 <Youtube size={20} />
-                            </a>
+                            </Link>
                         </div>
                     </div>
 
@@ -35,44 +35,44 @@ export default function Footer() {
                         <h2 className="text-xl font-bold text-primary mb-6 border-l-4 border-primary pl-3">Important Links</h2>
                         <ul className="space-y-4 text-gray-300">
                             <li>
-                                <a href="/" className="flex items-center hover:text-primary transition">
+                                <Link to="/" className="flex items-center hover:text-primary transition">
                                     <House className="mr-3" size={20} /> Home
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/about" className="flex items-center hover:text-primary transition">
+                                <Link to="/about" className="flex items-center hover:text-primary transition">
                                     <Store className="mr-3" size={20} /> About
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/services" className="flex items-center hover:text-primary transition">
+                                <Link to="/services" className="flex items-center hover:text-primary transition">
                                     <Wrench className="mr-3" size={20} /> Services
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/contact" className="flex items-center hover:text-primary transition">
+                                <Link to="/contact" className="flex items-center hover:text-primary transition">
                                     <ContactRound className="mr-3" size={20} /> Contact
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/blog" className="flex items-center hover:text-primary transition">
+                                <Link to="/blog" className="flex items-center hover:text-primary transition">
                                     <Rss className="mr-3" size={20} /> Blog
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/gallery" className="flex items-center hover:text-primary transition">
+                                <Link to="/gallery" className="flex items-center hover:text-primary transition">
                                     <Images className="mr-3" size={20} /> Gallery
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/referral" className="flex items-center hover:text-primary transition">
+                                <Link to="/referral" className="flex items-center hover:text-primary transition">
                                     <HandCoins className="mr-3" size={20} /> Referral & Earning
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/terms" className="flex items-center hover:text-primary transition">
+                                <Link to="/terms" className="flex items-center hover:text-primary transition">
                                     <ContactRound className="mr-3" size={20} /> Terms & Conditions
-                                </a>
+                                </Link>
                             </li>
                         </ul>
                     </div>
