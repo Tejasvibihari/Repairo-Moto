@@ -3,67 +3,10 @@ import { motion } from 'framer-motion';
 import Navbar from '../../components/ui/NavBar';
 import Breadcrumbs from '../../components/ui/Breadcrumbs';
 import Footer from '../../components/landing/Footer';
-import { ArrowRight, Wrench, Settings, Gauge, HardDrive, Cog } from 'lucide-react';
+import { ArrowRight, Wrench, Settings, Gauge, HardDrive, Cog, CheckCircle, Cpu } from 'lucide-react';
+import ServiceCards from '../../components/landing/ServiseCard';
 
-// Animation variants
-const fadeIn = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-        opacity: 1,
-        y: 0,
-        transition: { duration: 0.5 }
-    }
-};
 
-const staggerContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1
-        }
-    }
-};
-
-const services = [
-    {
-        title: 'Servicing',
-        description: 'Regular maintenance service to keep your vehicle in optimal condition. Our comprehensive servicing includes fluid checks, filter replacements, and system inspections.',
-        icon: <Wrench className="h-8 w-8 text-white" />,
-        image: '/images/Engine.jpg'
-    },
- 
-    {
-        title: 'Repairing',
-        description: 'Professional repair services for all types of vehicle issues. Our trained technicians can diagnose and fix problems with precision and care.',
-        icon: <Settings className="h-8 w-8 text-white" />,
-        image: '/images/bikerepair.jpg'
-    },
-    {
-        title: 'Drive-In Garage',
-        description: 'A car repair is a service provided to fix any issues or damages with your vehicle. Our drive-in facility makes servicing convenient and hassle-free.',
-        icon: <Gauge className="h-8 w-8 text-white" />,
-        image: '/images/bikemaintenance.jpg'
-    },
-    {
-        title: 'Engine Work',
-        description: 'Specialized engine services including diagnostics, tune-ups, and performance optimization to ensure your engine runs smoothly and efficiently.',
-        icon: <Gauge className="h-8 w-8 text-white" />,
-        image: '/images/bikers_04.jpg'
-    },
-    {
-        title: 'Full Engine Service',
-        description: 'Complete engine overhaul and rebuilding services for vehicles requiring major engine work. We restore performance and extend your engine',
-        icon: <HardDrive className="h-8 w-8 text-white" />,
-        image: '/images/Engine.jpg',
-    },
-    {
-        title: 'Half Engine Service',
-        description: 'Partial engine rebuilds and repairs targeting specific engine components. This cost-effective option addresses targeted issues without a full rebuild.',
-        icon: <Cog className="h-8 w-8 text-white" />,
-        image: '/images/bikerepair.jpg'
-    },
-];
 
 export default function Services() {
     return (
@@ -105,90 +48,27 @@ export default function Services() {
                 </motion.div>
             </div>
 
-            {/* Services Section - Based on the image style */}
-            <section className="py-16 bg-gray-50">
+
+            {/* Specialized Service Highlights Section */}
+            <section className="py-16 bg-white">
                 <div className="container mx-auto px-4">
-                    <motion.h3
-                        className="text-3xl text-center font-bold text-primary mb-16"
+                    <motion.div
+                        className="text-center mb-12"
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                         viewport={{ once: true }}
                     >
-                        What We Offer
-                    </motion.h3>
-
-                    <motion.div
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-                        variants={staggerContainer}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: true, amount: 0.1 }}
-                    >
-                        {services.map((service, index) => (
-                            <motion.div
-                                key={index}
-                                className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow duration-300"
-                                variants={fadeIn}
-                            >
-                                <div className="flex flex-col h-full">
-                                    {/* Icon */}
-                                    <div className="mb-4">
-                                        <div className="bg-primary h-16 w-16 rounded-lg flex items-center justify-center">
-                                            {service.icon}
-                                        </div>
-                                    </div>
-
-                                    {/* Title and Description */}
-                                    <h4 className="text-xl font-bold mb-2">{service.title}</h4>
-                                    <p className="text-gray-600 text-sm mb-4 flex-grow">
-                                        {service.description.substring(0, 60)}...
-                                    </p>
-
-                                    {/* Read More Button */}
-                                    <div className="mt-auto">
-                                        <button className="text-sm text-gray-600 hover:text-primary flex items-center uppercase font-medium">
-                                            Read More <ArrowRight className="ml-1 h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                        <h3 className="text-3xl font-bold text-primary mb-4">Our Specialized Services</h3>
+                        <p className="text-gray-600 max-w-2xl mx-auto">
+                            We offer comprehensive automotive services with expert technicians and quality parts
+                        </p>
                     </motion.div>
+
+                   <ServiceCards/>
                 </div>
             </section>
 
-            {/* Service Images Section */}
-            <section className="py-16 bg-white">
-                <div className="container mx-auto px-4">
-                    <motion.div
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                        variants={staggerContainer}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: true }}
-                    >
-                        {services.map((service, index) => (
-                            <motion.div
-                                key={index}
-                                className="overflow-hidden rounded-lg"
-                                variants={fadeIn}
-                            >
-                                <motion.div
-                                    whileHover={{ scale: 1.05 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <img
-                                        src={service.image}
-                                        alt={service.title}
-                                        className="w-full h-64 object-cover"
-                                    />
-                                </motion.div>
-                            </motion.div>
-                        ))}
-                    </motion.div>
-                </div>
-            </section>
 
             {/* Service Process Section */}
             <section className="py-16 bg-gray-50">
@@ -226,6 +106,61 @@ export default function Services() {
                                     {step === 'Repair Work' && 'Our skilled technicians perform the necessary repairs.'}
                                     {step === 'Quality Check' && 'We ensure all repairs meet our quality standards.'}
                                 </p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+
+
+            {/* Engine Services Section */}
+            <section className="py-16 bg-gray-50">
+                <div className="container mx-auto px-4">
+                    <motion.div
+                        className="text-center mb-12"
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        viewport={{ once: true }}
+                    >
+                        <h3 className="text-3xl font-bold text-primary mb-4">Engine Services</h3>
+                        <p className="text-gray-600 max-w-2xl mx-auto">
+                            From minor tune-ups to complete rebuilds, our engine specialists have you covered
+                        </p>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {[
+                            {
+                                title: "Engine Work",
+                                description: "Diagnostics and repairs for all types of engine issues"
+                            },
+                            {
+                                title: "Full Engine Service",
+                                description: "Complete engine overhaul and rebuilding services"
+                            },
+                            {
+                                title: "Half Engine Service",
+                                description: "Targeted repairs for specific engine components"
+                            }
+                        ].map((service, index) => (
+                            <motion.div
+                                key={index}
+                                className="bg-white rounded-lg shadow-lg overflow-hidden"
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                                viewport={{ once: true }}
+                            >
+                                <div className="bg-primary h-2 w-full"></div>
+                                <div className="p-6">
+                                    <h4 className="text-xl font-bold mb-3">{service.title}</h4>
+                                    <p className="text-gray-600 text-sm mb-5">{service.description}</p>
+                                    <a href="#" className="text-xs font-bold text-gray-700 hover:text-primary tracking-wider uppercase flex items-center">
+                                        LEARN MORE <ArrowRight className="ml-1 h-3 w-3" />
+                                    </a>
+                                </div>
                             </motion.div>
                         ))}
                     </div>

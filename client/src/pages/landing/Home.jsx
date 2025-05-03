@@ -4,6 +4,9 @@ import NavBar from "../../components/ui/NavBar"
 import Feature from '../../components/landing/Feature'
 import Footer from '../../components/landing/Footer'
 import AboutSection from '../../components/landing/AboutSection'
+import WhyChooseUs from '../../components/landing/WhyChooseUs'
+import HowItWorks from '../../components/landing/HowItWork'
+
 
 
 export default function Home() {
@@ -13,6 +16,8 @@ export default function Home() {
             <Hero />
             <AboutSection/>
             <Feature />
+            <WhyChooseUs />
+            <HowItWorks/>
             <Footer/>
           
         </div>
