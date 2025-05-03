@@ -16,7 +16,9 @@ export default function Dashboard() {
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
     const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
-
+    const [vendor, setVendor] = useState([]);
+    const [employee, setEmployee] = useState([]);
+    const [order, setOrder] = useState([]);
 
     useEffect(() => {
         const fetchBrands = async () => {
@@ -30,10 +32,48 @@ export default function Dashboard() {
                 setSnackBarSeverity('error');
                 setSnackBarOpen(true);
             }
-
         }
+        const fetchVendor = async () => {
+            try {
+                const response = await axiosClient.get('/api/vendor/getallvendor');
+                setVendor(response.data.vendors)
+            } catch (error) {
+                console.error("Error fetching vendor:", error);
+                setSnackBarMessage(error.response?.data?.message || "Unauthorized Access"); // Set the message to display in the Snackbar
+                setSnackBarSeverity('error');
+                setSnackBarOpen(true);
+            }
+        }
+        const fetchEmployee = async () => {
+            try {
+                const response = await axiosClient.get('/api/admin/employee/getallemployee');
+                setEmployee(response.data.employees)
+            } catch (error) {
+                console.error("Error fetching vendor:", error);
+                setSnackBarMessage(error.response?.data?.message || "Unauthorized Access"); // Set the message to display in the Snackbar
+                setSnackBarSeverity('error');
+                setSnackBarOpen(true);
+            }
+        }
+        const fetchOrder = async () => {
+            try {
+                const response = await axiosClient.get('/api/admin/order/getallorder');
+                setOrder(response.data)
+            } catch (error) {
+                console.error("Error fetching vendor:", error);
+                setSnackBarMessage(error.response?.data?.message || "Unauthorized Access"); // Set the message to display in the Snackbar
+                setSnackBarSeverity('error');
+                setSnackBarOpen(true);
+            }
+        }
+        // const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+        fetchOrder();
         fetchBrands()
+        fetchVendor();
+        fetchEmployee()
     }, [])
+
+
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -62,26 +102,30 @@ export default function Dashboard() {
             <div className="p-8 bg-gray-100">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Total Bookings */}
-                    <TotalBookingsCard totalBookings={dashboardData.totalBookings} />
+                    <TotalBookingsCard totalBookings={order.length} />
 
                     {/* Order Status Cards */}
-                    <OrderStatusCard status="Pending" count={dashboardData.pendingOrders} />
-                    <OrderStatusCard status="In Progress" count={dashboardData.inProgressOrders} />
-                    <OrderStatusCard status="Completed" count={dashboardData.completedOrders} />
+                    <OrderStatusCard status="Pending" count={order.filter((o) => o.status === "Pending").length} />
+                    <OrderStatusCard status="In Progress" count={order.filter((o) => o.status === "In Progress").length} />
+                    <OrderStatusCard status="Completed" count={order.filter((o) => o.status === "Completed").length} />
 
                     {/* Total Revenue */}
-                    <TotalRevenueCard revenue={dashboardData.totalRevenue} />
+                    <TotalRevenueCard revenue={order.reduce((sum, order) => sum + (order.total || 0), 0)} />
 
                     {/* Staff Count Cards */}
-                    <StaffCountCard type="Mechanics" count={dashboardData.totalMechanics} />
-                    <StaffCountCard type="Vendors" count={dashboardData.totalVendors} />
-                    <StaffCountCard type="Delivery Staff" count={dashboardData.totalDeliveryStaff} />
+                    <StaffCountCard
+                        type="Mechanics"
+                        count={employee.filter((e) => e.position === "mechanic").length}
+                    />
+                    <StaffCountCard type="Vendors" count={vendor.length} />
+                    <StaffCountCard type="Delivery Staff" count={employee.filter((e) => e.position === "delivery").length} />
                 </div>
             </div>
-          <div className='grid grid-cols-1 md:grid-cols-2'>
-                <MechanicManagement />
-                <MechanicManagement />
-          </div>
+            <div className='grid grid-cols-1 md:grid-cols-2'>
+                <MechanicManagement m={employee.filter((e) => e.position === "mechanic")} />
+                {/* 
+                < MechanicManagement /> */}
+            </div>
         </>
 
     )

@@ -1,115 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Phone, Mail, Calendar, Filter, ChevronDown, Wrench, X, Check } from 'lucide-react';
 
-// Mock data for mechanics
-const mockMechanics = [
-    {
-        id: 1,
-        name: "Alex Johnson",
-        avatar: "/api/placeholder/50/50",
-        contact: "+1 (555) 123-4567",
-        email: "alex.johnson@example.com",
-        specialization: "Engine Repair",
-        experience: "5 years",
-        assignedOrders: [
-            { id: 101, customer: "John Smith", service: "Engine Overhaul", date: "2025-04-28" }
-        ],
-        rating: 4.8,
-        isAvailable: false
-    },
-    {
-        id: 2,
-        name: "Sarah Williams",
-        avatar: "/api/placeholder/50/50",
-        contact: "+1 (555) 234-5678",
-        email: "sarah.williams@example.com",
-        specialization: "Electrical Systems",
-        experience: "7 years",
-        assignedOrders: [],
-        rating: 4.9,
-        isAvailable: true
-    },
-    {
-        id: 3,
-        name: "Michael Brown",
-        avatar: "/api/placeholder/50/50",
-        contact: "+1 (555) 345-6789",
-        email: "michael.brown@example.com",
-        specialization: "Brake Systems",
-        experience: "3 years",
-        assignedOrders: [
-            { id: 102, customer: "Emma Davis", service: "Brake Replacement", date: "2025-04-30" }
-        ],
-        rating: 4.7,
-        isAvailable: false
-    },
-    {
-        id: 4,
-        name: "Jessica Taylor",
-        avatar: "/api/placeholder/50/50",
-        contact: "+1 (555) 456-7890",
-        email: "jessica.taylor@example.com",
-        specialization: "Transmission",
-        experience: "6 years",
-        assignedOrders: [],
-        rating: 4.6,
-        isAvailable: true
-    },
-    {
-        id: 5,
-        name: "David Martinez",
-        avatar: "/api/placeholder/50/50",
-        contact: "+1 (555) 567-8901",
-        email: "david.martinez@example.com",
-        specialization: "Suspension Systems",
-        experience: "4 years",
-        assignedOrders: [
-            { id: 103, customer: "Oliver Wilson", service: "Suspension Repair", date: "2025-04-29" },
-            { id: 104, customer: "Sophia Anderson", service: "Wheel Alignment", date: "2025-05-02" }
-        ],
-        rating: 4.5,
-        isAvailable: false
-    },
-    {
-        id: 6,
-        name: "Rebecca Johnson",
-        avatar: "/api/placeholder/50/50",
-        contact: "+1 (555) 678-9012",
-        email: "rebecca.johnson@example.com",
-        specialization: "Air Conditioning",
-        experience: "2 years",
-        assignedOrders: [],
-        rating: 4.3,
-        isAvailable: true
-    },
-    {
-        id: 7,
-        name: "Thomas Jackson",
-        avatar: "/api/placeholder/50/50",
-        contact: "+1 (555) 789-0123",
-        email: "thomas.jackson@example.com",
-        specialization: "Diagnostic Expert",
-        experience: "8 years",
-        assignedOrders: [
-            { id: 105, customer: "Ava Thompson", service: "Engine Diagnostics", date: "2025-05-01" }
-        ],
-        rating: 4.9,
-        isAvailable: false
-    },
-    {
-        id: 8,
-        name: "Jennifer White",
-        avatar: "/api/placeholder/50/50",
-        contact: "+1 (555) 890-1234",
-        email: "jennifer.white@example.com",
-        specialization: "Oil Changes & Maintenance",
-        experience: "3 years",
-        assignedOrders: [],
-        rating: 4.4,
-        isAvailable: true
-    }
-];
-
 // Status badge component
 const StatusBadge = ({ isAvailable }) => {
     return (
@@ -202,8 +93,8 @@ const MechanicCard = ({ mechanic }) => {
                             />
                         </div>
                         <div>
-                            <h3 className="font-medium text-lg">{mechanic.name}</h3>
-                            <p className="text-gray-600 text-sm">{mechanic.specialization}</p>
+                            <h3 className="font-medium text-lg">{mechanic.firstName}</h3>
+                            <p className="text-gray-600 text-sm">{mechanic.position}</p>
                         </div>
                     </div>
 
@@ -287,8 +178,8 @@ const FilterMenu = ({ filters, onChange, isOpen, onToggle }) => {
 };
 
 // Main Mechanic Management Component
-export default function MechanicManagement() {
-    const [mechanics, setMechanics] = useState(mockMechanics);
+export default function MechanicManagement({ m }) {
+    const [mechanics, setMechanics] = useState(m);
     const [searchTerm, setSearchTerm] = useState('');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filters, setFilters] = useState({
@@ -364,8 +255,8 @@ export default function MechanicManagement() {
 
             {/* Mechanics List */}
             <div className="h-96 overflow-auto">
-                {filteredMechanics.length > 0 ? (
-                    filteredMechanics.map(mechanic => (
+                {mechanics.length > 0 ? (
+                    mechanics.map(mechanic => (
                         <MechanicCard key={mechanic.id} mechanic={mechanic} />
                     ))
                 ) : (
