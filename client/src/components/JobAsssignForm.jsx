@@ -613,7 +613,7 @@ export default function JobAsssignForm({ id }) {
                             >
                                 Cancel
                             </button> */}
-                            <Link to="/generate-invoice-form"
+                            <Link to={`/generate-invoice-form/${orderId._id}`}
                                 // onClick={updateOrderStatus}
                                 className="px-6 py-2 rounded-md flex items-center justify-center text-white shadow-sm transition-all hover:shadow-md"
                                 style={{ backgroundColor: '#e2a731' }}

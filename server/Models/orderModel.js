@@ -88,6 +88,17 @@ const orderSchema = new mongoose.Schema({
             discountPrice: { type: Number, default: 0, min: 0 }, // New field for discount price
         }
     ],
+    serviceProvided: [
+        {
+            serviceName: { type: String, required: true },
+            quantity: { type: Number, required: true, min: 1 },
+            price: { type: Number, required: true, min: 0 },
+            discountPrice: { type: Number, default: 0, min: 0 },
+        }
+    ],
+    invoiceDate: {
+        type: Date
+    },
     assignedVendor: {
         type: String,
         default: null,
@@ -107,6 +118,12 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
         default: null,
+    },
+    total: {
+        subTotal: { type: Number },
+        total: { type: Number },
+        discount: { type: Number },
+        discountType: { type: String }
     }
 }, {
     timestamps: true,

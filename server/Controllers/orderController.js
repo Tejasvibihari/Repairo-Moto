@@ -302,7 +302,7 @@ export const updatePartsPrice = async (req, res) => {
             partName: part.partName,
             quantity: part.quantity,
             price: part.price,
-            discountPrice: part.discountPrice
+            // discountPrice: part.discountPrice
         }));
 
         // 3. Save the updated order
@@ -332,3 +332,56 @@ export const updatePartsPrice = async (req, res) => {
     }
 };
 
+
+export const updateOrderandGenerateInvoice = async (req, res) => {
+    const { id } = req.params;
+    const data = req.body;
+
+    try {
+        // Separate parts and services from partsAndServices
+        const partsUsed = data.partsAndServices.filter(item => item.type === 'part').map(item => ({
+            partName: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            discountPrice: item.discountPrice
+        }));
+
+        const serviceProvided = data.partsAndServices.filter(item => item.type === 'service').map(item => ({
+            serviceName: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            discountPrice: item.discountPrice
+        }));
+
+        // Construct the update object
+        const updatedFields = {
+            invoiceDate: data.invoiceDetails.invoiceDate,
+            partsUsed,
+            serviceProvided,
+            total: {
+                subTotal: data.total.subtotal,
+                discount: data.total.discount,
+                discountType: data.total.discountType,
+                total: data.total.total
+            }
+        };
+
+        // Update the order
+        const updatedOrder = await Order.findByIdAndUpdate(id, {
+            $set: updatedFields
+        }, { new: true });
+
+        if (!updatedOrder) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        res.status(200).json({
+            message: "Order updated and invoice generated successfully",
+            order: updatedOrder
+        });
+
+    } catch (error) {
+        console.error("Error updating order:", error);
+        res.status(500).json({ message: "Internal server error", error });
+    }
+};

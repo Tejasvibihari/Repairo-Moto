@@ -52,6 +52,7 @@ import BlogDetail from './pages/landing/BlogDetail';
 import Gallery from './pages/landing/Gallery';
 import Services from './pages/landing/Service';
 import GenerateInvoiceForm from './components/GenerateInvoiceForm';
+import InvoiceTemplate from './components/InvoiceTemplate';
 
 
 
@@ -79,6 +80,7 @@ export default function App() {
           <Route path="/user-signin" element={<UserSigin />} />
           <Route path="/user-order-booking" element={<UserOrderBooking />} />
 
+          <Route path="/order/invoice/:id" element={<InvoiceTemplate />} />
 
           {/* Employee Route */}
           <Route path="/employee/sign-in" element={<EmployeeSignIn />} />
@@ -331,7 +333,7 @@ export default function App() {
             }
           />
           <Route
-            path='/generate-invoice-form'
+            path='/generate-invoice-form/:id'
             element={
               <PrivateRoute>
                 <Sidebar><GenerateInvoiceForm /></Sidebar>

@@ -1,5 +1,5 @@
 import express from "express";
-import { createManualOrder, getAllBookings, getAllBookingsByEmployee, getAllBookingsByVendor, getOrderById, updateDelivery, updateMechanic, updateOrderStatus, updatePartsPrice, updatePartsUsed, updateVendor } from "../Controllers/orderController.js";
+import { createManualOrder, getAllBookings, getAllBookingsByEmployee, getAllBookingsByVendor, getOrderById, updateDelivery, updateMechanic, updateOrderStatus, updatePartsPrice, updatePartsUsed, updateVendor, updateOrderandGenerateInvoice } from "../Controllers/orderController.js";
 import authAdmin from "../Middleware/authAdmin.js";
 
 const router = express.Router();
@@ -15,8 +15,11 @@ router.put("/updateStatus/:id", authAdmin, updateOrderStatus);
 router.get("/getorder/:employeeId", getAllBookingsByEmployee);
 router.get("/getorder/:vendorId", getAllBookingsByVendor);
 
+router.get("/employee/getorderbyid/:id", getOrderById);
 
 router.put('/bookings/:id/update-parts', updatePartsUsed);
 router.put('/bookings/:id/update-parts-price', updatePartsPrice);
+router.put('/:id/update-order/generate-invoice', updateOrderandGenerateInvoice);
+
 
 export default router;
