@@ -157,7 +157,7 @@ export default function AboutUs() {
                                         animate="rest"
                                     >
                                         <motion.img
-                                            src="/images/helmet.webp"
+                                            src="/images/pic2.jpeg"
                                             alt="Motorcycle helmets"
                                             className="object-cover rounded-lg"
                                             variants={imageHover}
@@ -176,7 +176,7 @@ export default function AboutUs() {
                                         animate="rest"
                                     >
                                         <motion.img
-                                            src="/images/bikerepair.jpg"
+                                            src="/images/pic5.jpeg"
                                             alt="Mechanic with tools"
                                             className="object-cover rounded-lg"
                                             variants={imageHover}
@@ -195,7 +195,7 @@ export default function AboutUs() {
                                         animate="rest"
                                     >
                                         <motion.img
-                                            src="/images/tery.webp"
+                                            src="/images/pic6.jpeg"
                                             alt="Car tires"
                                             className="object-cover rounded-lg"
                                             variants={imageHover}

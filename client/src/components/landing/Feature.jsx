@@ -7,19 +7,19 @@ const services = [
         icon: <Wrench className="w-8 h-8 text-primary" />,
         title: 'Auto Fixers',
         description: 'A bike repair is a service provided to fix any issues or damages with your vehicle.',
-        image: '/images/bike1.jpg',
+        image: '/images/pic1.jpeg',
     },
     {
         icon: <Bike className="w-8 h-8 text-primary" />,
         title: 'Mechanic Masters',
         description: 'Expert mechanical solutions to keep your bike running like new.',
-        image: '/images/Engine.jpg',
+        image: '/images/pic3.jpeg',
     },
     {
         icon: <Warehouse className="w-8 h-8 text-primary" />,
         title: 'Drive-In Garage',
         description: 'Modern garages equipped for complete vehicle diagnostics and services.',
-        image: '/images/Engine.jpg',
+        image: '/images/pic16.jpeg',
     },
 ];
 

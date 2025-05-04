@@ -6,6 +6,7 @@ import Footer from '../../components/landing/Footer'
 import AboutSection from '../../components/landing/AboutSection'
 import WhyChooseUs from '../../components/landing/WhyChooseUs'
 import HowItWorks from '../../components/landing/HowItWork'
+import CTASection from '../../components/landing/CtaSection'
 
 
 
@@ -17,7 +18,8 @@ export default function Home() {
             <AboutSection/>
             <Feature />
             <WhyChooseUs />
-            <HowItWorks/>
+            <HowItWorks />
+            <CTASection/>
             <Footer/>
           
         </div>

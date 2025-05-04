@@ -6,37 +6,37 @@ const services = [
         icon: <Settings className="w-8 h-8 text-primary" />,
         title: 'Servicing',
         description: 'Keep your bike in top condition with regular servicing by our experts.',
-        image: '/images/Engine.jpg',
+        image: '/images/pic19.jpeg',
     },
     {
         icon: <Wrench className="w-8 h-8 text-primary" />,
         title: 'Repairing',
         description: 'From minor issues to major repairs, we fix it all with precision.',
-        image: '/images/Engine.jpg',
+        image: '/images/pic17.jpeg',
     },
     {
         icon: <Wrench className="w-8 h-8 text-primary" />,
         title: 'Full Engine Service',
         description: 'Complete engine overhauls with genuine parts and skilled labor.',
-        image: '/images/Engine.jpg',
+        image: '/images/pic16.jpeg',
     },
     {
         icon: <CheckCircle className="w-8 h-8 text-primary" />,
         title: 'Half Engine Service',
         description: 'Focused repair for partial engine faults to save time and cost.',
-        image: '/images/Engine.jpg',
+        image: '/images/pic15.jpeg',
     },
     {
         icon: <Activity className="w-8 h-8 text-primary" />,
         title: 'Engine Work',
         description: 'Expert diagnostics and repairs for a smooth and efficient engine.',
-        image: '/images/Engine.jpg',
+        image: '/images/pic14.jpeg',
     },
     {
         icon: <Search className="w-8 h-8 text-primary" />,
         title: 'Inspection',
         description: 'Thorough inspections to identify hidden faults before they escalate.',
-        image: '/images/Engine.jpg',
+        image: '/images/pic12.jpeg',
     },
 ]
 
