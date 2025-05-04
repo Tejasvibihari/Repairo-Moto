@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 
 export default function NavBar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const user = useSelector((state) => state.user.isAuthenticated);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -41,11 +43,19 @@ export default function NavBar() {
                         </Link>
                     ))}
                 </div>
-                <Link to="/user-order-booking">
-                    <button className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary hidden md:block">
-                        Book Appointment
-                    </button>
-                </Link>
+                {user ?
+                    <Link to="/user/dashboard">
+                        <button className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary hidden md:block">
+                            Profile
+                        </button>
+                    </Link>
+                    :
+                    <Link to="/user-order-booking">
+                        <button className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary hidden md:block">
+                            Book Appointment
+                        </button>
+                    </Link>
+                }
 
                 {/* Hamburger Icon for Mobile */}
                 <div className="md:hidden">
