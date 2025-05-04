@@ -57,6 +57,8 @@ import Terms from './pages/landing/Terms';
 import ReferralEarning from './pages/landing/ReferralEarning';
 import UserDashboard from './pages/user/UserDashboard';
 import UserPrivateRoute from './components/routes/UserPrivateRoute';
+import UserQrCode from './pages/user/UserQrCode';
+import UserAllBooking from './pages/user/UserAllBooking';
 
 
 
@@ -97,6 +99,13 @@ export default function App() {
           />
           <Route path="/user-order-booking" element={<UserPrivateRoute>
             <UserOrderBooking />
+          </UserPrivateRoute>} />
+
+          <Route path="/user-qrcode" element={<UserPrivateRoute>
+            <UserQrCode />
+          </UserPrivateRoute>} />
+          <Route path="/user-allbooking" element={<UserPrivateRoute>
+            <UserAllBooking />
           </UserPrivateRoute>} />
 
 

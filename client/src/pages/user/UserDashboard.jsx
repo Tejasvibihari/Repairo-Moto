@@ -14,7 +14,8 @@ export default function UserDashboard() {
             title: "All Bookings",
             description: "View and manage all your bookings",
             icon: <Calendar size={24} />,
-            color: "bg-blue-500"
+            color: "bg-blue-500",
+            link: "/user-allbooking"
         },
         {
             id: "referrals",
@@ -28,7 +29,8 @@ export default function UserDashboard() {
             title: "My QR Code",
             description: "Scan to share your profile",
             icon: <QrCode size={24} />,
-            color: "bg-purple-500"
+            color: "bg-purple-500",
+            link: "/user-qrcode"
         },
         {
             id: "booking",
