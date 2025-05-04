@@ -59,6 +59,7 @@ import UserDashboard from './pages/user/UserDashboard';
 import UserPrivateRoute from './components/routes/UserPrivateRoute';
 import UserQrCode from './pages/user/UserQrCode';
 import UserAllBooking from './pages/user/UserAllBooking';
+import UserBookingDetail from './pages/user/UserBookingDetail';
 
 
 
@@ -106,6 +107,9 @@ export default function App() {
           </UserPrivateRoute>} />
           <Route path="/user-allbooking" element={<UserPrivateRoute>
             <UserAllBooking />
+          </UserPrivateRoute>} />
+          <Route path="/user-booking/:id" element={<UserPrivateRoute>
+            <UserBookingDetail />
           </UserPrivateRoute>} />
 
 

@@ -6,6 +6,9 @@ const orderSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
+    email: {
+        type: String
+    },
     contactNo: {
         type: String,
         required: true,
