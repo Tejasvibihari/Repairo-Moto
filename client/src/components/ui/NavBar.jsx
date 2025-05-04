@@ -1,4 +1,4 @@
-import  { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function NavBar() {
@@ -25,9 +25,9 @@ export default function NavBar() {
         <nav className="bg-white shadow-md w-full">
             <div className="container mx-auto px-4 py-3 flex items-center justify-between md:w-7xl">
                 {/* Logo */}
-                <div className="text-xl font-bold text-primary">
+                <Link to="/" className="text-xl font-bold text-primary">
                     <img src="/logo/textlogo150.png" alt="Logo" className="h-12 inline-block mr-2" />
-                </div>
+                </Link>
 
                 {/* Desktop Menu */}
                 <div className="hidden md:flex items-center space-x-6 mx-auto">
