@@ -439,3 +439,53 @@ export const userOrder = async (req, res) => {
         return res.status(500).json({ message: 'Server error while creating Order' });
     }
 };
+
+
+export const getOrderByEmail = async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        const orders = await Order.find({ email });
+
+        if (!orders.length) {
+            return res.status(404).json({ message: 'No orders found' });
+        }
+
+        return res.status(200).json({
+            message: 'Orders fetched successfully',
+            orders: orders
+        });
+
+    } catch (error) {
+        console.error("Error Fetching Orders:", error);
+        return res.status(500).json({ message: 'Server error while fetching orders' });
+    }
+};
+
+export const cancelOrder = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const order = await Order.findById(id);
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        if (order.status === 'Cancelled') {
+            return res.status(400).json({ message: 'Order is already cancelled' });
+        }
+
+        order.status = 'Cancelled';
+        await order.save();
+
+        res.status(200).json({ message: 'Order cancelled successfully', order });
+    } catch (error) {
+        console.error('Cancel order error:', error);
+        res.status(500).json({ message: 'Server error while cancelling order' });
+    }
+};

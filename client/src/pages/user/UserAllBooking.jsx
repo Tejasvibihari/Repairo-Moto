@@ -1,49 +1,56 @@
-import { useState } from 'react';
-import { Clock, CheckCircle, AlertCircle, XCircle, FileText, CreditCard, XOctagon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Clock, CheckCircle, AlertCircle, XCircle, FileText, CreditCard, XOctagon, User } from 'lucide-react';
 import Footer from '../../components/landing/Footer';
 import NavBar from '../../components/ui/NavBar';
 import { motion } from "framer-motion";
 import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import axiosClient from '../../service/axiosClient';
+import { useSelector } from 'react-redux';
+import CircularLoading from '../../components/ui/CircularLoading';
+import AlertSnackBar from '../../components/ui/AlertSnackBar';
+
+
 export default function UserAllBooking() {
     // Sample data
-    const [bikes, setBikes] = useState([
-        {
-            id: 1,
-            brand: "Kawasaki",
-            model: "Ninja",
-            cc: "650",
-            issue: "Engine overheating and chain adjustment needed",
-            status: "Pending",
-            dateReceived: "2025-05-01"
-        },
-        {
-            id: 2,
-            brand: "Honda",
-            model: "CBR",
-            cc: "1000",
-            issue: "Regular maintenance and oil change",
-            status: "In Progress",
-            dateReceived: "2025-04-28"
-        },
-        {
-            id: 3,
-            brand: "Ducati",
-            model: "Monster",
-            cc: "821",
-            issue: "Brake pad replacement and throttle calibration",
-            status: "Completed",
-            dateReceived: "2025-04-25"
-        },
-        {
-            id: 4,
-            brand: "Yamaha",
-            model: "R1",
-            cc: "1000",
-            issue: "Electrical system diagnostic",
-            status: "Canceled",
-            dateReceived: "2025-04-22"
+    const user = useSelector((state) => state.user.user);
+    const [allOrder, setAllOrder] = useState([])
+    const [loading, setLoading] = useState(false);
+    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
+    const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
+
+
+
+    useEffect(() => {
+        const fetchOrder = async () => {
+            try {
+                setLoading(true)
+                const response = await axiosClient.get(`/api/admin/order/by-email?email=${user.email}`)
+                console.log(response.data.orders)
+                setAllOrder(response.data.orders)
+                setLoading(false)
+            } catch (error) {
+                console.log(error);
+                setLoading(false)
+            }
         }
-    ]);
+        fetchOrder();
+    }, [])
+
+    const handleOrderCancel = async (id) => {
+        try {
+            const response = await axiosClient.put(`/api/admin/order/cancel/${id}`);
+            console.log(response, "Cancel Order");
+            setSnackBarMessage(response.data.message); // Set the message to display in the Snackbar
+            setSnackBarSeverity('success'); // Set severity to success
+            setSnackBarOpen(true); // Open the Snackbar
+        } catch (error) {
+            setSnackBarMessage(error.message); // Set the message to display in the Snackbar
+            setSnackBarSeverity("error"); // Set the message to display in the Snackbar
+            setSnackBarOpen(true);
+            console.log(error);
+        }
+    }
 
     const getStatusIcon = (status) => {
         switch (status) {
@@ -74,7 +81,13 @@ export default function UserAllBooking() {
                 return "bg-gray-100 text-gray-800";
         }
     };
+    const handleCloseSnackBar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
 
+        setSnackBarOpen(false);
+    }
     // Mock functions
     const viewDetails = (id) => {
         alert(`Viewing details for service ID: ${id}`);
@@ -86,6 +99,12 @@ export default function UserAllBooking() {
 
     return (
         <>
+            <AlertSnackBar
+                open={snackBarOpen}
+                message={snackBarMessage}
+                severity={snackBarSeverity}
+                onClose={handleCloseSnackBar} // Close function for the Snackbar
+            />
             <NavBar />
             <motion.div
                 className="relative bg-cover bg-center h-72 flex items-center justify-center text-white"
@@ -108,65 +127,73 @@ export default function UserAllBooking() {
             <div className="w-full p-4 bg-gray-50 my-4">
 
                 <div className="grid gap-4 md:grid-cols-2">
-                    {bikes.map((bike) => (
-                        <div
-                            key={bike.id}
-                            className="bg-white rounded-lg shadow-md overflow-hidden border-l-4 border-indigo-500"
-                        >
-                            <div className="p-5">
-                                {/* Header with brand, model and CC */}
-                                <div className="flex justify-between items-center mb-3">
-                                    <h3 className="text-lg font-bold text-gray-800">
-                                        {bike.brand} {bike.model} <span className="text-gray-600">{bike.cc}cc</span>
-                                    </h3>
-                                    <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center ${getStatusColor(bike.status)}`}>
-                                        {getStatusIcon(bike.status)}
-                                        {bike.status}
+                    {loading ? (
+                        <CircularLoading />
+                    ) : allOrder.length === 0 ? (
+                        <div className="text-center text-gray-500 mt-10 text-lg font-medium">
+                            No Order Found
+                        </div>
+                    ) : (
+                        allOrder.map((bike) => (
+                            <div
+                                key={bike._id}
+                                className="bg-white rounded-lg shadow-md overflow-hidden border-l-4 border-indigo-500"
+                            >
+                                <div className="p-5">
+                                    {/* Header with brand, model and CC */}
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-lg font-bold text-gray-800">
+                                            {bike.selectedBrand} {bike.selectedModel} <span className="text-gray-600">{bike.cc}cc</span>
+                                        </h3>
+                                        <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center ${getStatusColor(bike.status)}`}>
+                                            {getStatusIcon(bike.status)}
+                                            {bike.status}
+                                        </div>
+                                    </div>
+
+                                    {/* Issue */}
+                                    <div className="mb-3">
+                                        <p className="text-sm font-medium text-gray-600">Issue:</p>
+                                        <p className="text-gray-800">{bike.issues}</p>
+                                    </div>
+
+                                    {/* Date */}
+                                    <div className="mb-4">
+                                        <p className="text-xs text-gray-500">Received: {bike.createdAt}</p>
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <div className="flex justify-between gap-2 mt-2">
+                                        <button
+                                            onClick={() => viewDetails(bike.id)}
+                                            className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium w-1/2"
+                                        >
+                                            <FileText size={16} className="mr-1" />
+                                            View Details
+                                        </button>
+                                        {bike.status === "Pending" ? (
+                                            <button
+                                                onClick={() => handleOrderCancel(bike._id)}
+                                                className="flex items-center justify-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium w-1/2"
+                                            >
+                                                <XCircle size={16} className="mr-1" />
+                                                Cancel Service
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => getInvoice(bike.id)}
+                                                className={`flex items-center justify-center ${bike.status === "Completed" ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"} text-white px-4 py-2 rounded-md text-sm font-medium w-1/2`}
+                                                disabled={bike.status !== "Completed"}
+                                            >
+                                                <CreditCard size={16} className="mr-1" />
+                                                Get Invoice
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-
-                                {/* Issue */}
-                                <div className="mb-3">
-                                    <p className="text-sm font-medium text-gray-600">Issue:</p>
-                                    <p className="text-gray-800">{bike.issue}</p>
-                                </div>
-
-                                {/* Date */}
-                                <div className="mb-4">
-                                    <p className="text-xs text-gray-500">Received: {bike.dateReceived}</p>
-                                </div>
-
-                                {/* Action buttons */}
-                                <div className="flex justify-between gap-2 mt-2">
-                                    <button
-                                        onClick={() => viewDetails(bike.id)}
-                                        className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium w-1/2"
-                                    >
-                                        <FileText size={16} className="mr-1" />
-                                        View Details
-                                    </button>
-                                    {bike.status === "Pending" ? (
-                                        <button
-                                            onClick={() => alert(`Canceling service for ID: ${bike.id}`)}
-                                            className="flex items-center justify-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium w-1/2"
-                                        >
-                                            <XCircle size={16} className="mr-1" />
-                                            Cancel Service
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => getInvoice(bike.id)}
-                                            className={`flex items-center justify-center ${bike.status === "Completed" ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"} text-white px-4 py-2 rounded-md text-sm font-medium w-1/2`}
-                                            disabled={bike.status !== "Completed"}
-                                        >
-                                            <CreditCard size={16} className="mr-1" />
-                                            Get Invoice
-                                        </button>
-                                    )}
-                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
             <Footer />
