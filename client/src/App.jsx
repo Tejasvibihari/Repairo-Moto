@@ -55,6 +55,8 @@ import GenerateInvoiceForm from './components/GenerateInvoiceForm';
 import InvoiceTemplate from './components/InvoiceTemplate';
 import Terms from './pages/landing/Terms';
 import ReferralEarning from './pages/landing/ReferralEarning';
+import UserDashboard from './pages/user/UserDashboard';
+import UserPrivateRoute from './components/routes/UserPrivateRoute';
 
 
 
@@ -82,9 +84,24 @@ export default function App() {
           <Route path='/user-signup' element={<UserSignUp />} />
           <Route path="/user-signup/:referralType/:referralId" element={<UserSignUp />} />
           <Route path="/user-signin" element={<UserSigin />} />
-          <Route path="/user-order-booking" element={<UserOrderBooking />} />
 
           <Route path="/order/invoice/:id" element={<InvoiceTemplate />} />
+
+
+          {/* User Private Routes Started  */}
+          <Route path="/user/dashboard" element={
+            <UserPrivateRoute>
+              <UserDashboard />
+            </UserPrivateRoute>
+          }
+          />
+          <Route path="/user-order-booking" element={<UserPrivateRoute>
+            <UserOrderBooking />
+          </UserPrivateRoute>} />
+
+
+
+
 
           {/* Employee Route */}
           <Route path="/employee/sign-in" element={<EmployeeSignIn />} />

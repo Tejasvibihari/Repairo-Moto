@@ -10,7 +10,7 @@ export default function Footer() {
 
                     {/* Logo Section */}
                     <div className="">
-                        <img src="./logo/logo72.png" alt="Logo" className="w-36 mb-4" />
+                        <img src="/logo/logo72.png" alt="Logo" className="w-36 mb-4" />
                         <p className="text-gray-400 text-sm mb-6">
                             Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus labore itaque quas, sed deleniti.
                         </p>
@@ -118,7 +118,7 @@ export default function Footer() {
 
                 {/* Bottom Footer */}
                 <div className="mt-12 border-t border-gray-700 pt-6 text-center text-gray-500 text-sm">
-                    © {new Date().getFullYear()}  Repairo Moto Made with ❤️ by You.
+                    © {new Date().getFullYear()}  Designed and Developed by Tejasvi Bihari
                 </div>
             </div>
         </footer>

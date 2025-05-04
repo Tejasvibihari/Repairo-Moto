@@ -27,6 +27,6 @@ export const adminAuthSlice = createSlice({
         },
     },
 });
-export const { setAdminSignIn, setAdminSignOut, setLoading, setError } = adminAuthSlice.actions;
+export const { setAdminSignIn, setAdminLogout, setAdminSignOut, setLoading, setError } = adminAuthSlice.actions;
 
 export default adminAuthSlice.reducer;

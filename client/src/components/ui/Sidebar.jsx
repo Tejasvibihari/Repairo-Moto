@@ -21,7 +21,7 @@ const Sidebar = ({ children }) => {
 
     const menuItems = [
         { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-        { id: 'invoice', path: '/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
+        // { id: 'invoice', path: '/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
         { id: 'model', path: '/model', label: 'Bike Model', icon: <Bike size={20} /> },
         { id: 'admin-order-form', path: '/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
         { id: 'manage-order', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },

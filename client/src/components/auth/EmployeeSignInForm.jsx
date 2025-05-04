@@ -151,14 +151,14 @@ export default function EmployeeSignInForm() {
                             {loading ? <CircularLoading size={23} /> : 'Login'}
                         </button>
                     </form>
-                    {/* <div>
+                    <div>
                         <span className='text-sm text-center font-nunito text-white'>
-                            Don't have an account?{' '}
-                            <Link to='/user-signup' className='text-primary hover:underline'>
-                                Sign Up
+                            Are you a Vendor?{' '}
+                            <Link to='/vendor/sign-in' className='text-primary hover:underline'>
+                                Sign In
                             </Link>
                         </span>
-                    </div> */}
+                    </div>
                 </div>
             </div>
         </>

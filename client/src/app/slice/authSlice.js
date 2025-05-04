@@ -23,7 +23,13 @@ const authSlice = createSlice({
         setVendorToken: (state, action) => {
             state.vendorToken = action.payload;
         },
+        setLogOut: (state) => {
+            state.adminToken = null
+            state.userToken = null
+            state.employeeToken = null
+            state.vendorToken = null
+        }
     },
 });
-export const { setAdminToken, setUserToken, setEmployeeToken, setVendorToken } = authSlice.actions;
+export const { setAdminToken, setUserToken, setEmployeeToken, setVendorToken, setLogOut } = authSlice.actions;
 export default authSlice.reducer;

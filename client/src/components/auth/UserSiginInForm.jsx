@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { setLoading, setUserSignIn } from '../../app/slice/userSlice';
 import { Link } from 'react-router-dom';
 import CircularLoading from '../ui/CircularLoading';
+import { setUserToken } from '../../app/slice/authSlice';
 
 export default function UserSignInForm() {
     const loading = useSelector((state) => state.user.loading);
@@ -57,10 +58,10 @@ export default function UserSignInForm() {
         }
 
         try {
-            console.log(formData)
             const response = await axiosClient.post('api/user/auth/user-sign-in', formData);
-            console.log(response);
             dispatch(setUserSignIn(response.data))
+            dispatch(setUserToken(response.data.token))
+            console.log(response.data)
             setSnackBarMessage(response.data.message);
             setSnackBarSeverity('success');
             setSnackBarOpen(true);
@@ -69,6 +70,7 @@ export default function UserSignInForm() {
                 email: '',
                 password: '',
             });
+            navigate("/user/dashboard")
         } catch (err) {
             console.error(err);
             setSnackBarMessage(err.response?.data?.message || 'Login failed.');
@@ -98,8 +100,8 @@ export default function UserSignInForm() {
             <div className='h-auto w-auto bg-opacity-90 backdrop-blur-lg shadow-2xl rounded-lg p-10'>
                 <div className='flex flex-col items-center justify-center'>
                     <div className='flex flex-col space-y-2'>
-                        <span className='text-primary text-center text-2xl font-extrabold uppercase !leading-snug font-nunito md:text-3xl border-secondary border-l-6 border-r-6 pl-2'>
-                            SIGN IN
+                        <span className='text-primary text-center text-2xl pr-2 font-extrabold uppercase !leading-snug font-nunito md:text-3xl border-secondary border-l-6 border-r-6 pl-2'>
+                            USER SIGN IN
                         </span>
                         <span className='text-base text-center font-bold leading-normal text-white-dark font-nunito'>
                             Enter your details to login
