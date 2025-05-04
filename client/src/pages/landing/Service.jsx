@@ -65,7 +65,7 @@ export default function Services() {
                         </p>
                     </motion.div>
 
-                   <ServiceCards/>
+                    <ServiceCards />
                 </div>
             </section>
 
@@ -168,26 +168,31 @@ export default function Services() {
             </section>
 
             {/* Call to Action */}
-            <section className="py-16 bg-primary">
+            <section className="relative bg-white text-center py-16 px-6 overflow-hidden">
+                <div className="absolute top-0 left-0 w-72 h-72 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full blur-3xl opacity-30 -translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute bottom-0 right-0 w-72 h-72 bg-gradient-to-br from-yellow-400 to-puyellow rple-600 rounded-full blur-3xl opacity-30 translate-x-1/3 translate-y-1/3" />
+
                 <div className="container mx-auto px-4">
                     <motion.div
-                        className="text-center"
-                        initial={{ opacity: 0, y: 20 }}
+                        className="relative z-10 max-w-3xl mx-auto"
+                        initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
                         viewport={{ once: true }}
                     >
-                        <h3 className="text-3xl font-bold text-white mb-4">Ready to Service Your Vehicle?</h3>
-                        <p className="text-white mb-8 max-w-2xl mx-auto">
+                        <h3 className="text-sm font-medium text-yellow-600 bg-yellow-100 inline-block px-3 py-1 rounded-full mb-4">Ready to Service Your Vehicle?</h3>
+
+                        <p className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
                             Book an appointment today and experience our professional service.
                         </p>
-                        <motion.button
-                            className="bg-white text-primary px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors"
+                        <motion.a
+                            href="/contact"
+                            className="bg-primary text-white font-semibold px-8 py-3 rounded-full hover:bg-secondary transition duration-300 inline-block shadow-lg"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                         >
                             Book Now
-                        </motion.button>
+                        </motion.a>
                     </motion.div>
                 </div>
             </section>

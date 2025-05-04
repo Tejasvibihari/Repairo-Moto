@@ -75,8 +75,9 @@ export default function AboutSection() {
 
                     {/* Description text */}
                     <p className="text-sm sm:text-base text-gray-700 mb-6 md:mb-8">
-                        Et purus duis sollicitudin dignissim habitant. Egestas nulla quis venenatis
-                        cras sed eu massa eu faucibus. Urna fusce
+                        <strong>Repairo Moto</strong> is your trusted partner for two-wheeler maintenance and repairs.
+                        We bring professional bike service directly to your doorstep—saving you time, hassle, and unnecessary trips to the garage.
+                        From routine servicing to emergency fixes, our experienced mechanics are ready when you need them.
                     </p>
 
                     {/* Bullet points - responsive */}
