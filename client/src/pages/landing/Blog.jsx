@@ -2,11 +2,10 @@ import NavBar from "../../components/ui/NavBar";
 import Breadcrumbs from "../../components/ui/Breadcrumbs";
 import { Calendar, User } from 'lucide-react';
 import Footer from "../../components/landing/Footer";
+import { motion } from "framer-motion";
 
 export default function Blog() {
 
-
-    // Function to truncate text to a specified number of words
     function truncateText(text, maxWords) {
         const words = text.split(' ');
         if (words.length <= maxWords) {
@@ -14,7 +13,7 @@ export default function Blog() {
         }
         return words.slice(0, maxWords).join(' ') + '...';
     }
-   
+
     const posts = [
         { id: 1, img: '/images/tery.webp', title: 'Blog Image Post' },
         { id: 2, img: '/images/bikerepair.jpg', title: 'Second Gallery Post' },
@@ -27,8 +26,12 @@ export default function Blog() {
 
             <div className="min-h-screen bg-gray-50">
                 {/* Hero Banner */}
-                <div className="relative bg-cover bg-center h-72 flex items-center justify-center text-white"
+                <motion.div
+                    className="relative bg-cover bg-center h-72 flex items-center justify-center text-white"
                     style={{ backgroundImage: "url('/images/Breadcrums.png')" }}
+                    initial={{ opacity: 0, y: -50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/20 z-0" />
                     <div className="relative z-10 text-center">
@@ -40,19 +43,36 @@ export default function Blog() {
                             ]}
                         />
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Blog Posts */}
                 <div className="container mx-auto p-10">
-                    <div className="max-w-6xl mx-auto grid gap-16">
-                        {/* Blog Posts Loop */}
+                    <motion.div
+                        className="max-w-6xl mx-auto grid gap-16"
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                            visible: {
+                                transition: {
+                                    staggerChildren: 0.2,
+                                },
+                            },
+                        }}
+                    >
                         {posts.map((post, idx) => (
-                            <div key={idx} className="flex flex-col md:flex-row items-center  shadow-md rounded-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+                            <motion.div
+                                key={idx}
+                                className="flex flex-col md:flex-row items-center  shadow-md rounded-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300"
+                                initial={{ opacity: 0, y: 40 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: idx * 0.2 }}
+                            >
                                 <div className="md:w-2/5 w-full overflow-hidden">
-                                    <img
+                                    <motion.img
                                         src={post.img}
                                         alt={post.title}
                                         className="w-full h-64 object-cover transform hover:scale-105 transition-transform duration-500 ease-in-out"
+                                        whileHover={{ scale: 1.05 }}
                                     />
                                 </div>
                                 <div className="p-8 md:w-3/5 w-full">
@@ -74,13 +94,17 @@ export default function Blog() {
                                         Read More →
                                     </a>
                                 </div>
-                            </div>
+                            </motion.div>
                         ))}
-
-                    </div>
+                    </motion.div>
 
                     {/* Pagination */}
-                    <div className="flex justify-center mt-20">
+                    <motion.div
+                        className="flex justify-center mt-20"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.5 }}
+                    >
                         <div className="flex items-center space-x-3">
                             <a href="#" className="px-5 py-2 bg-primary text-white font-medium rounded-full shadow hover:bg-gray-800 transition-all duration-300">1</a>
                             <a href="#" className="px-5 py-2 bg-gray-200 text-gray-700 font-medium rounded-full hover:bg-gray-300 transition-all duration-300">2</a>
@@ -89,11 +113,11 @@ export default function Blog() {
                                 Next →
                             </a>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
 
             <Footer />
         </>
-    )
+    );
 }

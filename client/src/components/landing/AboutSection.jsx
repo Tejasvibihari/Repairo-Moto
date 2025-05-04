@@ -27,7 +27,7 @@ export default function AboutSection() {
                         viewport={{ once: true }}
                     >
                         <img
-                            src='/images/Engine.jpg'
+                            src='/images/pic9.jpeg'
                             alt="Mechanic Working"
                             className="rounded shadow-lg w-full h-40 sm:h-48 md:h-60 object-cover"
                         />
@@ -45,7 +45,7 @@ export default function AboutSection() {
                         viewport={{ once: true }}
                     >
                         <img
-                            src='/images/bike1.jpg'
+                            src='/images/pic7.jpeg'
                             alt="Bike"
                             className="rounded shadow-lg w-full h-40 sm:h-48 md:h-56 object-cover"
                         />

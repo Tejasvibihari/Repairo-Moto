@@ -5,12 +5,12 @@ import { X, Heart, Download, Share2, MessageCircle } from 'lucide-react';
 const mockImages = [
     {
         id: 1,
-        src: '/api/placeholder/400/300',
+        src: '/images/pic1.jpeg',
         alt: 'Gallery Image 1',
         user: 'John Doe',
         likes: 124,
         comments: 12,
-        aspectRatio: 4 / 3
+      
     },
     {
         id: 2,
