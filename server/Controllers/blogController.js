@@ -41,3 +41,21 @@ export const getAllBlogs = async (req, res) => {
         res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
+
+
+export const getBlogById = async (req, res) => {
+    try {
+        const blogId = req.params.id;
+
+        const blog = await Blog.findById(blogId);
+
+        if (!blog) {
+            return res.status(404).json({ message: "Blog not found" });
+        }
+
+        res.status(200).json(blog);
+    } catch (error) {
+        console.error("Error fetching blog by ID:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};

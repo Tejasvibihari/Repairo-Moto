@@ -5,6 +5,7 @@ import Footer from "../../components/landing/Footer";
 import { useEffect, useState } from "react";
 import axiosClient from "../../service/axiosClient";
 import CircularLoading from "../../components/ui/CircularLoading";
+import { Link } from "react-router-dom";
 export default function Blog() {
     const [loading, setLoading] = useState(false)
     const [allBlogs, setAllBlogs] = useState()
@@ -23,14 +24,7 @@ export default function Blog() {
         }
         fetchBlogs()
     }, [])
-    // Function to truncate text to a specified number of words
-    // function truncateText(text, maxWords) {
-    //     const words = text.split(' ');
-    //     if (words.length <= maxWords) {
-    //         return text;
-    //     }
-    //     return words.slice(0, maxWords).join(' ') + '...';
-    // }
+
     const stripHtml = (html) => {
         const div = document.createElement("div");
         div.innerHTML = html;
@@ -101,12 +95,12 @@ export default function Blog() {
                                         <p className="text-gray-600 mb-6 leading-relaxed">
                                             {truncateHtmlText(blog.content || '', 100)}
                                         </p>
-                                        <a
-                                            href={`/blog/${blog._id}`}
+                                        <Link
+                                            to={`/blog/${blog._id}`}
                                             className="inline-block bg-primary hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold transition-all duration-300"
                                         >
                                             Read More →
-                                        </a>
+                                        </Link>
                                     </div>
                                 </div>
                             ))
