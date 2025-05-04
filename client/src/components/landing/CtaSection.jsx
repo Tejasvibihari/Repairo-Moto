@@ -3,38 +3,35 @@ import { motion } from 'framer-motion';
 
 export default function CTASection() {
     return (
-        <section className="bg-primary text-white py-16 px-4 text-center overflow-hidden">
+        <section className="relative bg-white text-center py-20 px-6 overflow-hidden">
+            {/* Gradient Shapes */}
+            <div className="absolute top-0 left-0 w-72 h-72 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full blur-3xl opacity-30 -translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 right-0 w-72 h-72 bg-gradient-to-br from-yellow-400 to-puyellow rple-600 rounded-full blur-3xl opacity-30 translate-x-1/3 translate-y-1/3" />
+
             <motion.div
-                className="max-w-3xl mx-auto"
-                initial={{ opacity: 0, y: 50 }}
+                className="relative z-10 max-w-3xl mx-auto"
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: 'easeOut' }}
                 viewport={{ once: true }}
             >
-                <motion.h2
-                    className="text-3xl md:text-4xl font-bold mb-4"
-                    initial={{ scale: 0.95 }}
-                    whileInView={{ scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                >
-                    Need Instant Bike Service at Your Doorstep?
-                </motion.h2>
+                <p className="text-sm font-medium text-yellow-600 bg-yellow-100 inline-block px-3 py-1 rounded-full mb-4">
+                    Doorstep Bike Repairs
+                </p>
 
-                <motion.p
-                    className="text-lg md:text-xl mb-8"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                >
+                <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+                    Need Instant Bike Service at Your Doorstep?
+                </h2>
+
+                <p className="text-gray-600 text-lg md:text-xl mb-8">
                     Book a mechanic now and experience quick, reliable, and affordable two-wheeler repair!
-                </motion.p>
+                </p>
 
                 <motion.a
                     href="/contact"
-                    className="bg-white text-primary font-semibold px-8 py-3 rounded-full hover:bg-gray-100 transition duration-300 inline-block"
+                    className="bg-primary text-white font-semibold px-8 py-3 rounded-full hover:bg-secondary transition duration-300 inline-block shadow-lg"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
                 >
                     Book Now
                 </motion.a>

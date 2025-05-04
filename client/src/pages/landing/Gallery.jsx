@@ -13,7 +13,7 @@ export default function Gallery() {
   const bikes = [
     {
       id: 1,
-      imageUrl: "/images/Royalbike.jpg",
+      imageUrl: "/images/pic1.jpeg",
       title: "Royal Enfield Classic 350",
       engine: "349cc",
       price: "₹1.90 Lakh",
@@ -23,7 +23,7 @@ export default function Gallery() {
     },
     {
       id: 2,
-      imageUrl: "/images/Royalbike.jpg",
+      imageUrl: "/images/pic2.jpeg",
       title: "Yamaha R15 V4",
       engine: "155cc",
       price: "₹1.82 Lakh",
@@ -33,7 +33,7 @@ export default function Gallery() {
     },
     {
       id: 3,
-      imageUrl: "/images/Engine.jpg",
+      imageUrl: "/images/pic3.jpeg",
       title: "Hero Splendor Plus",
       engine: "97.2cc",
       price: "₹75,000",
@@ -43,7 +43,7 @@ export default function Gallery() {
     },
     {
       id: 4,
-      imageUrl: "/images/Engine.jpg",
+      imageUrl: "/images/pic4.jpeg",
       title: "Ather 450X",
       engine: "Electric",
       price: "₹1.26 Lakh",
@@ -53,7 +53,7 @@ export default function Gallery() {
     },
     {
       id: 5,
-      imageUrl: "/images/bike1.jpg",
+      imageUrl: "/images/pic5.jpeg",
       title: "Bajaj Pulsar NS200",
       engine: "199.5cc",
       price: "₹1.48 Lakh",
@@ -63,7 +63,7 @@ export default function Gallery() {
     },
     {
       id: 6,
-      imageUrl: "/images/bike1.jpg",
+      imageUrl: "/images/pic6.jpeg",
       title: "KTM Duke 390",
       engine: "373.2cc",
       price: "₹2.97 Lakh",
@@ -73,7 +73,7 @@ export default function Gallery() {
     },
     {
       id: 7,
-      imageUrl: "/images/bike1.jpg",
+      imageUrl: "/images/pic7.jpeg",
       title: "Honda CB Shine",
       engine: "124cc",
       price: "₹77,000",
@@ -83,7 +83,7 @@ export default function Gallery() {
     },
     {
       id: 8,
-      imageUrl: "/images/bike1.jpg",
+      imageUrl: "/images/pic8.jpeg",
       title: "TVS Apache RTR 160",
       engine: "159.7cc",
       price: "₹1.10 Lakh",
@@ -93,7 +93,7 @@ export default function Gallery() {
     },
     {
       id: 9,
-      imageUrl: "/images/bike1.jpg",
+      imageUrl: "/images/pic9.jpeg",
       title: "Suzuki Gixxer SF 250",
       engine: "249cc",
       price: "₹1.85 Lakh",
@@ -103,7 +103,7 @@ export default function Gallery() {
     },
     {
       id: 10,
-      imageUrl: "/images/bike1.jpg",
+      imageUrl: "/images/pic10.jpeg",
       title: "Kawasaki Ninja 300",
       engine: "296cc",
       price: "₹3.40 Lakh",
