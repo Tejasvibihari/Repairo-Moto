@@ -25,7 +25,7 @@ export default function BlogTable({ blogs }) {
                                 <td className="px-3 py-2">{index + 1}</td>
                                 <td className="px-3 py-2">{blog.title}</td>
                                 <td className="px-3 py-2">
-                                    <img src={`${import.meta.env.VITE_API_URL}/${blog.banner}`} alt={blog.banner} className="w-16 h-10 object-cover rounded" />
+                                    <img src={`${import.meta.env.VITE_API_URL}${blog.banner}`} alt={blog.banner} className="w-16 h-10 object-cover rounded" />
                                 </td>
                                 <td className="px-3 py-2">{blog.author}</td>
                                 <td className="px-3 py-2">

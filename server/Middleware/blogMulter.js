@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 
 // Ensure the uploads/blog directory exists
-const uploadDir = path.resolve("uploads/blog");
+const uploadDir = path.resolve("uploads/blogs");
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }

@@ -2,25 +2,45 @@ import NavBar from "../../components/ui/NavBar";
 import Breadcrumbs from "../../components/ui/Breadcrumbs";
 import { Calendar, User } from 'lucide-react';
 import Footer from "../../components/landing/Footer";
-
+import { useEffect, useState } from "react";
+import axiosClient from "../../service/axiosClient";
+import CircularLoading from "../../components/ui/CircularLoading";
 export default function Blog() {
+    const [loading, setLoading] = useState(false)
+    const [allBlogs, setAllBlogs] = useState()
 
-
-    // Function to truncate text to a specified number of words
-    function truncateText(text, maxWords) {
-        const words = text.split(' ');
-        if (words.length <= maxWords) {
-            return text;
+    useEffect(() => {
+        const fetchBlogs = async () => {
+            try {
+                setLoading(true);
+                const response = await axiosClient.get("/api/admin/blog/getallblog")
+                console.log(response.data.blogs)
+                setAllBlogs(response.data.blogs)
+                setLoading(false);
+            } catch (error) {
+                console.log(error)
+            }
         }
-        return words.slice(0, maxWords).join(' ') + '...';
-    }
-   
-    const posts = [
-        { id: 1, img: '/images/tery.webp', title: 'Blog Image Post' },
-        { id: 2, img: '/images/bikerepair.jpg', title: 'Second Gallery Post' },
-        { id: 3, img: '/images/helmet.webp', title: 'Motorcycle Safety Tips' }
-    ];
+        fetchBlogs()
+    }, [])
+    // Function to truncate text to a specified number of words
+    // function truncateText(text, maxWords) {
+    //     const words = text.split(' ');
+    //     if (words.length <= maxWords) {
+    //         return text;
+    //     }
+    //     return words.slice(0, maxWords).join(' ') + '...';
+    // }
+    const stripHtml = (html) => {
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        return div.textContent || div.innerText || "";
+    };
 
+    const truncateHtmlText = (html, length) => {
+        const plainText = stripHtml(html);
+        return plainText.length > length ? plainText.slice(0, length) + '...' : plainText;
+    };
     return (
         <>
             <NavBar />
@@ -46,36 +66,54 @@ export default function Blog() {
                 <div className="container mx-auto p-10">
                     <div className="max-w-6xl mx-auto grid gap-16">
                         {/* Blog Posts Loop */}
-                        {posts.map((post, idx) => (
-                            <div key={idx} className="flex flex-col md:flex-row items-center  shadow-md rounded-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
-                                <div className="md:w-2/5 w-full overflow-hidden">
-                                    <img
-                                        src={post.img}
-                                        alt={post.title}
-                                        className="w-full h-64 object-cover transform hover:scale-105 transition-transform duration-500 ease-in-out"
-                                    />
-                                </div>
-                                <div className="p-8 md:w-3/5 w-full">
-                                    <div className="flex items-center text-gray-500 text-sm mb-4 gap-6">
-                                        <div className="flex items-center gap-2">
-                                            <User size={18} />
-                                            <span>BY: ADMIN</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Calendar size={18} />
-                                            <span>27 FEB 2022</span>
-                                        </div>
-                                    </div>
-                                    <h3 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">{post.title}</h3>
-                                    <p className="text-gray-600 mb-6 leading-relaxed">
-                                        {truncateText(`Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.`, 100)}
-                                    </p>
-                                    <a href={`/blog/${post.id}`} className="inline-block bg-primary hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold transition-all duration-300">
-                                        Read More →
-                                    </a>
-                                </div>
+                        {loading ? (
+                            <div className="flex justify-center items-center min-h-[200px]">
+                                <CircularLoading />
                             </div>
-                        ))}
+                        ) : allBlogs && allBlogs.length > 0 ? (
+                            allBlogs.map((blog, idx) => (
+                                <div key={idx} className="flex flex-col md:flex-row items-center shadow-md rounded-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300 mb-6">
+                                    <div className="md:w-2/5 w-full overflow-hidden">
+                                        <img
+                                            src={`${import.meta.env.VITE_API_URL}${blog.banner}`}
+                                            alt={blog.title}
+                                            className="w-full h-64 object-cover transform hover:scale-105 transition-transform duration-500 ease-in-out"
+                                        />
+                                    </div>
+                                    <div className="p-8 md:w-3/5 w-full">
+                                        <div className="flex items-center text-gray-500 text-sm mb-4 gap-6">
+                                            <div className="flex items-center gap-2">
+                                                <User size={18} />
+                                                <span>BY: {blog.author}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Calendar size={18} />
+                                                <span>
+                                                    {new Date(blog.updatedAt).toLocaleDateString('en-GB', {
+                                                        day: '2-digit',
+                                                        month: 'short',
+                                                        year: 'numeric',
+                                                    })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <h3 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">{blog.title}</h3>
+                                        <p className="text-gray-600 mb-6 leading-relaxed">
+                                            {truncateHtmlText(blog.content || '', 100)}
+                                        </p>
+                                        <a
+                                            href={`/blog/${blog._id}`}
+                                            className="inline-block bg-primary hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold transition-all duration-300"
+                                        >
+                                            Read More →
+                                        </a>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center text-gray-500 text-lg font-medium py-8">No Blogs Found</div>
+                        )}
+
 
                     </div>
 
@@ -91,7 +129,7 @@ export default function Blog() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             <Footer />
         </>

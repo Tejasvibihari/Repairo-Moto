@@ -14,7 +14,6 @@ export default function BlogEditor({ title, setTitle, content, setContent, banne
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
     const handleEditorChange = (newContent) => {
         setContent(newContent); // update actual state!
-        // setContent(newContent);
         console.log(editorContent)
     };
 
