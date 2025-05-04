@@ -116,14 +116,13 @@ export default function AboutUs() {
                                         className="text-gray-600 leading-relaxed mb-4 text-left sm:text-justify px-4 sm:px-0"
                                         variants={fadeIn}
                                     >
-                                        Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                                        Founded with a passion for two-wheelers, Repairo Moto began as a humble initiative to make bike servicing more accessible and customer-friendly. We noticed the gap in reliable doorstep bike repair services and took the initiative to bridge it by providing expert mechanics at your convenience.
                                     </motion.p>
                                     <motion.p
                                         className="text-gray-600 leading-relaxed text-left sm:text-justify px-4 sm:px-0"
                                         variants={fadeIn}
                                     >
-                                        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.
-                                        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.
+                                        Over the years, Repairo Moto has grown into a trusted name for bike repairs, maintenance, and emergency breakdown support. Our commitment to transparency, affordability, and professional care has earned us the trust of hundreds of riders. We continue to expand our services, driven by the belief that every bike deserves the best care—wherever you are.
                                     </motion.p>
                                 </div>
                             </div>
@@ -243,16 +242,10 @@ export default function AboutUs() {
                                     DUSTIN MOCK
                                 </motion.h3>
                                 <motion.p
-                                    className="text-gray-500 mb-4"
-                                    variants={fadeIn}
-                                >
-                                    Chief Engineer
-                                </motion.p>
-                                <motion.p
                                     className="italic text-gray-600 mb-6 text-center"
                                     variants={fadeIn}
                                 >
-                                    Lorem ipsum dolor sit amet, consectetur adipisic elit, sed do eiusmod tempor incid ut labore et dolore magna aliqua.
+                                    Repairo Moto saved my day when my bike broke down on the way to work. Their mechanic arrived quickly and fixed everything on the spot. Truly reliable service!
                                 </motion.p>
                                 <motion.div
                                     className="flex items-center justify-center"
@@ -293,17 +286,12 @@ export default function AboutUs() {
                                 >
                                     ELMER SCHMIDT
                                 </motion.h3>
-                                <motion.p
-                                    className="text-gray-500 mb-4"
-                                    variants={fadeIn}
-                                >
-                                    Chief Engineer
-                                </motion.p>
+                               
                                 <motion.p
                                     className="italic text-gray-600 mb-6 text-center"
                                     variants={fadeIn}
                                 >
-                                    Lorem ipsum dolor sit amet, consectetur adipisic elit, sed do eiusmod tempor incid ut labore et dolore magna aliqua.
+                                    I’ve tried several bike service platforms, but Repairo Moto stands out with its fast response, skilled technicians, and honest pricing. Highly recommended!
                                 </motion.p>
                                 <motion.div
                                     className="flex items-center justify-center"
@@ -345,16 +333,10 @@ export default function AboutUs() {
                                     AZUL BALDWIN
                                 </motion.h3>
                                 <motion.p
-                                    className="text-gray-500 mb-4"
-                                    variants={fadeIn}
-                                >
-                                    Chief Engineer
-                                </motion.p>
-                                <motion.p
                                     className="italic text-gray-600 mb-6 text-center"
                                     variants={fadeIn}
                                 >
-                                    Lorem ipsum dolor sit amet, consectetur adipisic elit, sed do eiusmod tempor incid ut labore et dolore magna aliqua.
+                                    Booking a service with Repairo Moto is so easy! Their technician came to my home, explained everything clearly, and completed the repair quickly. Great value for money.
                                 </motion.p>
                                 <motion.div
                                     className="flex items-center justify-center"
@@ -372,6 +354,7 @@ export default function AboutUs() {
                         </motion.div>
                     </div>
                 </div>
+
 
                 {/* Vision and Mission Section */}
                 <div className="w-full bg-white py-16">
@@ -425,23 +408,15 @@ export default function AboutUs() {
                                     className="text-gray-700 mb-4"
                                     variants={fadeIn}
                                 >
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis,
-                                    pulvinar dapibus leo. Sed non mauris vitae erat consequat auctor eu in elit.
+                                    At Repairo Moto, our vision is to redefine bike service by offering a seamless, transparent, and tech-driven experience for every rider. We aim to become India's most trusted name for two-wheeler care.
                                 </motion.p>
                                 <motion.p
                                     className="text-gray-700 mb-6"
                                     variants={fadeIn}
                                 >
-                                    Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
-                                    Mauris in erat justo. Nullam ac urna eu felis dapibus condimentum sit amet a augue.
+                                    We believe your ride deserves the best care — from regular servicing to urgent repairs — and we're committed to making high-quality bike maintenance easy, accessible, and reliable.
                                 </motion.p>
-                                <motion.button
-                                    className="bg-primary text-white px-6 py-3 rounded transition duration-300"
-                                    whileHover={{ scale: 1.05, backgroundColor: "#e74c3c" }}
-                                    whileTap={{ scale: 0.95 }}
-                                >
-                                    Learn More
-                                </motion.button>
+                              
                             </motion.div>
                         </motion.div>
 
@@ -477,23 +452,15 @@ export default function AboutUs() {
                                     className="text-gray-700 mb-4"
                                     variants={fadeIn}
                                 >
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis,
-                                    pulvinar dapibus leo. Sed non mauris vitae erat consequat auctor eu in elit.
+                                    Repairo Moto’s mission is to deliver professional and affordable bike service at your doorstep or nearest partner garage. Our team of certified mechanics ensures that your two-wheeler stays in top condition.
                                 </motion.p>
                                 <motion.p
                                     className="text-gray-700 mb-6"
                                     variants={fadeIn}
                                 >
-                                    Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
-                                    Mauris in erat justo. Nullam ac urna eu felis dapibus condimentum sit amet a augue.
+                                    Through innovation, digital convenience, and dedicated service, we strive to eliminate the hassle from traditional repair experiences — making two-wheeler maintenance smooth and stress-free.
                                 </motion.p>
-                                <motion.button
-                                    className="bg-primary text-white px-6 py-3 rounded transition duration-300"
-                                    whileHover={{ scale: 1.05, backgroundColor: "#e74c3c" }}
-                                    whileTap={{ scale: 0.95 }}
-                                >
-                                    Learn More
-                                </motion.button>
+                               
                             </motion.div>
 
                             {/* Right Side - Image */}
@@ -515,6 +482,7 @@ export default function AboutUs() {
                         </motion.div>
                     </div>
                 </div>
+
             </div>
 
             {/* Footer */}

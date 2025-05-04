@@ -45,17 +45,17 @@ export default function ContactUs() {
                         <IconCard
                             icon={<Phone className="text-white" size={24} />}
                             title="Phone"
-                            text="0123456789"
+                            text="+91 9229207021"
                         />
                         <IconCard
                             icon={<Mail className="text-white" size={24} />}
                             title="Email"
-                            text="demo@example.com"
+                            text="Contact@repairomoto.in"
                         />
                         <IconCard
                             icon={<Home className="text-white" size={24} />}
                             title="Address"
-                            text="Your address goes here"
+                            text="5c/12 Manna Singh Lane, Vivekanand Marg, North S.K Puri, Boring Road, Patna - 13"
                         />
                         <IconCard
                             icon={<Clock className="text-white" size={24} />}
