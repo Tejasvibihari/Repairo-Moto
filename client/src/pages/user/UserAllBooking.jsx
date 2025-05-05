@@ -8,6 +8,7 @@ import axiosClient from '../../service/axiosClient';
 import { useSelector } from 'react-redux';
 import CircularLoading from '../../components/ui/CircularLoading';
 import AlertSnackBar from '../../components/ui/AlertSnackBar';
+import { Link } from 'react-router-dom';
 
 
 export default function UserAllBooking() {
@@ -128,7 +129,7 @@ export default function UserAllBooking() {
 
                 <div className="grid gap-4 md:grid-cols-2">
                     {loading ? (
-                        <CircularLoading />
+                        <div className='flex items-center justify-center my-10'><CircularLoading /></div>
                     ) : allOrder.length === 0 ? (
                         <div className="text-center text-gray-500 mt-10 text-lg font-medium">
                             No Order Found
@@ -164,13 +165,12 @@ export default function UserAllBooking() {
 
                                     {/* Action buttons */}
                                     <div className="flex justify-between gap-2 mt-2">
-                                        <button
-                                            onClick={() => viewDetails(bike.id)}
+                                        <Link to={`/user-booking/${bike._id}`}
                                             className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium w-1/2"
                                         >
                                             <FileText size={16} className="mr-1" />
                                             View Details
-                                        </button>
+                                        </Link>
                                         {bike.status === "Pending" ? (
                                             <button
                                                 onClick={() => handleOrderCancel(bike._id)}
@@ -195,7 +195,7 @@ export default function UserAllBooking() {
                         ))
                     )}
                 </div>
-            </div>
+            </div >
             <Footer />
         </>
     );

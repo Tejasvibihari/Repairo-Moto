@@ -22,8 +22,7 @@ import axiosClient from '../service/axiosClient';
 import { Divider } from '@mui/material';
 import CircularLoading from './ui/CircularLoading';
 import { useSelector } from 'react-redux';
-import { motion } from "framer-motion";
-import Breadcrumbs from './ui/Breadcrumbs';
+
 
 export default function UserBookingForm() {
     const user = useSelector((state) => state.user.user);
@@ -142,24 +141,7 @@ export default function UserBookingForm() {
     }
     return (
         <>
-            <motion.div
-                className="relative bg-cover bg-center h-72 flex items-center justify-center text-white"
-                style={{ backgroundImage: "url('/images/Breadcrums.png')" }}
-                initial={{ opacity: 0, y: -50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-            >
-                <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/20 z-0" />
-                <div className="relative z-10 text-center">
-                    <h2 className="text-4xl md:text-5xl font-extrabold mb-3 capitalize tracking-wide">Our Blog</h2>
-                    <Breadcrumbs
-                        items={[
-                            { label: 'Home', href: '/' },
-                            { label: 'Blog' },
-                        ]}
-                    />
-                </div>
-            </motion.div>
+           
             <AlertSnackBar
                 open={snackBarOpen}
                 message={snackBarMessage}
