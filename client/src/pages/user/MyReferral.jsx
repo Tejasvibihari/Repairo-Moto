@@ -64,7 +64,7 @@ export default function MyReferral() {
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
                             <div className="flex items-center mb-4 md:mb-0">
                                 <div className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg font-medium">
-                                    {/* Total Referrals: {referrals.length} */}
+                                    Total Referrals: {allUser?.length}
                                 </div>
                             </div>
                         </div>

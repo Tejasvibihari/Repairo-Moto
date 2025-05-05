@@ -1,5 +1,6 @@
 import express from "express";
-import { createUser, getAllUser, getAllUserByReferralCode, usrSignIn } from "../Controllers/userController.js";
+import { createUser, getAllUser, getAllUserByReferralCode, updateUser, usrSignIn } from "../Controllers/userController.js";
+import { userUpload } from "../Middleware/userMulter.js";
 
 
 const router = express.Router();
@@ -10,6 +11,6 @@ router.get("/getalluser", getAllUser);
 
 
 router.get("/getalluser/:referalcode", getAllUserByReferralCode);
-
+router.put('/update-profile/:userId', userUpload.single('profileImage'), updateUser)
 
 export default router;

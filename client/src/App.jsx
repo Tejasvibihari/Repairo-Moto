@@ -61,6 +61,7 @@ import UserQrCode from './pages/user/UserQrCode';
 import UserAllBooking from './pages/user/UserAllBooking';
 import UserBookingDetail from './pages/user/UserBookingDetail';
 import MyReferral from './pages/user/MyReferral';
+import UserProfile from './pages/user/UserProfile';
 
 
 
@@ -114,6 +115,9 @@ export default function App() {
           </UserPrivateRoute>} />
           <Route path="/user-referral" element={<UserPrivateRoute>
             <MyReferral />
+          </UserPrivateRoute>} />
+          <Route path="/user/profile" element={<UserPrivateRoute>
+            <UserProfile />
           </UserPrivateRoute>} />
 
 

@@ -40,6 +40,14 @@ export default function UserDashboard() {
             icon: <BookOpen size={24} />,
             color: "bg-red-500",
             link: "/user-order-booking"
+        },
+        {
+            id: "profile",
+            title: "My Account",
+            description: "Schedule a new appointment",
+            icon: <BookOpen size={24} />,
+            color: "bg-red-500",
+            link: "/user/profile"
         }
     ];
 
@@ -67,9 +75,9 @@ export default function UserDashboard() {
                     />
                 </div>
             </div>
-            <div className="p-6 max-w-4xl mx-auto my-8">
+            <div className="p-6 max-w-5xl mx-auto my-8">
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {cards.map((card) => (
                         <Link to={card.link}
                             key={card.id}
