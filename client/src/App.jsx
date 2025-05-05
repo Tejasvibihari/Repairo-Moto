@@ -60,6 +60,7 @@ import UserPrivateRoute from './components/routes/UserPrivateRoute';
 import UserQrCode from './pages/user/UserQrCode';
 import UserAllBooking from './pages/user/UserAllBooking';
 import UserBookingDetail from './pages/user/UserBookingDetail';
+import MyReferral from './pages/user/MyReferral';
 
 
 
@@ -85,7 +86,7 @@ export default function App() {
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
           <Route path='/user-signup' element={<UserSignUp />} />
-          <Route path="/user-signup/:referralType/:referralId" element={<UserSignUp />} />
+          <Route path="/user-signup/:referralId" element={<UserSignUp />} />
           <Route path="/user-signin" element={<UserSigin />} />
 
           <Route path="/order/invoice/:id" element={<InvoiceTemplate />} />
@@ -110,6 +111,9 @@ export default function App() {
           </UserPrivateRoute>} />
           <Route path="/user-booking/:id" element={<UserPrivateRoute>
             <UserBookingDetail />
+          </UserPrivateRoute>} />
+          <Route path="/user-referral" element={<UserPrivateRoute>
+            <MyReferral />
           </UserPrivateRoute>} />
 
 

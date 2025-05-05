@@ -65,7 +65,7 @@ export default function QrTable({ onGenerateQR }) {
                                 </td> */}
                                 <td className="px-3 py-2 flex gap-2 flex-wrap justify-center">
                                     <button
-                                        onClick={() => onGenerateQR(`http://localhost:5173/user-signup/${item.role}/${item.referralCode}`)}
+                                        onClick={() => onGenerateQR(`http://localhost:5173/user-signup/${item.referralCode}`)}
                                         className="flex items-center justify-center bg-transparent text-green-600 py-2 rounded-md px-3 cursor-pointer hover:bg-green-600 hover:text-white border border-green-600">
                                         <Trash2 size={18} className="mr-0 md:mr-2" />
                                         <span className="hidden md:inline">Generate Qr</span>

@@ -43,7 +43,7 @@ export default function UserQrCode() {
                         <h1 className="text-2xl font-bold text-gray-800">Share Your Referral Code</h1>
                         <p className="text-gray-600 mt-2">Invite friends and earn rewards when they join!</p>
                     </div>
-                    <QRGenerator text={`${import.meta.env.VITE_API_URL}/user-signup/user/${user.referralCode}`} />
+                    <QRGenerator text={`${import.meta.env.VITE_API_URL}/user-signup/${user.referralCode}`} />
 
 
                     {/* Referral Link */}

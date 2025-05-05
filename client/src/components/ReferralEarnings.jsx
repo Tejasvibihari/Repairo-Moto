@@ -9,8 +9,8 @@ export default function ReferralEarnings() {
     const vendor = useSelector((state) => state.vendorAuth.vendor)
     console.log(vendor)
     const referralCode = "FRIEND25XYZ";
-    const employeeReferralUrl = `${import.meta.env.VITE_API_URL}/user-signup/employee/${employee.referralCode}`;
-    const vendorReferralUrl = `${import.meta.env.VITE_API_URL}/user-signup/vendor/${vendor.referralCode}`;
+    const employeeReferralUrl = `${import.meta.env.VITE_API_URL}/user-signup/${employee.referralCode}`;
+    const vendorReferralUrl = `${import.meta.env.VITE_API_URL}/user-signup/${vendor.referralCode}`;
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(referralCode);

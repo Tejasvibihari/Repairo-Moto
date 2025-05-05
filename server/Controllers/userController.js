@@ -155,3 +155,25 @@ export const getAllUser = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+
+export const getAllUserByReferralCode = async (req, res) => {
+    try {
+        const { referalcode } = req.params;
+
+        if (!referalcode) {
+            return res.status(400).json({ success: false, message: "Referral code is required." });
+        }
+
+        const users = await User.find({ referredBy: referalcode });
+
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            data: users
+        });
+    } catch (error) {
+        console.error("Error fetching referred users:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};

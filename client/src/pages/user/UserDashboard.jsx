@@ -22,7 +22,8 @@ export default function UserDashboard() {
             title: "My Referrals",
             description: "Track your referrals and rewards",
             icon: <UserPlus size={24} />,
-            color: "bg-green-500"
+            color: "bg-green-500",
+            link: "/user-referral"
         },
         {
             id: "qrcode",

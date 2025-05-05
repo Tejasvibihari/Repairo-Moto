@@ -10,7 +10,7 @@ import CircularLoading from '../ui/CircularLoading';
 
 
 export default function UserSignUpForm() {
-    const { referralType, referralId } = useParams();
+    const { referralId } = useParams();
     const loading = useSelector((state) => state.user.loading);
     const error = useSelector((state) => state.user.error);
     const dispatch = useDispatch();
@@ -21,7 +21,6 @@ export default function UserSignUpForm() {
         email: '',
         password: '',
         referredBy: referralId || '',
-        referralType,
         accountType: 'personal', // Default to personal
         businessName: '',
         address: '',
