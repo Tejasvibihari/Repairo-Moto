@@ -157,7 +157,7 @@ export default function OrderCard({ booking }) {
                     <div>
                         <p className="text-xs text-gray-500">Customer</p>
                         <p className="text-sm font-semibold" style={{ color: primaryColor }}>{name || 'N/A'}</p>
-                        <p className="text-xs text-gray-500">{contactNo || 'No phone number'}</p>
+                        {/* <p className="text-xs text-gray-500">{contactNo || 'No phone number'}</p> */}
                     </div>
                 </div>
 
