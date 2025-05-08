@@ -5,6 +5,8 @@ import VendorOrder from "../Models/vendorOrderModel.js";
 // @desc Create a new service booking
 // @route POST /api/bookings
 // @access Public
+
+
 export const createManualOrder = async (req, res) => {
     try {
         const {
@@ -23,12 +25,34 @@ export const createManualOrder = async (req, res) => {
             issues
         } = req.body;
 
-        // Basic validation (can be enhanced)
         if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime || !estimatedBudget) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
 
+        // Format today's date as DDMMYY
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const yy = String(now.getFullYear()).slice(-2);
+        const todayFormatted = `${dd}${mm}${yy}`;
+
+        // Get the latest order for today
+        const latestOrder = await Order.findOne({ orderId: { $regex: `^ORD-${todayFormatted}` } })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        let serial = 1;
+        if (latestOrder && latestOrder.orderId) {
+            const parts = latestOrder.orderId.split('-');
+            if (parts.length === 3) {
+                serial = parseInt(parts[2], 10) + 1;
+            }
+        }
+
+        const orderId = `ORD-${todayFormatted}-${String(serial).padStart(3, '0')}`;
+
         const newOrder = new Order({
+            orderId,
             name,
             contactNo,
             city,
@@ -45,6 +69,7 @@ export const createManualOrder = async (req, res) => {
         });
 
         const savedOrder = await newOrder.save();
+
         return res.status(201).json({
             message: 'Order Confirmed!',
             data: savedOrder
@@ -55,6 +80,7 @@ export const createManualOrder = async (req, res) => {
         return res.status(500).json({ message: 'Server error while creating Order' });
     }
 };
+
 
 // (Optional) @desc Get all bookings
 export const getAllBookings = async (req, res) => {
@@ -386,7 +412,6 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
     }
 };
 
-
 export const userOrder = async (req, res) => {
     try {
         const {
@@ -407,12 +432,34 @@ export const userOrder = async (req, res) => {
             issues
         } = req.body;
 
-        // Basic validation (can be enhanced)
         if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime || !estimatedBudget) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
 
+        // Format today's date as DDMMYY
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yy = String(now.getFullYear()).slice(-2);
+        const todayFormatted = `${dd}${mm}${yy}`;
+
+        // Get latest order with today's date in orderId
+        const latestOrder = await Order.findOne({ orderId: { $regex: `^ORD-${todayFormatted}` } })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        let serial = 1;
+        if (latestOrder && latestOrder.orderId) {
+            const parts = latestOrder.orderId.split('-');
+            if (parts.length === 3) {
+                serial = parseInt(parts[2], 10) + 1;
+            }
+        }
+
+        const orderId = `ORD-${todayFormatted}-${String(serial).padStart(3, '0')}`;
+
         const newOrder = new Order({
+            orderId,
             userId,
             name,
             contactNo,
@@ -431,6 +478,7 @@ export const userOrder = async (req, res) => {
         });
 
         const savedOrder = await newOrder.save();
+
         return res.status(201).json({
             message: 'Order Confirmed!',
             data: savedOrder

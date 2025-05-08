@@ -26,7 +26,9 @@ import { useSelector } from 'react-redux';
 
 export default function UserBookingForm() {
     const user = useSelector((state) => state.user.user);
-    console.log(user._id)
+    const [location, setLocation] = useState({ lat: '', lng: '' });
+    const [locationError, setLocationError] = useState('');
+    console.log('Location:', location);
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
@@ -50,7 +52,24 @@ export default function UserBookingForm() {
         estimatedBudget: '',
         issues: '',
     });
-
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    setLocation({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                },
+                error => {
+                    setLocationError('Unable to retrieve location.');
+                    console.error(error);
+                }
+            );
+        } else {
+            setLocationError('Geolocation is not supported by this browser.');
+        }
+    }, []);
     useEffect(() => {
         const getBrands = async () => {
             try {
@@ -98,8 +117,10 @@ export default function UserBookingForm() {
             setSnackBarOpen(true); // Open the Snackbar
             setLoading(false); // Stop loading state
             setFormData({
+                userId: user._id,
                 name: '',
                 contactNo: '',
+                email: user.email,
                 city: 'Patna',
                 selectedBrand: '',
                 selectedModel: '',

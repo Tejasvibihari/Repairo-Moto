@@ -17,7 +17,7 @@ export default function DeliveryOrderCard({ order, vendor }) {
         <div className="max-w-md mx-auto bg-white rounded-xl overflow-hidden shadow-lg">
             {/* Card Header */}
             <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4">
-                <h2 className="text-xl font-bold text-white">{vendor.businessName}</h2>
+                <h2 className="text-xl font-bold text-white">{vendor?.businessName}</h2>
                 <p className="text-white text-opacity-80 text-sm">Order Details</p>
             </div>
 
@@ -29,12 +29,12 @@ export default function DeliveryOrderCard({ order, vendor }) {
                 </div>
 
                 <div className="ml-7 space-y-2 text-sm">
-                    <p className="font-medium">{vendor.firstName} {vendor.lastName}</p>
+                    <p className="font-medium">{vendor?.firstName} {vendor?.lastName}</p>
 
                     <div className="flex items-center">
                         <Phone className="text-gray-500 mr-2 h-4 w-4" />
-                        <a href={`tel:${vendor.phone}`} className="text-blue-600 hover:underline">
-                            {vendor.phone}
+                        <a href={`tel:${vendor?.phone}`} className="text-blue-600 hover:underline">
+                            {vendor?.phone}
                         </a>
                     </div>
 
@@ -44,7 +44,7 @@ export default function DeliveryOrderCard({ order, vendor }) {
                             onClick={handleLocationClick}
                             className="text-left text-blue-600 hover:underline"
                         >
-                            {vendor.address}, {vendor.city}, {vendor.state} - {vendor.pincode}
+                            {vendor?.address}, {vendor?.city}, {vendor?.state} - {vendor?.pincode}
                         </button>
                     </div>
                 </div>
@@ -87,7 +87,7 @@ export default function DeliveryOrderCard({ order, vendor }) {
             </div>
 
             {/* Vehicle Details */}
-            {/* <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-gray-200">
                 <div className="flex items-center mb-3">
                     <Package className="text-purple-500 mr-2 h-5 w-5" />
                     <h3 className="font-semibold">Vehicle Details</h3>
@@ -107,7 +107,7 @@ export default function DeliveryOrderCard({ order, vendor }) {
                         <span className="ml-1 font-medium">{order.cc}</span>
                     </div>
                 </div>
-            </div> */}
+            </div>
 
             {/* Parts Used Section */}
             <div className="p-4">
