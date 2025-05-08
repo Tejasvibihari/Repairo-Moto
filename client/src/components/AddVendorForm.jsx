@@ -16,6 +16,7 @@ export default function AddVendorForm() {
         address: '',
         city: '',
         state: '',
+        googleLocation: '',
         pincode: '',
         businessName: '', // New field
         gstNo: '', // New field
@@ -70,6 +71,7 @@ export default function AddVendorForm() {
                 city: '',
                 state: '',
                 pincode: '',
+                googleLocation: '',
                 businessName: '', // New field
                 gstNo: '', // New field
                 profileImage: null, // File input
@@ -220,6 +222,18 @@ export default function AddVendorForm() {
                             className="border-2 border-gray-300 rounded-md p-2 w-full"
                             required
                             placeholder="Pincode"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Google Location URL</label>
+                        <input
+                            type="text"
+                            name="googleLocation"
+                            value={formData.googleLocation}
+                            onChange={handleChange}
+                            className="border-2 border-gray-300 rounded-md p-2 w-full"
+                            required
+                            placeholder="Google Location URL"
                         />
                     </div>
 

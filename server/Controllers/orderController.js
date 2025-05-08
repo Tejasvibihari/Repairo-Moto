@@ -489,3 +489,33 @@ export const cancelOrder = async (req, res) => {
         res.status(500).json({ message: 'Server error while cancelling order' });
     }
 };
+
+export const getOrdersByPosition = async (req, res) => {
+    const { position, employeeId } = req.query; // or from req.params if using route params
+
+    if (!position || !employeeId) {
+        return res.status(400).json({ message: 'Position and employeeId are required.' });
+    }
+
+    try {
+        let filter = {};
+
+        switch (position.toLowerCase()) {
+            case 'delivery':
+                filter = { deliveryId: employeeId };
+                break;
+            case 'mechanic':
+                filter = { mechanicId: employeeId };
+                break;
+            default:
+                return res.status(400).json({ message: 'Invalid position provided.' });
+        }
+
+        const orders = await Order.find(filter);
+        res.status(200).json(orders);
+
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};

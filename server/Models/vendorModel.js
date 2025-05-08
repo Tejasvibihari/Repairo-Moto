@@ -32,6 +32,9 @@ const vendorSchema = new mongoose.Schema({
     pincode: {
         type: String,
     },
+    googleLocation: {
+        type: String,
+    },
     rating: {
         type: Number,
         default: 0,

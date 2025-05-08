@@ -7,13 +7,12 @@ export default function ReferralEarnings() {
     const [showQR, setShowQR] = useState(false);
     const employee = useSelector((state) => state.employeeAuth.employee)
     const vendor = useSelector((state) => state.vendorAuth.vendor)
-    console.log(vendor)
-    const referralCode = "FRIEND25XYZ";
+
     const employeeReferralUrl = `${import.meta.env.VITE_API_URL}/user-signup/${employee.referralCode}`;
     const vendorReferralUrl = `${import.meta.env.VITE_API_URL}/user-signup/${vendor.referralCode}`;
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(referralCode);
+        navigator.clipboard.writeText(vendor ? vendor.referralCode : employee.referralCode);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };

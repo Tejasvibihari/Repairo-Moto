@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 
 export const addVendor = async (req, res) => {
     try {
-        const { firstName, lastName, phone, email, address, city, state, pincode, gstNo, businessName } = req.body;
+        const { firstName, lastName, phone, email, address, city, state, pincode, gstNo, businessName, googleLocation } = req.body;
 
         // Validate required fields
         if (!firstName || !lastName || !phone || !email || !address || !city || !state || !pincode || !gstNo || !businessName) {
@@ -37,6 +37,7 @@ export const addVendor = async (req, res) => {
             city,
             state,
             pincode,
+            googleLocation,
             gstNo,
             businessName,
             profileImage,

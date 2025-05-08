@@ -27,6 +27,6 @@ export const employeeAuthSlice = createSlice({
         },
     },
 });
-export const { setEmployeeSignIn, setEmployeeSignOut, setLoading, setError } = employeeAuthSlice.actions;
+export const { setEmployeeSignIn, setEmployeeLogout, setLoading, setError } = employeeAuthSlice.actions;
 
 export default employeeAuthSlice.reducer;

@@ -53,7 +53,7 @@ const QRGenerator = ({ text }) => {
                         <QrCode size={100} className="text-gray-400 text-6xl" />
                     )}
                 </div>
-                {text && <div className="relative p-2 bg-gray-200 my-4 rounded-md">
+                {text && <div className="relative p-2 pr-8 bg-gray-200 my-4 rounded-md">
                     <div
                         className="absolute bottom-2 right-2 cursor-pointer text-gray-600 hover:text-gray-800"
                         onClick={() => {

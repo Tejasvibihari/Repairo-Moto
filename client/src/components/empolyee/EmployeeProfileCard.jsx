@@ -1,28 +1,18 @@
 import { User, MapPin, Phone, Mail, Star, Copy, CheckCheck } from "lucide-react";
 import { useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { setEmployeeLogout } from "../../app/slice/employeeAuth";
+import { setEmployeeSignOut } from "../../app/slice/authSlice";
 
 export default function EmployeeProfileCard() {
     const [copied, setCopied] = useState(false);
     const employee = useSelector((state) => state.employeeAuth.employee)
+    const dispatch = useDispatch()
 
-    // This would normally come from a context or props
-    // // Sample employee data from your JSON
-    // const employee = {
-    //     firstName: "Tejasvi",
-    //     lastName: "Kumar",
-    //     email: "tejasvi.90804@mygyanvihar.com",
-    //     phone: "06205731150",
-    //     address: "Shiv Nagar 2",
-    //     city: "Jaipur",
-    //     state: "Rajasthan",
-    //     pinCode: 302017,
-    //     rating: 0,
-    //     referralCode: "T115011",
-    //     profileImage: "/api/placeholder/150/150", // Using placeholder image
-    //     position: "employee"
-    // };
-
+    const employeeLogout = () => {
+        dispatch(setEmployeeLogout())
+        dispatch(setEmployeeSignOut())
+    }
     const copyReferralCode = () => {
         navigator.clipboard.writeText(employee.referralCode);
         setCopied(true);
@@ -151,10 +141,11 @@ export default function EmployeeProfileCard() {
                             Edit Profile
                         </button>
                         <button
-                            className="w-full sm:w-auto bg-white py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors duration-300 border"
+                            onClick={employeeLogout}
+                            className="w-full cursor-pointer sm:w-auto bg-white py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors duration-300 border"
                             style={{ borderColor: primaryColor, color: primaryColor }}
                         >
-                            View Performance
+                            Logout
                         </button>
                     </div>
                 </div>

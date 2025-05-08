@@ -4,13 +4,14 @@ import axiosClient from '../../service/axiosClient';
 import { useDispatch, useSelector } from 'react-redux';
 import CircularLoading from '../../components/ui/CircularLoading';
 import Heading from '../../components/ui/Heading';
+import DeliveryOrderCard from '../../components/empolyee/DeliveryOrderCard';
 
 
 export default function EmployeeBooking() {
     const employee = useSelector((state) => state.employeeAuth.employee)
-    console.log(employee._id);
     const [loading, setLoading] = useState(true)
     const [bookings, setBookings] = useState([])
+    const [vendors, setVendors] = useState([])
     // Sample booking data - replace with your actual data source
 
     const handleSaveParts = async (bookingId, updatedParts) => {
@@ -40,9 +41,12 @@ export default function EmployeeBooking() {
             try {
                 setLoading(true); // Set loading state to true
                 const response = await axiosClient.get(`/api/admin/order/getorder/${employee._id}`); // Use the employee's _id
+                const vendorResponse = await axiosClient.get(`/api/vendor/getallvendor`);
                 if (response.status === 200) {
-                    console.log("Bookings fetched successfully:", response);
                     setBookings(response.data.data); // Update the bookings state with the fetched data
+                    setVendors(vendorResponse.data.vendors); // Update the vendors state with the fetched data
+                    console.log(response.data.data)
+                    console.log(vendorResponse.data.vendors)
                 } else {
                     console.error("Failed to fetch bookings");
                 }
@@ -60,21 +64,33 @@ export default function EmployeeBooking() {
     }
     return (
         <div className="container mx-auto px-4 py-8">
-            {/* <h1 className="text-2xl font-bold mb-6">Recent Order</h1> */}
             <div className='my-4'>
                 <Heading heading="Recent Order" />
             </div>
+
             {/* Responsive grid layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                {bookings.map(booking => (
-                    <div key={booking.id} className="w-full">
-                        <AllBookingCard
-                            key={booking._id}
-                            booking={booking}
-                            onSaveParts={handleSaveParts}
-                        />
-                    </div>
-                ))}
+                {bookings.map((booking) => {
+                    const assignedVendor = vendors.find(v => v._id === booking.vendorId);
+
+                    return (
+                        <div key={booking._id} className="w-full">
+                            {employee.position === 'mechanic' && (
+                                <AllBookingCard
+                                    booking={booking}
+                                    onSaveParts={handleSaveParts}
+                                />
+                            )}
+
+                            {employee.position === 'delivery' && (
+                                <DeliveryOrderCard
+                                    order={booking}
+                                    vendor={assignedVendor}
+                                />
+                            )}
+                        </div>
+                    );
+                })}
             </div>
 
             {/* No bookings state */}
