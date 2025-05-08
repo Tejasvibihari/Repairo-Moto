@@ -7,11 +7,10 @@ export default function AllBookingCard({ booking, onSaveParts }) {
     const [parts, setParts] = useState([]);
     const [user, setUser] = useState(null);
     useEffect(() => {
-        const searchUserByMobile = async () => {
+        const searchUserByUserId = async () => {
             try {
-                const response = await axiosClient.get(`/api/admin/user/searchbymobile/${booking.contactNo}`);
+                const response = await axiosClient.get(`/api/user/get-user-by-id/${booking.userId}`);
                 if (response.status === 200) {
-                    console.log("Booking fetched successfully:", response.data.booking);
                     setUser(response.data.user);
                 } else {
                     console.error("Failed to fetch booking:", response.data.message);
@@ -20,7 +19,9 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                 console.error("Error fetching booking:", error.response?.data?.message || error.message);
             }
         }
-    })
+        searchUserByUserId();
+    }, [])
+    console.log(user, "user")
     useEffect(() => {
         if (booking && booking._id) {
             console.log("Booking data loaded:", booking);
@@ -98,7 +99,7 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                 <div className="flex flex-col md:flex-row">
                     <div className="w-full md:w-1/4 p-4 flex justify-center items-center">
                         <img
-                            src={booking.image}
+                            src={user?.profileImage ? `${import.meta.env.VITE_API_URL}/${user?.profileImage}` : '/profileplaceholder.png'}
                             alt={`${booking.name}'s bike`}
                             className="rounded-lg w-32 h-32 object-cover"
                         />

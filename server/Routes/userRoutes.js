@@ -1,5 +1,5 @@
 import express from "express";
-import { createUser, getAllUser, getAllUserByReferralCode, updateUser, usrSignIn } from "../Controllers/userController.js";
+import { createUser, getAllUser, getAllUserByReferralCode, getUserById, updateUser, usrSignIn } from "../Controllers/userController.js";
 import { userUpload } from "../Middleware/userMulter.js";
 
 
@@ -12,5 +12,6 @@ router.get("/getalluser", getAllUser);
 
 router.get("/getalluser/:referalcode", getAllUserByReferralCode);
 router.put('/update-profile/:userId', userUpload.single('profileImage'), updateUser)
+router.get('/get-user-by-id/:userId', getUserById)
 
 export default router;
