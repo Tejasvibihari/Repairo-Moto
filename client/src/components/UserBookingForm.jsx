@@ -26,6 +26,7 @@ import { useSelector } from 'react-redux';
 
 export default function UserBookingForm() {
     const user = useSelector((state) => state.user.user);
+    console.log(user._id)
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
@@ -33,6 +34,7 @@ export default function UserBookingForm() {
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
     const [loading, setLoading] = useState(false); // State to control loading spinner
     const [formData, setFormData] = useState({
+        userId: user._id,
         name: '',
         contactNo: '',
         email: user.email,
@@ -141,7 +143,7 @@ export default function UserBookingForm() {
     }
     return (
         <>
-           
+
             <AlertSnackBar
                 open={snackBarOpen}
                 message={snackBarMessage}

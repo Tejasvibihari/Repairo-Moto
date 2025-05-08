@@ -390,6 +390,7 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
 export const userOrder = async (req, res) => {
     try {
         const {
+            userId,
             name,
             contactNo,
             email,
@@ -412,6 +413,7 @@ export const userOrder = async (req, res) => {
         }
 
         const newOrder = new Order({
+            userId,
             name,
             contactNo,
             email,

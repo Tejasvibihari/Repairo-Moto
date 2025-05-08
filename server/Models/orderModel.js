@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+    },
     name: {
         type: String,
         required: true,
@@ -88,7 +93,7 @@ const orderSchema = new mongoose.Schema({
             partName: { type: String, required: true, trim: true },
             quantity: { type: Number, required: true, min: 1 },
             price: { type: Number, required: true, min: 0 },
-            discountPrice: { type: Number, default: 0, min: 0 }, // New field for discount price
+            discountPrice: { type: Number, default: 0, min: 0 },
         }
     ],
     serviceProvided: [

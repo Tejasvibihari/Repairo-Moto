@@ -5,7 +5,22 @@ import axiosClient from '../../service/axiosClient';
 export default function AllBookingCard({ booking, onSaveParts }) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [parts, setParts] = useState([]);
-
+    const [user, setUser] = useState(null);
+    useEffect(() => {
+        const searchUserByMobile = async () => {
+            try {
+                const response = await axiosClient.get(`/api/admin/user/searchbymobile/${booking.contactNo}`);
+                if (response.status === 200) {
+                    console.log("Booking fetched successfully:", response.data.booking);
+                    setUser(response.data.user);
+                } else {
+                    console.error("Failed to fetch booking:", response.data.message);
+                }
+            } catch (error) {
+                console.error("Error fetching booking:", error.response?.data?.message || error.message);
+            }
+        }
+    })
     useEffect(() => {
         if (booking && booking._id) {
             console.log("Booking data loaded:", booking);

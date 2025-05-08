@@ -2,7 +2,7 @@
 
 export default function BlogLivePreview({ title, content, banner }) {
     const currentDate = new Date().toLocaleDateString();
-    const bannerUrl = banner ? URL.createObjectURL(banner) : "./logo/logo72.png";
+    const bannerUrl = banner ? URL.createObjectURL(banner) : "/logo/logo72.png";
     return (
         <div className='shadow-sm border border-gray-300 rounded p-4'>
             <div className='p-4 border border-gray-300 rounded'>

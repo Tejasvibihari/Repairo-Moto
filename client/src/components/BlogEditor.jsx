@@ -120,10 +120,18 @@ export default function BlogEditor({ title, setTitle, content, setContent, banne
                         <label className="block text-sm font-medium mb-2" htmlFor="content">
                             Content
                         </label>
-                        <JoditEditor
+                        {/* <JoditEditor
                             ref={editor}
                             value={content}
                             onChange={handleEditorChange}
+                            config={{
+                                height: 350,
+                            }}
+                        /> */}
+                        <JoditEditor
+                            ref={editor}
+                            value={content}
+                            onBlur={handleEditorChange}
                             config={{
                                 height: 350,
                             }}

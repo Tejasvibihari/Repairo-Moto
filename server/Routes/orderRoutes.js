@@ -6,12 +6,12 @@ const router = express.Router();
 
 router.post("/manualorder", createManualOrder);
 router.post("/userorder", userOrder);
-router.get("/getallorder", authAdmin, getAllBookings);
-router.get("/getorderbyid/:id", authAdmin, getOrderById);
-router.put("/update/updateMechanic/:id", authAdmin, updateMechanic);
-router.put("/updateDelivery/:id", authAdmin, updateDelivery);
-router.put("/updateVendor/:id", authAdmin, updateVendor);
-router.put("/updateStatus/:id", authAdmin, updateOrderStatus);
+router.get("/getallorder", getAllBookings);
+router.get("/getorderbyid/:id", getOrderById);
+router.put("/update/updateMechanic/:id", updateMechanic);
+router.put("/updateDelivery/:id", updateDelivery);
+router.put("/updateVendor/:id", updateVendor);
+router.put("/updateStatus/:id", updateOrderStatus);
 
 router.get("/getorder/:employeeId", getAllBookingsByEmployee);
 router.get("/getorder/:vendorId", getAllBookingsByVendor);

@@ -5,6 +5,7 @@ import OrderStatusCard from '../../components/empolyee/OrderStatusCard';
 import BikeRepairCard from '../../components/empolyee/BikeRepairCard';
 import axiosClient from '../../service/axiosClient';
 import CircularLoading from '../../components/ui/CircularLoading';
+import Dashboard from '../dashboard/Dashboard';
 
 
 export default function EmployeeDashboard() {
@@ -34,6 +35,9 @@ export default function EmployeeDashboard() {
         setInProgressOrders(fetchOrder.filter(order => order.status === "In Progress"));
         setCompletedOrders(fetchOrder.filter(order => order.status === "Completed"));
     }, [fetchOrder])
+    if (employee.position === "telecaller" || employee.position === "operational manager") {
+        return <Dashboard />;
+    }
     return (
         <>
             {

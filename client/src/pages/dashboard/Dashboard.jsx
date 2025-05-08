@@ -81,16 +81,7 @@ export default function Dashboard() {
 
         setSnackBarOpen(false);
     }
-    const [dashboardData, setDashboardData] = useState({
-        totalBookings: 1245,
-        pendingOrders: 84,
-        inProgressOrders: 156,
-        completedOrders: 1005,
-        totalRevenue: 125750,
-        totalMechanics: 35,
-        totalVendors: 12,
-        totalDeliveryStaff: 28
-    });
+
     return (
         <>
             <AlertSnackBar
