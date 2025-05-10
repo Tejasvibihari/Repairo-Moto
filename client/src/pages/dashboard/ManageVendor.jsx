@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Heading from '../../components/ui/Heading';
 import AddVendorForm from '../../components/AddVendorForm';
-import VendorProfileCard from '../../components/vendorProfileCard';
+import VendorProfileCard from '../../components/VendorProfileCard';
 import { Search } from 'lucide-react';
 import { useDispatch, useSelector } from "react-redux"
 import axiosClient from '../../service/axiosClient';
