@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux';
 import NavBar from '../../components/ui/NavBar';
 import Footer from '../../components/landing/Footer';
 import { motion } from "framer-motion";
-import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import BreadCrumbs from '../../components/ui/BreadCrumbs';
 export default function UserQrCode() {
     const [copied, setCopied] = useState(false);
     const user = useSelector((state) => state.user.user);
@@ -29,7 +29,7 @@ export default function UserQrCode() {
                 <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/20 z-0" />
                 <div className="relative z-10 text-center">
                     <h2 className="text-4xl md:text-5xl font-extrabold mb-3 capitalize tracking-wide">Booking Form</h2>
-                    <Breadcrumbs
+                    <BreadCrumbs
                         items={[
                             { label: 'Home', href: '/' },
                             { label: 'Booking' },

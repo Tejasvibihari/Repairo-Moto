@@ -1,12 +1,12 @@
 
-import { Share2, Gift, Users,  } from "lucide-react";
+import { Share2, Gift, Users, } from "lucide-react";
 import NavBar from '../../components/ui/NavBar';
 import Footer from '../../components/landing/Footer';
-import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import BreadCrumbs from '../../components/ui/BreadCrumbs';
 import { motion } from 'framer-motion';
 
 export default function ReferralEarning() {
-  
+
     return (
         <>
             <NavBar />
@@ -84,7 +84,7 @@ export default function ReferralEarning() {
                     </div>
                 </div>
 
-                
+
 
                 {/* How It Works Section */}
                 <div id="how-it-works" className=" bg-white">
@@ -154,8 +154,8 @@ export default function ReferralEarning() {
                     </div>
                 </div>
 
-               
-               
+
+
             </div>
 
             <Footer />

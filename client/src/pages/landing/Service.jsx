@@ -1,7 +1,7 @@
 // File: Service.jsx
 import { motion } from 'framer-motion';
 import Navbar from '../../components/ui/NavBar';
-import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import BreadCrumbs from '../../components/ui/BreadCrumbs';
 import Footer from '../../components/landing/Footer';
 import { ArrowRight, Wrench, Settings, Gauge, HardDrive, Cog, CheckCircle, Cpu } from 'lucide-react';
 import ServiceCards from '../../components/landing/ServiseCard';
@@ -38,7 +38,7 @@ export default function Services() {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.4, duration: 0.6 }}
                     >
-                        <Breadcrumbs
+                        <BreadCrumbs
                             items={[
                                 { label: 'Home', href: '/' },
                                 { label: 'Services', href: '/services' },

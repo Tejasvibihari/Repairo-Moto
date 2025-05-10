@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-const Breadcrumbs = ({ items = [] }) => {
+const BreadCrumbs = ({ items = [] }) => {
     return (
         <nav className="text-white" aria-label="Breadcrumb">
             <ol className="flex flex-wrap items-center">
@@ -21,4 +21,4 @@ const Breadcrumbs = ({ items = [] }) => {
     );
 };
 
-export default Breadcrumbs;
+export default BreadCrumbs;

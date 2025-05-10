@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import NavBar from '../../components/ui/Navbar';
 import Footer from '../../components/landing/Footer';
-import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import BreadCrumbs from '../../components/ui/BreadCrumbs';
 import { Heart, BookmarkPlus, Share2, MessageCircle, X } from 'lucide-react';
 import ImageModal from '../../components/ui/ImageModel';
 
@@ -154,7 +154,7 @@ export default function Gallery() {
           <div className="relative z-10 text-center">
             <h2 className="text-4xl md:text-5xl font-bold">Gallery</h2>
 
-            <Breadcrumbs
+            <BreadCrumbs
               items={[
                 { label: 'Home', href: '/' },
                 { label: 'Gallery', href: '/gallery' },
@@ -199,7 +199,7 @@ export default function Gallery() {
                       onClick={() => openModal(item.imageUrl)}
                       className="w-full h-64 object-cover cursor-pointer"
                     />
-                    <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-20 transition pointer-events-none"  />
+                    <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-20 transition pointer-events-none" />
                     <div className="absolute bottom-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition">
                       <button
                         className="p-2 bg-white rounded-full shadow hover:bg-gray-100 pointer-events-auto"

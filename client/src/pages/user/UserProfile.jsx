@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import NavBar from '../../components/ui/NavBar'
 import Footer from '../../components/landing/Footer'
 import { motion } from 'framer-motion';
-import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import BreadCrumbs from '../../components/ui/BreadCrumbs';
 import { Camera, Save, Edit2, User, Briefcase, Phone, Mail, MapPin, Hash, Lock } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -122,7 +122,7 @@ export default function UserProfile() {
                 <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/20 z-0" />
                 <div className="relative z-10 text-center">
                     <h2 className="text-4xl md:text-5xl font-extrabold mb-3 capitalize tracking-wide">My Profile</h2>
-                    <Breadcrumbs
+                    <BreadCrumbs
                         items={[
                             { label: 'Home', href: '/' },
                             { label: 'My Profile' },

@@ -3,7 +3,7 @@ import { Clock, CheckCircle, AlertCircle, XCircle, FileText, CreditCard, XOctago
 import Footer from '../../components/landing/Footer';
 import NavBar from '../../components/ui/NavBar';
 import { motion } from "framer-motion";
-import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import BreadCrumbs from '../../components/ui/BreadCrumbs';
 import axiosClient from '../../service/axiosClient';
 import { useSelector } from 'react-redux';
 import CircularLoading from '../../components/ui/CircularLoading';
@@ -117,7 +117,7 @@ export default function UserAllBooking() {
                 <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/20 z-0" />
                 <div className="relative z-10 text-center">
                     <h2 className="text-4xl md:text-5xl font-extrabold mb-3 capitalize tracking-wide">All Bookings</h2>
-                    <Breadcrumbs
+                    <BreadCrumbs
                         items={[
                             { label: 'Home', href: '/' },
                             { label: 'All Bookings' },

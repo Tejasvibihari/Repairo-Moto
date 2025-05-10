@@ -1,5 +1,5 @@
 import NavBar from "../../components/ui/NavBar";
-import Breadcrumbs from "../../components/ui/Breadcrumbs";
+import BreadCrumbs from "../../components/ui/BreadCrumbs";
 import { Calendar, User } from 'lucide-react';
 import Footer from "../../components/landing/Footer";
 import { motion } from "framer-motion";
@@ -53,7 +53,7 @@ export default function Blog() {
                     <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/20 z-0" />
                     <div className="relative z-10 text-center">
                         <h2 className="text-4xl md:text-5xl font-extrabold mb-3 capitalize tracking-wide">Our Blog</h2>
-                        <Breadcrumbs
+                        <BreadCrumbs
                             items={[
                                 { label: 'Home', href: '/' },
                                 { label: 'Blog' },

@@ -1,6 +1,6 @@
 import React from 'react'
 import NavBar from '../../components/ui/NavBar'
-import Breadcrumbs from '../../components/ui/Breadcrumbs'
+import BreadCrumbs from '../../components/ui/BreadCrumbs'
 import { MapPin, Phone, Mail, Clock, Home } from 'lucide-react'
 import ContactForm from '../../components/landing/ContactForm'
 import { IconCard } from '../../components/landing/IconCard'
@@ -13,7 +13,7 @@ export default function ContactUs() {
             <NavBar />
 
             <div className="min-h-screen">
-                {/* Hero Banner with Breadcrumbs */}
+                {/* Hero Banner with BreadCrumbs */}
                 <motion.div
                     initial={{ opacity: 0, y: -50 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -24,7 +24,7 @@ export default function ContactUs() {
                     <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-transparent z-0" />
                     <div className="relative z-10 text-center">
                         <h2 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h2>
-                        <Breadcrumbs
+                        <BreadCrumbs
                             items={[
                                 { label: 'Home', href: '/' },
                                 { label: 'Contact Us', href: '/contact' },

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import NavBar from '../../components/ui/NavBar'
 import Footer from '../../components/landing/Footer'
-import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import BreadCrumbs from '../../components/ui/BreadCrumbs';
 import { Calendar, UserPlus, QrCode, BookOpen } from "lucide-react";
 import { Link } from 'react-router-dom';
 export default function UserDashboard() {
@@ -67,7 +67,7 @@ export default function UserDashboard() {
                 <div className="relative z-10 text-center">
                     <h2 className="text-4xl md:text-5xl font-bold">Dashboard</h2>
 
-                    <Breadcrumbs
+                    <BreadCrumbs
                         items={[
                             { label: 'Home', href: '/' },
                             { label: 'Dasboard', href: '/user/dashboard' },

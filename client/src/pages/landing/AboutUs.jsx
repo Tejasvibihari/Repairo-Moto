@@ -1,6 +1,6 @@
 import { Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 import NavBar from '../../components/ui/NavBar';
-import Breadcrumbs from '../../components/ui/Breadcrumbs'
+import BreadCrumbs from '../../components/ui/BreadCrumbs'
 import Footer from '../../components/landing/Footer';
 import { motion } from 'framer-motion';
 
@@ -80,7 +80,7 @@ export default function AboutUs() {
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.5, duration: 0.6 }}
                         >
-                            <Breadcrumbs
+                            <BreadCrumbs
                                 items={[
                                     { label: 'Home', href: '/' },
                                     { label: 'About Us', },
@@ -286,7 +286,7 @@ export default function AboutUs() {
                                 >
                                     ELMER SCHMIDT
                                 </motion.h3>
-                               
+
                                 <motion.p
                                     className="italic text-gray-600 mb-6 text-center"
                                     variants={fadeIn}
@@ -416,7 +416,7 @@ export default function AboutUs() {
                                 >
                                     We believe your ride deserves the best care — from regular servicing to urgent repairs — and we're committed to making high-quality bike maintenance easy, accessible, and reliable.
                                 </motion.p>
-                              
+
                             </motion.div>
                         </motion.div>
 
@@ -460,7 +460,7 @@ export default function AboutUs() {
                                 >
                                     Through innovation, digital convenience, and dedicated service, we strive to eliminate the hassle from traditional repair experiences — making two-wheeler maintenance smooth and stress-free.
                                 </motion.p>
-                               
+
                             </motion.div>
 
                             {/* Right Side - Image */}
