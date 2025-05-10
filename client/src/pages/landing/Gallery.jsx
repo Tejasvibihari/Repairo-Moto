@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import NavBar from '../../components/ui/Navbar';
+import NavBar from '../../components/ui/NavBar';
 import Footer from '../../components/landing/Footer';
 import BreadCrumbs from '../../components/ui/BreadCrumbs';
 import { Heart, BookmarkPlus, Share2, MessageCircle, X } from 'lucide-react';
