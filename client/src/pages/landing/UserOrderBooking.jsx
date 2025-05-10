@@ -3,7 +3,7 @@ import NavBar from '../../components/ui/NavBar'
 import Footer from '../../components/landing/Footer'
 import UserBookingForm from '../../components/UserBookingForm'
 import { motion } from "framer-motion";
-import BreadCrumbs from '../../components/ui/Breadcrumbs';
+import BreadCrumbs from '../../components/ui/BreadCrumbs';
 
 
 export default function UserOrderBooking() {
