@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-
+import bodyParser from "body-parser";
 
 // Import Router 
 import adminRoutes from "./Routes/adminRoutes.js";
@@ -19,8 +19,8 @@ import blogRouter from "./Routes/blogRoutes.js"
 const app = express();
 dotenv.config();
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: "10mb" })); // Adjust the limit as needed
+app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 app.use('/uploads', express.static('uploads'));
 app.use('/static', express.static('static'));
 

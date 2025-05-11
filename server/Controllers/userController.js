@@ -2,6 +2,11 @@ import bcrypt from "bcryptjs";
 import User from "../Models/userModel.js";
 import { generateReferralCode } from "../Utils/generateReferralCode.js";
 import jwt from "jsonwebtoken";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const createUser = async (req, res) => {
     try {
@@ -255,3 +260,97 @@ export const getUserById = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
+
+export const editUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const {
+            firstName,
+            lastName,
+            phone,
+            accountType,
+            businessName,
+            businessType,
+            address,
+            city,
+            state,
+            pincode,
+            currentPassword,
+            newPassword,
+            confirmPassword,
+        } = req.body;
+
+        console.log("Request file:", req.file);
+
+        // Find the user by ID
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+
+        // Handle profile image upload
+        if (req.file) {
+            // Remove the previous profile image if it exists
+            if (user.profileImage) {
+                // Construct the correct path for the old profile image
+                const oldImagePath = path.join(__dirname, "..", "uploads", "user", path.basename(user.profileImage));
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlink(oldImagePath, (err) => {
+                        if (err) {
+                            console.error("Error deleting old profile image:", err);
+                        } else {
+                            console.log("Old profile image deleted successfully");
+                        }
+                    });
+                } else {
+                    console.log("Old profile image does not exist:", oldImagePath);
+                }
+            }
+
+            // Set the new profile image
+            user.profileImage = `/uploads/user/${req.file.filename}`;
+        }
+
+        // Update basic user fields
+        user.firstName = firstName || user.firstName;
+        user.lastName = lastName || user.lastName;
+        user.phone = phone || user.phone;
+        user.accountType = accountType || user.accountType;
+        user.businessName = accountType === "business" ? businessName : null;
+        user.businessType = accountType === "business" ? businessType : null;
+        user.address = address || user.address;
+        user.city = city || user.city;
+        user.state = state || user.state;
+        user.pincode = pincode || user.pincode;
+
+        // Handle password update
+        if (currentPassword || newPassword || confirmPassword) {
+            const isMatch = await bcrypt.compare(currentPassword, user.password);
+            if (!isMatch) {
+                return res.status(400).json({ message: "Current password is incorrect" });
+            }
+
+            if (newPassword !== confirmPassword) {
+                return res.status(400).json({ message: "New password and confirmation do not match" });
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(newPassword, salt);
+        }
+
+        // Save the updated user to the database
+        await user.save();
+
+        // Return the updated user (excluding the password)
+        const updatedUser = await User.findById(userId).select("-password");
+        res.status(200).json({
+            message: "User updated successfully",
+            user: updatedUser,
+        });
+    } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};

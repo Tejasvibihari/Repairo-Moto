@@ -5,21 +5,31 @@ import { motion } from 'framer-motion';
 import BreadCrumbs from '../../components/ui/BreadCrumbs';
 import { Camera, Save, Edit2, User, Briefcase, Phone, Mail, MapPin, Hash, Lock } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import axiosClient from '../../service/axiosClient';
+import { setUserSignIn } from '../../app/slice/userSlice';
+import AlertSnackBar from '../../components/ui/AlertSnackBar';
 
 export default function UserProfile() {
     const user = useSelector((state) => state.user.user);
+    const dispatch = useDispatch();
     const [isEditing, setIsEditing] = useState(false);
-    const [editedUser, setEditedUser] = useState(user);
+    const [editedUser, seteditedUser] = useState(user);
     const [previewImage, setPreviewImage] = useState(null);
+    const [snackBarOpen, setSnackBarOpen] = useState(false);
+    const [snackBarMessage, setSnackBarMessage] = useState('');
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success');
+    const [loading, setLoading] = useState(false);
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
     });
     const [passwordError, setPasswordError] = useState('');
+    const [userForm, setUserForm] = useState(user);
 
     // Handle field changes
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (['currentPassword', 'newPassword', 'confirmPassword'].includes(name)) {
@@ -28,7 +38,7 @@ export default function UserProfile() {
                 [name]: value
             }));
         } else {
-            setEditedUser(prev => ({
+            seteditedUser(prev => ({
                 ...prev,
                 [name]: value
             }));
@@ -39,56 +49,88 @@ export default function UserProfile() {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            seteditedUser(prev => ({
+                ...prev,
+                profileImage: file
+            }));
+
             const reader = new FileReader();
             reader.onloadend = () => {
-                setPreviewImage(reader.result);
+                setPreviewImage(reader.result); // for preview
             };
             reader.readAsDataURL(file);
         }
     };
 
+    const handleCloseSnackBar = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setSnackBarOpen(false);
+    };
+
     // Save user data
-    const handleSave = () => {
-        // Password validation
-        if (passwordData.newPassword || passwordData.confirmPassword || passwordData.currentPassword) {
-            if (!passwordData.currentPassword) {
-                setPasswordError('Current password is required');
-                return;
-            }
-            if (passwordData.newPassword !== passwordData.confirmPassword) {
-                setPasswordError('New passwords do not match');
-                return;
-            }
-            if (passwordData.newPassword && passwordData.newPassword.length < 8) {
-                setPasswordError('Password must be at least 8 characters');
-                return;
+    const handleSave = async () => {
+        try {
+            // Password validation
+            if (passwordData.newPassword || passwordData.confirmPassword || passwordData.currentPassword) {
+                if (!passwordData.currentPassword) {
+                    setPasswordError('Current password is required');
+                    return;
+                }
+                if (passwordData.newPassword !== passwordData.confirmPassword) {
+                    setPasswordError('New passwords do not match');
+                    return;
+                }
+                if (passwordData.newPassword.length < 8) {
+                    setPasswordError('Password must be at least 8 characters');
+                    return;
+                }
             }
 
-            // Here you would make an API call to verify current password and update with new password
-            console.log('Password update data:', passwordData);
+            setLoading(true);
 
-            // Reset password fields after update
-            setPasswordData({
-                currentPassword: '',
-                newPassword: '',
-                confirmPassword: ''
+            // Prepare form data
+            const formData = new FormData();
+            Object.entries(editedUser).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    formData.append(key, value);
+                }
             });
-            setPasswordError('');
-        }
+            formData.append('currentPassword', passwordData.currentPassword || '');
+            formData.append('newPassword', passwordData.newPassword || '');
+            formData.append('confirmPassword', passwordData.confirmPassword || '');
 
-        // Here you would typically make an API call to update the user
-        setUser({
-            ...editedUser,
-            profileImage: previewImage || user.profileImage
-        });
-        setIsEditing(false);
+            const response = await axiosClient.put(`/api/user/update-profile/${user._id}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            dispatch(setUserSignIn({ user: response.data.user }));
+
+            setSnackBarMessage(response.data.message || "Profile updated successfully!");
+            setSnackBarSeverity('success');
+            setSnackBarOpen(true);
+
+            // Reset state
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            setPasswordError('');
+            setPreviewImage(null);
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Error updating user:', error);
+            setSnackBarMessage('Failed to update profile. Please try again.');
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+        } finally {
+            setLoading(false);
+        }
     };
 
     // Toggle edit mode
     const toggleEdit = () => {
         if (isEditing) {
             // Cancel editing
-            setEditedUser(user);
+            seteditedUser(user);
             setPreviewImage(null);
             setPasswordData({
                 currentPassword: '',
@@ -111,6 +153,12 @@ export default function UserProfile() {
 
     return (
         <>
+            <AlertSnackBar
+                open={snackBarOpen}
+                message={snackBarMessage}
+                severity={snackBarSeverity}
+                onClose={handleCloseSnackBar} // Close function for the Snackbar
+            />
             <NavBar />
             <motion.div
                 className="relative bg-cover bg-center h-72 flex items-center justify-center text-white"
@@ -163,9 +211,9 @@ export default function UserProfile() {
                         <div className="relative -mt-24 ml-8 mb-4">
                             <div className="relative">
                                 <div className="w-36 h-36 rounded-full border-4 border-white shadow-md overflow-hidden bg-gray-200">
-                                    {previewImage || user.profileImage ? (
+                                    {previewImage || user?.profileImage ? (
                                         <img
-                                            src={previewImage || user.profileImage || "/api/placeholder/150/150"}
+                                            src={previewImage || `${import.meta.env.VITE_API_URL}${user.profileImage}` || "/api/placeholder/150/150"}
                                             alt="Profile"
                                             className="w-full h-full object-cover"
                                         />
@@ -203,7 +251,7 @@ export default function UserProfile() {
                                                 <input
                                                     type="text"
                                                     name="firstName"
-                                                    value={editedUser.firstName}
+                                                    value={editedUser?.firstName}
                                                     onChange={handleChange}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                 />
@@ -213,7 +261,7 @@ export default function UserProfile() {
                                                 <input
                                                     type="text"
                                                     name="lastName"
-                                                    value={editedUser.lastName}
+                                                    value={editedUser?.lastName}
                                                     onChange={handleChange}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                 />
@@ -223,7 +271,7 @@ export default function UserProfile() {
                                                 <input
                                                     type="text"
                                                     name="phone"
-                                                    value={editedUser.phone}
+                                                    value={editedUser?.phone}
                                                     onChange={handleChange}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                 />
@@ -233,7 +281,8 @@ export default function UserProfile() {
                                                 <input
                                                     type="email"
                                                     name="email"
-                                                    value={editedUser.email}
+                                                    disabled
+                                                    value={editedUser?.email}
                                                     onChange={handleChange}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                 />
@@ -302,7 +351,7 @@ export default function UserProfile() {
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
                                                 <select
                                                     name="accountType"
-                                                    value={editedUser.accountType}
+                                                    value={editedUser?.accountType}
                                                     onChange={handleChange}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                 >
@@ -310,14 +359,14 @@ export default function UserProfile() {
                                                     <option value="business">Business</option>
                                                 </select>
                                             </div>
-                                            {editedUser.accountType === 'business' && (
+                                            {editedUser?.accountType === 'business' && (
                                                 <>
                                                     <div>
                                                         <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
                                                         <input
                                                             type="text"
                                                             name="businessName"
-                                                            value={editedUser.businessName || ''}
+                                                            value={editedUser?.businessName || ''}
                                                             onChange={handleChange}
                                                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                         />
@@ -327,7 +376,7 @@ export default function UserProfile() {
                                                         <input
                                                             type="text"
                                                             name="businessType"
-                                                            value={editedUser.businessType || ''}
+                                                            value={editedUser?.businessType || ''}
                                                             onChange={handleChange}
                                                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                         />
@@ -346,7 +395,7 @@ export default function UserProfile() {
                                                 <input
                                                     type="text"
                                                     name="address"
-                                                    value={editedUser.address || ''}
+                                                    value={editedUser?.address || ''}
                                                     onChange={handleChange}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                 />
@@ -356,7 +405,7 @@ export default function UserProfile() {
                                                 <input
                                                     type="text"
                                                     name="city"
-                                                    value={editedUser.city || ''}
+                                                    value={editedUser?.city || ''}
                                                     onChange={handleChange}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                 />
@@ -366,7 +415,7 @@ export default function UserProfile() {
                                                 <input
                                                     type="text"
                                                     name="state"
-                                                    value={editedUser.state || ''}
+                                                    value={editedUser?.state || ''}
                                                     onChange={handleChange}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                 />
@@ -376,7 +425,7 @@ export default function UserProfile() {
                                                 <input
                                                     type="text"
                                                     name="pincode"
-                                                    value={editedUser.pincode || ''}
+                                                    value={editedUser?.pincode || ''}
                                                     onChange={handleChange}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                                                 />
@@ -393,7 +442,7 @@ export default function UserProfile() {
                                                 <input
                                                     type="text"
                                                     name="referralCode"
-                                                    value={editedUser.referralCode || ''}
+                                                    value={editedUser?.referralCode || ''}
                                                     disabled
                                                     className="w-full p-2 border border-gray-300 rounded-md bg-gray-50"
                                                 />
@@ -403,7 +452,7 @@ export default function UserProfile() {
                                                 <input
                                                     type="text"
                                                     name="referredBy"
-                                                    value={editedUser.referredBy || ''}
+                                                    value={editedUser?.referredBy || ''}
                                                     disabled
                                                     className="w-full p-2 border border-gray-300 rounded-md bg-gray-50"
                                                 />
@@ -413,7 +462,7 @@ export default function UserProfile() {
                                                 <input
                                                     type="text"
                                                     name="referralType"
-                                                    value={editedUser.referralType || ''}
+                                                    value={editedUser?.referralType || ''}
                                                     disabled
                                                     className="w-full p-2 border border-gray-300 rounded-md bg-gray-50"
                                                 />
@@ -436,8 +485,8 @@ export default function UserProfile() {
                                 <div>
                                     {/* Display View */}
                                     <div className="mb-6">
-                                        <h2 className="text-2xl font-bold text-gray-800">{user.firstName} {user.lastName}</h2>
-                                        <p className="text-sm text-gray-500 capitalize">{user.role}</p>
+                                        <h2 className="text-2xl font-bold text-gray-800">{user?.firstName} {user?.lastName}</h2>
+                                        <p className="text-sm text-gray-500 capitalize">{user?.role}</p>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -449,7 +498,7 @@ export default function UserProfile() {
                                                 <Phone className="text-primary mt-1" size={18} />
                                                 <div>
                                                     <p className="text-sm text-gray-500">Phone</p>
-                                                    <p className="font-medium">{user.phone}</p>
+                                                    <p className="font-medium">{user?.phone}</p>
                                                 </div>
                                             </div>
 
@@ -457,16 +506,16 @@ export default function UserProfile() {
                                                 <Mail className="text-primary mt-1" size={18} />
                                                 <div>
                                                     <p className="text-sm text-gray-500">Email</p>
-                                                    <p className="font-medium">{user.email}</p>
+                                                    <p className="font-medium">{user?.email}</p>
                                                 </div>
                                             </div>
-                                            {user.accountType === 'business' && (<>
+                                            {user?.accountType === 'business' && (<>
                                                 <div className="flex items-start gap-3">
                                                     <MapPin className="text-primary mt-1" size={18} />
                                                     <div>
                                                         <p className="text-sm text-gray-500">Address</p>
-                                                        <p className="font-medium">{user.address}</p>
-                                                        <p className="font-medium">{user.city}, {user.state} {user.pincode}</p>
+                                                        <p className="font-medium">{user?.address}</p>
+                                                        <p className="font-medium">{user?.city}, {user?.state} {user?.pincode}</p>
                                                     </div>
                                                 </div>
                                             </>)}
@@ -481,7 +530,7 @@ export default function UserProfile() {
                                                 <User className="text-primary mt-1" size={18} />
                                                 <div>
                                                     <p className="text-sm text-gray-500">Account Type</p>
-                                                    <p className="font-medium capitalize">{user.accountType}</p>
+                                                    <p className="font-medium capitalize">{user?.accountType}</p>
                                                 </div>
                                             </div>
 
@@ -499,13 +548,13 @@ export default function UserProfile() {
                                                 </div>
                                             </div>
 
-                                            {user.accountType === 'business' && (
+                                            {user?.accountType === 'business' && (
                                                 <>
                                                     <div className="flex items-start gap-3">
                                                         <Briefcase className="text-primary mt-1" size={18} />
                                                         <div>
                                                             <p className="text-sm text-gray-500">Business Name</p>
-                                                            <p className="font-medium">{user.businessName}</p>
+                                                            <p className="font-medium">{user?.businessName}</p>
                                                         </div>
                                                     </div>
 
@@ -513,7 +562,7 @@ export default function UserProfile() {
                                                         <Briefcase className="text-primary mt-1" size={18} />
                                                         <div>
                                                             <p className="text-sm text-gray-500">Business Type</p>
-                                                            <p className="font-medium">{user.businessType}</p>
+                                                            <p className="font-medium">{user?.businessType}</p>
                                                         </div>
                                                     </div>
                                                 </>
@@ -523,16 +572,16 @@ export default function UserProfile() {
                                                 <Hash className="text-primary mt-1" size={18} />
                                                 <div>
                                                     <p className="text-sm text-gray-500">Your Referral Code</p>
-                                                    <p className="font-medium">{user.referralCode}</p>
+                                                    <p className="font-medium">{user?.referralCode}</p>
                                                 </div>
                                             </div>
 
-                                            {user.referredBy && (
+                                            {user?.referredBy && (
                                                 <div className="flex items-start gap-3">
                                                     <Hash className="text-primary mt-1" size={18} />
                                                     <div>
                                                         <p className="text-sm text-gray-500">Referred By</p>
-                                                        <p className="font-medium">{user.referredBy}</p>
+                                                        <p className="font-medium">{user?.referredBy}</p>
                                                     </div>
                                                 </div>
                                             )}
