@@ -5,13 +5,15 @@ import { UserRoundPlus } from 'lucide-react';
 import axios from 'axios';
 import axiosClient from '../service/axiosClient';
 import AlertSnackBar from './ui/AlertSnackBar';
+import { useDispatch } from 'react-redux';
+import { addEmployee, setEmployee } from '../app/slice/employeeSlice';
 
 export default function AddEmployeeForm() {
     const [loading, setLoading] = useState(false);
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
     const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
-
+    const dispatch = useDispatch();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -58,6 +60,7 @@ export default function AddEmployeeForm() {
                 }
             );
             console.log('Employee added:', res);
+            dispatch(addEmployee(res.data.employee)); // Dispatch the employee data to the Redux store
             setLoading(false);
             console.log(res.data.message); // Set the message to display in the Snackbar
             setSnackBarMessage(res.data.message); // Set the message to display in the Snackbar

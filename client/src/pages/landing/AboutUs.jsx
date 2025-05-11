@@ -91,7 +91,7 @@ export default function AboutUs() {
                 </div>
 
                 {/* Our History */}
-                <div className="text-center mb-12 px-20 py-10">
+                <div className="text-center mb-12 px-5 py-10">
                     <motion.div
                         className="text-center mb-12"
                         initial="hidden"
@@ -111,15 +111,15 @@ export default function AboutUs() {
                                     OUR HISTORY
                                 </motion.h3>
 
-                                <div className="max-w-4xl mx-auto">
+                                <div className="max-w-5xl mx-auto">
                                     <motion.p
-                                        className="text-gray-600 leading-relaxed mb-4 text-left sm:text-justify px-4 sm:px-0"
+                                        className="text-gray-600 leading-relaxed mb-4 text-justify sm:text-justify px-4 sm:px-0"
                                         variants={fadeIn}
                                     >
                                         Founded with a passion for two-wheelers, Repairo Moto began as a humble initiative to make bike servicing more accessible and customer-friendly. We noticed the gap in reliable doorstep bike repair services and took the initiative to bridge it by providing expert mechanics at your convenience.
                                     </motion.p>
                                     <motion.p
-                                        className="text-gray-600 leading-relaxed text-left sm:text-justify px-4 sm:px-0"
+                                        className="text-gray-600 leading-relaxed text-justify sm:text-justify px-4 sm:px-0"
                                         variants={fadeIn}
                                     >
                                         Over the years, Repairo Moto has grown into a trusted name for bike repairs, maintenance, and emergency breakdown support. Our commitment to transparency, affordability, and professional care has earned us the trust of hundreds of riders. We continue to expand our services, driven by the belief that every bike deserves the best care—wherever you are.

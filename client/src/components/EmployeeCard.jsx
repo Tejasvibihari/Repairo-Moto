@@ -83,7 +83,7 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
                     <div className='flex justify-center mb-4'>
                         <div className='relative'>
                             <img
-                                src={`${import.meta.env.VITE_API_URL}/${profileImage}`}
+                                src={`${import.meta.env.VITE_API_URL}${profileImage}`}
                                 alt={`${firstName} ${lastName}`}
                                 className='w-28 h-28 rounded-full object-cover border-4 border-primary shadow-md'
                             />

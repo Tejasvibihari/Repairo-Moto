@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from "react-router-dom";
 
+const MotionLink = motion(Link);
 export default function CTASection() {
     return (
         <section className="relative bg-white text-center py-20 px-6 overflow-hidden">
@@ -27,14 +29,14 @@ export default function CTASection() {
                     Book a mechanic now and experience quick, reliable, and affordable two-wheeler repair!
                 </p>
 
-                <motion.a
-                    href="/contact"
+                <MotionLink
+                    to="/user-order-booking"
                     className="bg-primary text-white font-semibold px-8 py-3 rounded-full hover:bg-secondary transition duration-300 inline-block shadow-lg"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                 >
                     Book Now
-                </motion.a>
+                </MotionLink>
             </motion.div>
         </section>
     );

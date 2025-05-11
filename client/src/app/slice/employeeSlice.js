@@ -13,6 +13,9 @@ export const employeeSlice = createSlice({
         setEmployee: (state, action) => {
             state.employee = action.payload;
         },
+        addEmployee: (state, action) => {
+            state.employee.push(action.payload);
+        },
         setLoading: (state, action) => {
             state.loading = action.payload;
         },
@@ -22,5 +25,5 @@ export const employeeSlice = createSlice({
     },
 });
 
-export const { setEmployee, setLoading, setError } = employeeSlice.actions;
+export const { setEmployee, setLoading, addEmployee, setError } = employeeSlice.actions;
 export default employeeSlice.reducer; // Corrected export

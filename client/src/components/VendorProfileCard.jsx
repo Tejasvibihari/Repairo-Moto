@@ -89,7 +89,7 @@ export default function VendorProfileCard({ vendor }) {
                     <div className='flex flex-col md:flex-row items-center md:items-start gap-6 mb-6'>
                         <div className='relative'>
                             <img
-                                src={`${import.meta.env.VITE_API_URL}/${vendor.profileImage}`}
+                                src={`${import.meta.env.VITE_API_URL}${vendor.profileImage}`}
                                 className='w-48 h-48 object-cover rounded-lg shadow-md border-2 border-primary'
                                 alt={vendor.businessName}
                             />

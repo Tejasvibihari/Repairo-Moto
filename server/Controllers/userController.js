@@ -38,7 +38,7 @@ export const createUser = async (req, res) => {
         // Handle profile image if uploaded
         let profileImage = null;
         if (req.file) {
-            profileImage = `uploads/user/${req.file.filename}`;
+            profileImage = `/uploads/user/${req.file.filename}`;
         }
 
         // Hash the password

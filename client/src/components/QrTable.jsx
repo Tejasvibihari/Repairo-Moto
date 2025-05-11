@@ -8,15 +8,19 @@ export default function QrTable({ onGenerateQR }) {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const users = await axiosClient.get("/api/user/getalluser");
-                const employees = await axiosClient.get("/api/admin/employee/getallemployee");
-                const vendors = await axiosClient.get("/api/vendor/getallvendor");
-                // Combine all data into a single array with a type field
-                const combinedData = [
-                    ...users.data.users.map((item) => ({ ...item, type: "User" })),
-                    ...employees.data.employees.map((item) => ({ ...item, type: "Employee" })),
-                    ...vendors.data.vendors.map((item) => ({ ...item, type: "Vendor" })),
-                ];
+                const results = await Promise.allSettled([
+                    axiosClient.get("/api/user/getalluser"),
+                    axiosClient.get("/api/admin/employee/getallemployee"),
+                    axiosClient.get("/api/vendor/getallvendor"),
+                ]);
+
+                // Extract data from successful responses
+                const users = results[0].status === "fulfilled" ? results[0].value.data.users.map((item) => ({ ...item, type: "User" })) : [];
+                const employees = results[1].status === "fulfilled" ? results[1].value.data.employees.map((item) => ({ ...item, type: "Employee" })) : [];
+                const vendors = results[2].status === "fulfilled" ? results[2].value.data.vendors.map((item) => ({ ...item, type: "Vendor" })) : [];
+
+                // Combine all data into a single array
+                const combinedData = [...users, ...employees, ...vendors];
 
                 setData(combinedData);
             } catch (error) {
@@ -49,7 +53,7 @@ export default function QrTable({ onGenerateQR }) {
                                 <td className="px-3 py-2">{index + 1}</td>
                                 <td className="px-3 py-2 flex items-center justify-center">
                                     <img
-                                        src={item.profileImage ? `${import.meta.env.VITE_API_URL}/${item.profileImage}` : "/default-avatar.png"}
+                                        src={item.profileImage ? `${import.meta.env.VITE_API_URL}${item.profileImage}` : "/profileplaceholder.png"}
                                         alt="User"
                                         className="w-10 h-10 object-cover rounded-full"
                                     />
@@ -65,7 +69,7 @@ export default function QrTable({ onGenerateQR }) {
                                 </td> */}
                                 <td className="px-3 py-2 flex gap-2 flex-wrap justify-center">
                                     <button
-                                        onClick={() => onGenerateQR(`http://localhost:5173/user-signup/${item.referralCode}`)}
+                                        onClick={() => onGenerateQR(`${import.meta.env.VITE_FRONTEND_URL}/user-signup/${item.referralCode}`)}
                                         className="flex items-center justify-center bg-transparent text-green-600 py-2 rounded-md px-3 cursor-pointer hover:bg-green-600 hover:text-white border border-green-600">
                                         <Trash2 size={18} className="mr-0 md:mr-2" />
                                         <span className="hidden md:inline">Generate Qr</span>

@@ -54,19 +54,19 @@ export default function ManageEmployee() {
                     :
                     employees ? employees.map((employee) => (
                         <EmployeeCard
-                            key={employee._id}
-                            id={employee._id}
-                            firstName={employee.firstName}
-                            lastName={employee.lastName}
-                            position={employee.position}
-                            phone={employee.phone}
-                            email={employee.email}
-                            profileImage={employee.profileImage}
-                            address={employee.address}
-                            city={employee.city}
-                            state={employee.state}
-                            pinCode={employee.pinCode}
-                            referralCode={employee.referralCode}
+                            key={employee?._id}
+                            id={employee?._id}
+                            firstName={employee?.firstName}
+                            lastName={employee?.lastName}
+                            position={employee?.position}
+                            phone={employee?.phone}
+                            email={employee?.email}
+                            profileImage={employee?.profileImage}
+                            address={employee?.address}
+                            city={employee?.city}
+                            state={employee?.state}
+                            pinCode={employee?.pinCode}
+                            referralCode={employee?.referralCode}
                         />
                     )) : <div className='flex items-center justify-center'>Loading...</div>
                 }

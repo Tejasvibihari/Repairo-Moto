@@ -18,7 +18,7 @@ export const addVendor = async (req, res) => {
         // Handle profile image if uploaded
         let profileImage = null;
         if (req.file) {
-            profileImage = `uploads/vendor/${req.file.filename}`;
+            profileImage = `/uploads/vendor/${req.file.filename}`;
         }
 
         // Create password from the first 4 letters of firstName and the last 4 digits of phone

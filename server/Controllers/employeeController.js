@@ -22,7 +22,7 @@ export const createEmployee = async (req, res) => {
 
 
         // Handle uploaded file
-        const profileImage = req.file ? `uploads/employee/${req.file.filename}` : null;
+        const profileImage = req.file ? `/uploads/employee/${req.file.filename}` : null;
 
         const newEmployee = new Employee({
             firstName,
@@ -39,7 +39,7 @@ export const createEmployee = async (req, res) => {
             profileImage // Placeholder URL
         });
         await newEmployee.save();
-        res.status(201).json({ message: "Employee created successfully" });
+        res.status(201).json({ message: "Employee created successfully", employee: newEmployee });
     } catch (error) {
         console.log(error)
 
