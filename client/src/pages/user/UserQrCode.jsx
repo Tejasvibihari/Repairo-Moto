@@ -15,6 +15,8 @@ export default function UserQrCode() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+    const url = `${import.meta.env.VITE_FRONTEND_URL}/user-signup/${user.referralCode}`;
+    console.log(url)
 
     return (
         <>
@@ -28,11 +30,11 @@ export default function UserQrCode() {
             >
                 <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/20 z-0" />
                 <div className="relative z-10 text-center">
-                    <h2 className="text-4xl md:text-5xl font-extrabold mb-3 capitalize tracking-wide">Booking Form</h2>
+                    <h2 className="text-4xl md:text-5xl font-extrabold mb-3 capitalize tracking-wide">Qr Code</h2>
                     <BreadCrumbs
                         items={[
                             { label: 'Home', href: '/' },
-                            { label: 'Booking' },
+                            { label: 'Qr Code' },
                         ]}
                     />
                 </div>
@@ -43,7 +45,7 @@ export default function UserQrCode() {
                         <h1 className="text-2xl font-bold text-gray-800">Share Your Referral Code</h1>
                         <p className="text-gray-600 mt-2">Invite friends and earn rewards when they join!</p>
                     </div>
-                    <QRGenerator text={`${import.meta.env.VITE_API_URL}/user-signup/${user.referralCode}`} />
+                    <QRGenerator text={`${import.meta.env.VITE_FRONTEND_URL}/user-signup/${user.referralCode}`} />
 
 
                     {/* Referral Link */}
@@ -58,7 +60,7 @@ export default function UserQrCode() {
                             />
                             <button
                                 onClick={copyToClipboard}
-                                className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-r-md"
+                                className="bg-primary cursor-pointer hover:bg-blue-700 text-white p-3 rounded-r-md"
                             >
                                 {copied ? <Check size={20} /> : <Copy size={20} />}
                             </button>
@@ -85,7 +87,7 @@ export default function UserQrCode() {
                     </div>
 
                     {/* Share Button */}
-                    <button
+                    {/* <button
                         className="flex items-center justify-center w-full bg-primary hover:bg-green-700 text-white font-medium py-3 px-4 rounded-md"
                         onClick={() => {
                             if (navigator.share) {
@@ -99,7 +101,7 @@ export default function UserQrCode() {
                     >
                         <Share2 size={20} className="mr-2" />
                         Share Referral Link
-                    </button>
+                    </button> */}
                 </div>
             </div>
             <Footer />

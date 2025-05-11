@@ -2,13 +2,21 @@ import React, { useState } from 'react'
 import NavBar from '../../components/ui/NavBar'
 import Footer from '../../components/landing/Footer'
 import BreadCrumbs from '../../components/ui/BreadCrumbs';
-import { Calendar, UserPlus, QrCode, BookOpen } from "lucide-react";
+import { Calendar, UserPlus, QrCode, BookOpen, CalendarPlus } from "lucide-react";
 import { Link } from 'react-router-dom';
 export default function UserDashboard() {
 
     const [activeCard, setActiveCard] = useState(null);
 
     const cards = [
+        {
+            id: "booking",
+            title: "New Booking",
+            description: "Schedule a new appointment",
+            icon: <CalendarPlus size={24} />,
+            color: "bg-red-500",
+            link: "/user-order-booking"
+        },
         {
             id: "bookings",
             title: "All Bookings",
@@ -33,14 +41,7 @@ export default function UserDashboard() {
             color: "bg-purple-500",
             link: "/user-qrcode"
         },
-        {
-            id: "booking",
-            title: "New Booking",
-            description: "Schedule a new appointment",
-            icon: <BookOpen size={24} />,
-            color: "bg-red-500",
-            link: "/user-order-booking"
-        },
+
         {
             id: "profile",
             title: "My Account",
