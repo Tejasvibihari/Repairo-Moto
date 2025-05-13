@@ -11,6 +11,7 @@ import SelectVendorDialog from './ui/SelectVendorDialog';
 import { Link } from 'react-router-dom';
 
 export default function JobAsssignForm({ id }) {
+    console.log(id)
     const [snackBarOpen, setSnackBarOpen] = useState(false);
     const [snackBarMessage, setSnackBarMessage] = useState('');
     const [snackBarSeverity, setSnackBarSeverity] = useState('success');
@@ -33,33 +34,52 @@ export default function JobAsssignForm({ id }) {
     const handleDeliveryDialogClose = () => setDeliveryDialogOpen(false);
     const handleVendorDialogOpen = () => setVendorDialogOpen(true);
     const handleVendorDialogClose = () => setVendorDialogOpen(false);
-
+    console.log(orderId);
     useEffect(() => {
-        const fetchDetails = async () => {
-            try {
-                setModalLoading(true)
-                const [vendorsData, employeesData, deliveryData, orderDetail] = await Promise.all([
-                    axiosClient.get('/api/vendor/getallvendor'),
-                    axiosClient.get('/api/admin/employee/getallemployee?position=mechanic'),
-                    axiosClient.get('/api/admin/employee/getallemployee?position=delivery'),
-                    axiosClient.get(`/api/admin/order/getorderbyid/${id}`),
-                ]);
-                setOrderById(orderDetail.data);
-                setVendors(vendorsData.data.vendors);
-                setMechanic(employeesData.data.employees);
-                setDelivery(deliveryData.data.employees)
-                setModalLoading(false);
-            } catch (error) {
-                const msg = error.response?.data?.message || 'Something went wrong.';
-                setSnackBarMessage(msg);
-                setSnackBarSeverity("error");
-                setSnackBarOpen(true);
-                setModalLoading(false);
-            }
-        };
+        if (id) { // Only fetch data when id is available
+            const fetchDetails = async () => {
+                try {
+                    setModalLoading(true);
 
-        fetchDetails();
-    }, [id]);
+                    const results = await Promise.allSettled([
+                        axiosClient.get('/api/vendor/getallvendor'),
+                        axiosClient.get('/api/admin/employee/getallemployee?position=mechanic'),
+                        axiosClient.get('/api/admin/employee/getallemployee?position=delivery'),
+                        axiosClient.get(`/api/admin/order/employee/getorderbyid/${id}`),
+                    ]);
+
+                    // Handle each result individually
+                    const vendorsData = results[0].status === "fulfilled" ? results[0].value.data.vendors : [];
+                    const employeesData = results[1].status === "fulfilled" ? results[1].value.data.employees : [];
+                    const deliveryData = results[2].status === "fulfilled" ? results[2].value.data.employees : [];
+                    const orderDetail = results[3].status === "fulfilled" ? results[3].value.data : null;
+
+                    // Update state
+                    setVendors(vendorsData);
+                    setMechanic(employeesData);
+                    setDelivery(deliveryData);
+
+                    if (orderDetail) {
+                        setOrderById(orderDetail);
+                    } else {
+                        setSnackBarMessage("Failed to fetch order details.");
+                        setSnackBarSeverity("error");
+                        setSnackBarOpen(true);
+                    }
+
+                    setModalLoading(false);
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                    setSnackBarMessage("An unexpected error occurred.");
+                    setSnackBarSeverity("error");
+                    setSnackBarOpen(true);
+                    setModalLoading(false);
+                }
+            };
+
+            fetchDetails();
+        }
+    }, [id]); // Only run when id changes
 
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') return;
@@ -613,11 +633,18 @@ export default function JobAsssignForm({ id }) {
                             >
                                 Cancel
                             </button> */}
-                            <Link to={`/generate-invoice-form/${orderId._id}`}
-                                // onClick={updateOrderStatus}
-                                className="px-6 py-2 rounded-md flex items-center justify-center text-white shadow-sm transition-all hover:shadow-md"
-                                style={{ backgroundColor: '#e2a731' }}
-                            // disabled={loading}
+                            <Link
+                                to={orderId.status === 'Completed' ? `/generate-invoice-form/${orderId._id}` : '#'}
+                                onClick={(e) => {
+                                    if (loading || orderId.status !== 'Completed') {
+                                        e.preventDefault(); // Prevent navigation if loading or status is not 'Completed'
+                                    } else {
+                                        updateOrderStatus(); // Call the update function if needed
+                                    }
+                                }}
+                                className={`px-6 py-2 rounded-md flex items-center justify-center text-white shadow-sm transition-all hover:shadow-md ${loading || orderId.status !== 'Completed' ? 'bg-gray-400 cursor-not-allowed' : 'hover:bg-yellow-600'
+                                    }`}
+                                style={{ backgroundColor: loading || orderId.status !== 'Completed' ? '#d1d5db' : '#e2a731' }}
                             >
                                 {loading ? (
                                     <CircularLoading size={24} color="white" />

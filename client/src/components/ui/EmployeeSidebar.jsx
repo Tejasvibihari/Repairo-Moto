@@ -5,6 +5,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Home, Bike, FileText, NotebookPen, User2, Briefcase,
     ShoppingCart, QrCode, Menu, ChevronRight,
+    HandCoins,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -32,8 +33,8 @@ const EmployeeSidebar = ({ children }) => {
     ];
     const lowmenuItems = [
         { id: 'employee/dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-        { id: 'employee/all-booking', path: '/employee/all-booking', label: 'All Booking', icon: <Home size={20} /> },
-        { id: 'employee/referral', path: '/employee/referral', label: 'Referrai & Earnings', icon: <Home size={20} /> },
+        { id: 'employee/all-booking', path: '/employee/all-booking', label: 'All Booking', icon: <ShoppingCart size={20} /> },
+        { id: 'employee/referral', path: '/employee/referral', label: 'Referrai & Earnings', icon: <HandCoins size={20} /> },
         // { id: 'employeeall-booking', path: '/employee/profile', label: 'Profile', icon: <Home size={20} /> },
     ];
 

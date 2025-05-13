@@ -33,7 +33,7 @@ export default function EmployeeProfileCard() {
                 >
                     <div className="relative">
                         <img
-                            src={`${import.meta.env.VITE_API_URL}/${employee.profileImage}`}
+                            src={`${import.meta.env.VITE_API_URL}${employee.profileImage}`}
                             alt={`${employee.firstName} ${employee.lastName}`}
                             className="h-24 w-24 rounded-full border-4 border-white object-cover"
                         />
@@ -134,12 +134,12 @@ export default function EmployeeProfileCard() {
                     style={{ backgroundColor: primaryColorLight }}
                 >
                     <div className="flex flex-col sm:flex-row justify-between items-center">
-                        <button
+                        {/* <button
                             className="w-full sm:w-auto mb-2 sm:mb-0 text-white py-2 px-4 rounded-lg transition-colors duration-300"
                             style={{ backgroundColor: primaryColor }}
                         >
                             Edit Profile
-                        </button>
+                        </button> */}
                         <button
                             onClick={employeeLogout}
                             className="w-full cursor-pointer sm:w-auto bg-white py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors duration-300 border"

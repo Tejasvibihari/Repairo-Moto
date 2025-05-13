@@ -126,7 +126,7 @@ export default function SelectVendorDialog({ open, onClose, data, bookingId }) {
                                 label={
                                     <div className='flex gap-4 items-center my-4 border border-gray-300 p-2 rounded'>
                                         <img
-                                            src={`${import.meta.env.VITE_API_URL}/${d.profileImage}`}
+                                            src={`${import.meta.env.VITE_API_URL}${d.profileImage}`}
                                             alt={`${d.firstName} ${d.lastName}`}
                                             style={{ width: '40px', height: '40px', borderRadius: '50%' }}
                                         />

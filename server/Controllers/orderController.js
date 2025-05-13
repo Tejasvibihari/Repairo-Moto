@@ -315,7 +315,7 @@ export const updatePartsUsed = async (req, res) => {
 export const updatePartsPrice = async (req, res) => {
     const { id } = req.params; // Order ID
     const { partsUsed } = req.body; // Array of partsUsed
-
+    console.log(partsUsed)
     try {
         // 1. Find the order
         const order = await Order.findById(id);
@@ -328,7 +328,7 @@ export const updatePartsPrice = async (req, res) => {
             partName: part.partName,
             quantity: part.quantity,
             price: part.price,
-            // discountPrice: part.discountPrice
+            discountPrice: part.discountPrice
         }));
 
         // 3. Save the updated order

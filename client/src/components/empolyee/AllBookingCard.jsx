@@ -6,6 +6,8 @@ export default function AllBookingCard({ booking, onSaveParts }) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [parts, setParts] = useState([]);
     const [user, setUser] = useState(null);
+    const [partsUsedState, setPartsUsedState] = useState(booking.partsUsed || []);
+
     useEffect(() => {
         const searchUserByUserId = async () => {
             try {
@@ -26,6 +28,9 @@ export default function AllBookingCard({ booking, onSaveParts }) {
         if (booking && booking._id) {
             console.log("Booking data loaded:", booking);
         }
+    }, [booking]);
+    useEffect(() => {
+        setPartsUsedState(booking.partsUsed || []);
     }, [booking]);
 
     const handleCall = () => {
@@ -64,6 +69,8 @@ export default function AllBookingCard({ booking, onSaveParts }) {
             await axiosClient.put(`/api/admin/order/bookings/${booking._id}/update-parts`, {
                 partsUsed: parts
             });
+            // Update local state
+            setPartsUsedState(parts);
 
             setIsDialogOpen(false);
             onSaveParts?.(); // Optional callback if needed
@@ -99,7 +106,7 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                 <div className="flex flex-col md:flex-row">
                     <div className="w-full md:w-1/4 p-4 flex justify-center items-center">
                         <img
-                            src={user?.profileImage ? `${import.meta.env.VITE_API_URL}/${user?.profileImage}` : '/profileplaceholder.png'}
+                            src={user?.profileImage ? `${import.meta.env.VITE_API_URL}${user?.profileImage}` : '/profileplaceholder.png'}
                             alt={`${booking.name}'s bike`}
                             className="rounded-lg w-32 h-32 object-cover"
                         />
@@ -155,7 +162,7 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                                 </button>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                {booking.partsUsed && booking.partsUsed.length > 0 ? booking.partsUsed.map((part, index) => (
+                                {partsUsedState && partsUsedState.length > 0 ? partsUsedState.map((part, index) => (
                                     <span key={index} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
                                         {part.partName || part.name}{` x${part.quantity}`}
                                     </span>

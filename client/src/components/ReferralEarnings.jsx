@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Copy, CheckCheck, Share2 } from 'lucide-react';
 import { useSelector } from "react-redux";
 import QRGenerator from './QRGenerator';
@@ -7,9 +7,7 @@ export default function ReferralEarnings() {
     const [showQR, setShowQR] = useState(false);
     const employee = useSelector((state) => state.employeeAuth.employee)
     const vendor = useSelector((state) => state.vendorAuth.vendor)
-
-    const employeeReferralUrl = `${import.meta.env.VITE_API_URL}/user-signup/${employee.referralCode}`;
-    const vendorReferralUrl = `${import.meta.env.VITE_API_URL}/user-signup/${vendor.referralCode}`;
+    const [referralUrl, setReferralUrl] = useState("");
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(vendor ? vendor.referralCode : employee.referralCode);
@@ -20,7 +18,17 @@ export default function ReferralEarnings() {
     const toggleQRCode = () => {
         setShowQR(!showQR);
     };
+    useEffect(() => {
+        if (employee) {
+            const referralUrl = `${import.meta.env.VITE_FRONTEND_URL}/user-signup/${employee.referralCode}`
+            setReferralUrl(referralUrl);
+        } else {
+            const referralUrl = `${import.meta.env.VITE_FRONTEND_URL}/user-signup/${vendor.referralCode}`
+            setReferralUrl(referralUrl);
+        }
 
+    }, [])
+    // const employeeReferralUrl = `${import.meta.env.VITE_FRONTEND_URL}/user-signup/${employee?.referralCode}`;
     return (
         <div className="max-w-2xl mx-auto p-6 rounded-lg shadow-lg bg-white">
             {/* Header */}
@@ -46,7 +54,8 @@ export default function ReferralEarnings() {
                 <p className="text-gray-500 mb-2">Your Referral Code</p>
                 <div className="flex items-center">
                     <div className="flex-1 bg-white p-3 rounded-l-md border border-r-0 border-gray-200 font-mono font-semibold text-lg">
-                        {vendor ? vendor.referralCode : employee.referralCode}
+                        {/* {vendor ? vendor.referralCode : employee?.referralCode} */}
+                        {employee.referralCode}
                     </div>
                     <button
                         onClick={copyToClipboard}
@@ -63,7 +72,8 @@ export default function ReferralEarnings() {
                 <p className="text-gray-500 mb-2">Your Referral Link</p>
                 <div className="flex items-center">
                     <div className="flex-1 bg-white p-3 rounded-l-md border border-r-0 border-gray-200 truncate text-sm">
-                        {vendor ? vendorReferralUrl : employeeReferralUrl}
+                        {/* {vendor ? vendorReferralUrl : employeeReferralUrl} */}
+                        {referralUrl}
                     </div>
                     {/* <button
                         onClick={toggleQRCode}
@@ -115,7 +125,10 @@ export default function ReferralEarnings() {
                 </div>
             )} */}
 
-            <QRGenerator text={vendor ? vendorReferralUrl : employeeReferralUrl} />
+            <QRGenerator
+                //  text={vendor ? vendorReferralUrl : employeeReferralUrl} 
+                text={referralUrl}
+            />
             {/* How It Works Section */}
             <div className="bg-gray-50 p-6 rounded-lg">
                 <h2 className="font-semibold mb-4" style={{ color: '#e2a731' }}>How It Works</h2>

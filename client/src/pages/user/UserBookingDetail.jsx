@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Clock, Calendar, Wrench, Bike, User, MapPin, Phone, DollarSign, Package, Check, AlertTriangle, Truck } from 'lucide-react';
+import { Clock, Calendar, Wrench, Bike, User, MapPin, Phone, DollarSign, Package, Check, AlertTriangle, Truck, IndianRupee } from 'lucide-react';
 import Footer from '../../components/landing/Footer';
 import NavBar from '../../components/ui/NavBar';
 import { useParams } from "react-router-dom";
@@ -185,13 +185,13 @@ export default function UserBookingDetail() {
                                             </span>
                                             <span className="mt-1">{booking.assignedMechanic}</span>
                                         </div>
-                                        <div className="flex flex-col p-3 bg-white rounded-lg shadow-sm">
+                                        {/* <div className="flex flex-col p-3 bg-white rounded-lg shadow-sm">
                                             <span className="text-orange-600 font-medium flex items-center gap-1">
                                                 <User size={16} />
                                                 Vendor
                                             </span>
                                             <span className="mt-1">{booking.assignedVendor}</span>
-                                        </div>
+                                        </div> */}
                                         <div className="flex flex-col p-3 bg-white rounded-lg shadow-sm">
                                             <span className="text-blue-600 font-medium flex items-center gap-1">
                                                 <Truck size={16} />
@@ -280,16 +280,16 @@ export default function UserBookingDetail() {
                                 {/* Payment Summary */}
                                 <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 text-white">
                                     <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <DollarSign className="text-white" />
+                                        <IndianRupee className="text-white" />
                                         Payment Summary
                                     </h3>
                                     <div className="grid grid-cols-1 gap-1">
                                         <div className="flex justify-between items-center py-1">
                                             <span>Subtotal:</span>
-                                            <span className="font-medium">₹{booking.total?.subTotal}</span>
+                                            <span className="font-medium">₹{booking.total?.subTotal ? booking.total?.subTotal : "00"}</span>
                                         </div>
                                         <div className="flex justify-between items-center py-1">
-                                            <span>Discount ({booking.total?.discountType === 'percentage' ? `${booking.total?.discount}%` : `₹${booking.total?.discount}`}):</span>
+                                            <span>Discount ({booking.total?.discountType === 'percentage' ? `${booking.total?.discount}%` : `₹${booking.total?.discount ? booking.total?.discount : "N/A"}`}):</span>
                                             <span className="font-medium">-₹{booking.total?.subTotal - booking.total?.total}</span>
                                         </div>
                                         <div className="h-px bg-white/30 my-2"></div>

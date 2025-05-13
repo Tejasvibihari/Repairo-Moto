@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Bike from './Bike';
+import { Link } from "react-router-dom";
 
+const MotionLink = motion(Link);
 export default function Hero() {
     return (
 
@@ -23,13 +25,14 @@ export default function Hero() {
                 >
                     Affordable, reliable, and fast bike repair services delivered where you are.
                 </motion.p>
-                <motion.button
+                <MotionLink
+                    to="/user-order-booking"
                     className='mt-4 bg-primary text-white px-6 py-3 rounded-lg shadow-lg hover:bg-primary/90 transition'
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                 >
                     Book a Mechanic Now
-                </motion.button>
+                </MotionLink>
             </div>
             <div className="hidden md:flex items-center justify-center">
                 <Bike />

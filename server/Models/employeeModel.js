@@ -31,7 +31,25 @@ const empleyeeSchema = new mongoose.Schema({
     pinCode: {
         type: Number,
     },
-    rating: {
+    ratings: [
+        {
+            rating: {
+                type: Number,
+                min: 1,
+                max: 5,
+            },
+            reviewer: {
+                type: mongoose.Schema.Types.ObjectId, // optional
+                ref: "User", // or "Customer" if you have that model
+            },
+            comment: String,
+            date: {
+                type: Date,
+                default: Date.now,
+            }
+        }
+    ],
+    averageRating: {
         type: Number,
         default: 0,
     },

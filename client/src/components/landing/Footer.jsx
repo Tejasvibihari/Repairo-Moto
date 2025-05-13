@@ -1,4 +1,4 @@
-import { ContactRound, HandCoins, House, Images, Rss, Store, Wrench, Facebook, Instagram, Twitter, Youtube, Phone, Mail, Clock, MapPin } from 'lucide-react';
+import { ContactRound, HandCoins, House, Images, Rss, Store, Wrench, Facebook, Instagram, Twitter, Youtube, Phone, Mail, Clock, MapPin, ShieldUser, PersonStanding } from 'lucide-react';
 import { Link } from "react-router-dom";
 import React from 'react';
 
@@ -39,39 +39,30 @@ export default function Footer() {
                                     <House className="mr-3" size={20} /> Home
                                 </Link>
                             </li>
-                            <li>
-                                <Link to="/about" className="flex items-center hover:text-primary transition">
-                                    <Store className="mr-3" size={20} /> About
-                                </Link>
-                            </li>
+
                             <li>
                                 <Link to="/services" className="flex items-center hover:text-primary transition">
                                     <Wrench className="mr-3" size={20} /> Services
                                 </Link>
                             </li>
                             <li>
-                                <Link to="/contact" className="flex items-center hover:text-primary transition">
-                                    <ContactRound className="mr-3" size={20} /> Contact
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/blog" className="flex items-center hover:text-primary transition">
-                                    <Rss className="mr-3" size={20} /> Blog
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/gallery" className="flex items-center hover:text-primary transition">
-                                    <Images className="mr-3" size={20} /> Gallery
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/referral" className="flex items-center hover:text-primary transition">
-                                    <HandCoins className="mr-3" size={20} /> Referral & Earning
-                                </Link>
-                            </li>
-                            <li>
                                 <Link to="/terms" className="flex items-center hover:text-primary transition">
                                     <ContactRound className="mr-3" size={20} /> Terms & Conditions
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/dashboard" className="flex items-center hover:text-primary transition">
+                                    <ShieldUser className="mr-3" size={20} /> Admin
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/employee/dashboard" className="flex items-center hover:text-primary transition">
+                                    <Wrench className="mr-3" size={20} /> Employee
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/vendor/dashboard" className="flex items-center hover:text-primary transition">
+                                    <PersonStanding className="mr-3" size={20} /> Vendor
                                 </Link>
                             </li>
                         </ul>

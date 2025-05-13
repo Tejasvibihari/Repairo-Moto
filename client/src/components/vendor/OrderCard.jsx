@@ -89,7 +89,7 @@ export default function OrderCard({ booking }) {
                 price: part.price,
                 discountPrice: part.discountPrice
             }));
-
+            console.log(partsData, "Partsdata to be sent to API");
             // Make API call to update parts pricing
             const response = await axiosClient.put(`/api/admin/order/bookings/${_id}/update-parts-price`, { partsUsed: partsData });
             console.log(response);

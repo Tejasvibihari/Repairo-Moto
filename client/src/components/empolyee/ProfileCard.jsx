@@ -42,7 +42,7 @@ export default function ProfileCard({ employee }) {
                 <div className="flex flex-col items-center p-6 md:w-1/3">
                     <div className="relative">
                         <img
-                            src={`${import.meta.env.VITE_API_URL}/${employee.profileImage}`}
+                            src={`${import.meta.env.VITE_API_URL}${employee.profileImage}`}
                             alt={`${employee.firstName} ${employee.lastName}`}
                             className="w-32 h-32 object-cover rounded-full border-4 border-white shadow-md"
                         />
