@@ -9,6 +9,11 @@ const vendorOrderSchema = new mongoose.Schema({
             discountPrice: { type: Number, default: 0, min: 0 }, // New field for discount price
         }
     ],
+    orderId: {
+        type: mongoose.Schema.Types.ObjectId, // Unique identifier for the order
+        required: true,
+        ref: 'Order',
+    },
     vendorId: {
         type: mongoose.Schema.Types.ObjectId, // Reference to the Vendor model
         ref: 'Vendor',

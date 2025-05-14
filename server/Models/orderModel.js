@@ -100,6 +100,7 @@ const orderSchema = new mongoose.Schema({
             quantity: { type: Number, required: true, min: 1 },
             price: { type: Number, required: true, min: 0 },
             discountPrice: { type: Number, default: 0, min: 0 },
+            discountType: { type: String }
         }
     ],
     serviceProvided: [

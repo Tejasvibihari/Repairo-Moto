@@ -181,7 +181,7 @@ export default function UserAllBooking() {
                                             </button>
                                         ) : (
                                             <button
-                                                onClick={() => getInvoice(bike.id)}
+                                                onClick={() => getInvoice(bike._id)}
                                                 className={`flex items-center justify-center ${bike.status === "Completed" ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"} text-white px-4 py-2 rounded-md text-sm font-medium w-1/2`}
                                                 disabled={bike.status !== "Completed"}
                                             >

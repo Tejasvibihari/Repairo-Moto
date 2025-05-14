@@ -10,4 +10,5 @@ router.post("/addvendor", vendorUpload.single('profileImage'), addVendor);
 router.get("/getallvendor", getAllVendor);
 router.delete("/deletevendor/:id", deleteVendor);
 router.put("/updatevendor/:id", vendorUpload.single('profileImage'), updateVendorById);
+
 export default router;

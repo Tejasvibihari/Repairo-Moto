@@ -67,7 +67,7 @@ const Sidebar = ({ children }) => {
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                     {(!collapsed || isMobile) && (
-                        <img src="./logo/textlogo72.png" className="w-28" />
+                        <img src="/logo/textlogo72.png" className="w-28" />
                     )}
                     <button
                         onClick={() => isMobile ? setIsMobileMenuOpen(!isMobileMenuOpen) : setCollapsed(!collapsed)}

@@ -311,11 +311,11 @@ export const updatePartsUsed = async (req, res) => {
     }
 };
 
-
 export const updatePartsPrice = async (req, res) => {
     const { id } = req.params; // Order ID
     const { partsUsed } = req.body; // Array of partsUsed
-    console.log(partsUsed)
+    console.log(partsUsed);
+
     try {
         // 1. Find the order
         const order = await Order.findById(id);
@@ -323,31 +323,50 @@ export const updatePartsPrice = async (req, res) => {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        // 2. Update order's partsUsed
+        // 2. Update order's partsUsed (without discountPrice)
         order.partsUsed = partsUsed.map(part => ({
             partName: part.partName,
             quantity: part.quantity,
-            price: part.price,
-            discountPrice: part.discountPrice
+            price: part.price
         }));
 
         // 3. Save the updated order
         await order.save();
 
-        // 4. Create a new VendorOrder document
-        const vendorOrder = new VendorOrder({
-            partsUsed: order.partsUsed,
-            vendorId: order.vendorId,
-            deliveryBoyId: order.deliveryId,
-            deliveryBoyName: order.assignedDelivery,
-            orderDate: new Date() // Optional, defaults to now
-        });
+        // 4. Check if a VendorOrder with the given orderId already exists
+        let vendorOrder = await VendorOrder.findOne({ orderId: order._id });
 
-        await vendorOrder.save();
+        if (vendorOrder) {
+            // Update the existing VendorOrder
+            vendorOrder.partsUsed = partsUsed.map(part => ({
+                partName: part.partName,
+                quantity: part.quantity,
+                price: part.price,
+                discountPrice: part.discountPrice // Save discountPrice only in VendorOrder
+            }));
+            vendorOrder.orderDate = new Date(); // Update the order date
+            await vendorOrder.save();
+        } else {
+            // Create a new VendorOrder document
+            vendorOrder = new VendorOrder({
+                orderId: order._id,
+                partsUsed: partsUsed.map(part => ({
+                    partName: part.partName,
+                    quantity: part.quantity,
+                    price: part.price,
+                    discountPrice: part.discountPrice // Save discountPrice only in VendorOrder
+                })),
+                vendorId: order.vendorId,
+                deliveryBoyId: order.deliveryId,
+                deliveryBoyName: order.assignedDelivery,
+                orderDate: new Date() // Optional, defaults to now
+            });
+            await vendorOrder.save();
+        }
 
         // 5. Send response
         res.status(200).json({
-            message: 'Parts pricing updated successfully and vendor order saved.',
+            message: 'Parts pricing updated successfully',
             order,
             vendorOrder
         });
@@ -369,7 +388,8 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             partName: item.name,
             quantity: item.quantity,
             price: item.price,
-            discountPrice: item.discountPrice
+            discountPrice: item.discountPrice,
+            discountType: item.discountType
         }));
 
         const serviceProvided = data.partsAndServices.filter(item => item.type === 'service').map(item => ({

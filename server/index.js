@@ -14,6 +14,7 @@ import userRouter from './Routes/userRoutes.js'
 import employeeAuthRouter from "./Routes/employeeAuth.js"
 import vendorAuthRouter from "./Routes/vendorAuth.js"
 import blogRouter from "./Routes/blogRoutes.js"
+import vendorOrderRouter from "./Routes/vendorOrderRoutes.js"
 
 
 const app = express();
@@ -37,6 +38,7 @@ app.use("/api/user", userRouter);
 app.use("/api/employee/auth", employeeAuthRouter)
 app.use("/api/vendor/auth", vendorAuthRouter)
 app.use("/api/admin/blog", blogRouter);
+app.use("/api/vendor/vendororder", vendorOrderRouter);
 
 app.get("/", (req, res) => {
     res.send("Welcome to the Admin API");

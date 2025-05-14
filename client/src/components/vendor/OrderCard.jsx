@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axiosClient from '../../service/axiosClient';
 
-export default function OrderCard({ booking }) {
+export default function OrderCard({ booking, vendorOrder }) {
     // Extract data from booking object
     const {
         name,
@@ -32,11 +32,12 @@ export default function OrderCard({ booking }) {
     // Primary color variables
     const primaryColor = "#e2a731";
 
+
     // When dialog opens, initialize updatedParts with existing parts data
     const handleOpenPriceDialog = () => {
         if (status?.toLowerCase() !== 'in progress') return;
 
-        const initialParts = Array.isArray(partsUsed) ? partsUsed.map(part => ({
+        const initialParts = Array.isArray(vendorOrder.partsUsed) ? vendorOrder.partsUsed.map(part => ({
             ...part,
             price: part.price || 0,
             discountPrice: part.discountPrice || 0
@@ -89,7 +90,6 @@ export default function OrderCard({ booking }) {
                 price: part.price,
                 discountPrice: part.discountPrice
             }));
-            console.log(partsData, "Partsdata to be sent to API");
             // Make API call to update parts pricing
             const response = await axiosClient.put(`/api/admin/order/bookings/${_id}/update-parts-price`, { partsUsed: partsData });
             console.log(response);
@@ -120,14 +120,6 @@ export default function OrderCard({ booking }) {
             default:
                 return 'bg-gray-100 text-gray-800';
         }
-    };
-
-    // Safe function to get ID string from MongoDB ObjectId
-    const getShortId = (objectId) => {
-        if (objectId && objectId.$oid) {
-            return objectId.$oid.substring(objectId.$oid.length - 6).toUpperCase();
-        }
-        return typeof objectId === 'string' ? objectId.substring(objectId.length - 6).toUpperCase() : 'N/A';
     };
 
     // Check if the order status allows price updates
@@ -254,7 +246,7 @@ export default function OrderCard({ booking }) {
                             <div className="col-span-2 text-right">Total (₹)</div>
                         </div>
 
-                        {Array.isArray(partsUsed) && partsUsed.map((part, index) => (
+                        {Array.isArray(vendorOrder.partsUsed) && vendorOrder.partsUsed.map((part, index) => (
                             <div
                                 key={index}
                                 className={`grid grid-cols-12 text-sm py-2 ${index !== (partsUsed || []).length - 1 ? 'border-b' : ''}`}
@@ -268,7 +260,8 @@ export default function OrderCard({ booking }) {
                                     {part.discountPrice ? part.discountPrice : '-'}
                                 </div>
                                 <div className="col-span-2 text-right">
-                                    {((part.discountPrice || part.price) * part.quantity).toFixed(2)}
+                                    {/* {((part.discountPrice || part.price) * part.quantity).toFixed(2)} */}
+                                    {part.price - part.discountPrice}
                                 </div>
                             </div>
                         ))}
@@ -286,14 +279,22 @@ export default function OrderCard({ booking }) {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
                                     <span>
-                                        Total items: {partsUsed.reduce((acc, part) => acc + (part.quantity || 0), 0)}
+                                        {/* Total items: {partsUsed.reduce((acc, part) => acc + (part.quantity || 0), 0)} */}
+                                        Total items: {vendorOrder?.partsUsed?.length}
                                     </span>
                                 </div>
                                 <div className="font-medium" style={{ color: primaryColor }}>
-                                    Total: ₹{partsUsed.reduce((acc, part) => {
+                                    {/* Total: ₹{vendorOrder?.partsUsed.reduce((acc, part) => {
                                         const price = part.discountPrice > 0 ? part.discountPrice : part.price;
                                         return acc + (price * part.quantity);
-                                    }, 0).toFixed(2)}
+                                    }, 0).toFixed(2)} */}
+                                    Total: ₹{
+                                        vendorOrder.partsUsed.reduce(
+                                            (sum, part) =>
+                                                sum + (part.price - part.discountPrice) * part.quantity,
+                                            0
+                                        )
+                                    }
                                 </div>
                             </div>
                         )}
@@ -303,8 +304,8 @@ export default function OrderCard({ booking }) {
                 {/* Footer */}
                 <div className="mt-4 pt-3 border-t flex justify-between items-center" style={{ borderColor: `${primaryColor}40` }}>
                     <div className="text-xs text-gray-500">
-                        Order #: {getShortId(_id)}
-                        <div className="mt-1">Budget: ₹{estimatedBudget || 'N/A'}</div>
+                        Order #: {booking?.orderId}
+                        {/* <div className="mt-1">Budget: ₹{estimatedBudget || 'N/A'}</div> */}
                     </div>
                     <button
                         className={`text-xs font-medium px-3 py-1 rounded-full ${!canUpdatePrices && status?.toLowerCase() === 'completed' ? 'opacity-50 cursor-not-allowed' : ''}`}
