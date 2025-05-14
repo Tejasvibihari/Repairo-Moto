@@ -45,13 +45,13 @@ export default function NavBar() {
                 </div>
                 {user ?
                     <Link to="/user/dashboard">
-                        <button className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary hidden md:block">
+                        <button className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary hidden md:block rounded-lg">
                             Profile
                         </button>
                     </Link>
                     :
                     <Link to="/user-order-booking">
-                        <button className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary hidden md:block">
+                        <button className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary hidden md:block rounded-lg">
                             Book Appointment
                         </button>
                     </Link>
@@ -80,7 +80,7 @@ export default function NavBar() {
 
             {/* Mobile Menu */}
             <div
-                className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg transform ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+                className={`fixed top-0 right-0 h-full w-64 z-50 bg-white shadow-lg transform ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
                     } transition-transform duration-300 ease-in-out md:hidden`}
             >
                 <div className="flex items-center justify-between px-4 py-3 border-b">
@@ -114,9 +114,16 @@ export default function NavBar() {
                             {link.name}
                         </Link>
                     ))}
-                    <button className="bg-primary text-white cursor-pointer px-4 py-2 hover:bg-secondary">
-                        Sign In
-                    </button>
+                    {user ?
+                        <Link to="/user/dashboard" className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary text-center rounded-lg">
+                            Profile
+                        </Link>
+                        :
+                        <Link to="/user-order-booking" className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary text-center rounded-lg">
+                            Book Appointment
+                        </Link>
+                    }
+
                 </div>
             </div>
         </nav>
