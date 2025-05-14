@@ -67,8 +67,8 @@ const GenerateInvoiceForm = () => {
                     price: parseFloat(data.estimatedBudget || 0)
                 };
 
-                setTotaldiscount(data.total.discount || 0);
-                setTotaldiscountType(data.total.discountType || 'percentage');
+                setTotaldiscount(data?.total?.discount || 0);
+                setTotaldiscountType(data?.total?.discountType || 'percentage');
 
                 setPartsAndServices([...parts, ...servicesProvided]);
 
@@ -212,7 +212,7 @@ const GenerateInvoiceForm = () => {
                                         <input
                                             type="text"
                                             name="invoiceNumber"
-                                            value={orderData._id}
+                                            value={orderData.orderId}
                                             // onChange={handleInvoiceDetailsChange}
                                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                                         />
