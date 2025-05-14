@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import axiosClient from '../../service/axiosClient';
 import { setUserSignIn } from '../../app/slice/userSlice';
 import AlertSnackBar from '../../components/ui/AlertSnackBar';
+import CircularLoading from '../../components/ui/CircularLoading';
 
 export default function UserProfile() {
     const user = useSelector((state) => state.user.user);
@@ -70,6 +71,7 @@ export default function UserProfile() {
     // Save user data
     const handleSave = async () => {
         try {
+            setLoading(true);
             // Password validation
             if (passwordData.newPassword || passwordData.confirmPassword || passwordData.currentPassword) {
                 if (!passwordData.currentPassword) {
@@ -86,7 +88,7 @@ export default function UserProfile() {
                 }
             }
 
-            setLoading(true);
+
 
             // Prepare form data
             const formData = new FormData();
@@ -116,11 +118,13 @@ export default function UserProfile() {
             setPasswordError('');
             setPreviewImage(null);
             setIsEditing(false);
+            setLoading(false)
         } catch (error) {
             console.error('Error updating user:', error);
             setSnackBarMessage('Failed to update profile. Please try again.');
             setSnackBarSeverity('error');
             setSnackBarOpen(true);
+            setLoading(false)
         } finally {
             setLoading(false);
         }
@@ -471,14 +475,20 @@ export default function UserProfile() {
                                     </div>
 
                                     {/* Save Button */}
+
                                     <div className="col-span-1 md:col-span-2 mt-6 flex justify-end">
-                                        <button
-                                            onClick={handleSave}
-                                            className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-md flex items-center gap-2 shadow-md transition-all duration-300"
-                                        >
-                                            <Save size={18} />
-                                            Save Changes
-                                        </button>
+                                        {
+                                            loading ? <div className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-md flex items-center gap-2 shadow-md transition-all duration-300">
+                                                <CircularLoading size={35} />
+                                            </div> : <button
+                                                onClick={handleSave}
+                                                className="bg-primary cursor-pointer hover:bg-primary/90 text-white px-6 py-2 rounded-md flex items-center gap-2 shadow-md transition-all duration-300"
+                                            >
+                                                <Save size={18} />
+                                                Save Changes
+                                            </button>
+                                        }
+
                                     </div>
                                 </div>
                             ) : (

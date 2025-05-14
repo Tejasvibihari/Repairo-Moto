@@ -1,12 +1,12 @@
 import express from "express";
-import { createUser, editUser, getAllUser, getAllUserByReferralCode, getUserById, updateUser, usrSignIn } from "../Controllers/userController.js";
+import { createUser, editUser, getAllUser, getAllUserByReferralCode, getUserById, userSignIn } from "../Controllers/userController.js";
 import { userUpload } from "../Middleware/userMulter.js";
 
 
 const router = express.Router();
 
 router.post("/auth/user-sign-up", createUser);
-router.post("/auth/user-sign-in", usrSignIn);
+router.post("/auth/user-sign-in", userSignIn);
 router.get("/getalluser", getAllUser);
 
 

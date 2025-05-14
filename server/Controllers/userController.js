@@ -89,7 +89,7 @@ export const createUser = async (req, res) => {
 };
 
 
-export const usrSignIn = async (req, res) => {
+export const userSignIn = async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -111,12 +111,6 @@ export const usrSignIn = async (req, res) => {
             process.env.USER_JWT_SECRET, // Secret key
             { expiresIn: "1h" } // Token expiration time
         );
-
-        // Return success response with token
-        res.status(200).json({
-            token,
-            user: user
-        });
         res.status(200).json({
             message: "Sign-in successful",
             token, // Include the token in the response
@@ -184,63 +178,63 @@ export const getAllUserByReferralCode = async (req, res) => {
 };
 
 
-export const updateUser = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const {
-            firstName,
-            lastName,
-            phone,
-            email,
-            accountType,
-            businessName,
-            businessType,
-            currentPassword,
-            newPassword,
-            confirmPassword,
-        } = req.body;
+// export const updateUser = async (req, res) => {
+//     try {
+//         const { userId } = req.params;
+//         const {
+//             firstName,
+//             lastName,
+//             phone,
+//             email,
+//             accountType,
+//             businessName,
+//             businessType,
+//             currentPassword,
+//             newPassword,
+//             confirmPassword,
+//         } = req.body;
 
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
+//         const user = await User.findById(userId);
+//         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        // 🖼️ Handle Profile Image
-        if (req.file) {
-            user.profileImage = `/uploads/profile/${req.file.filename}`;
-        }
+//         // 🖼️ Handle Profile Image
+//         if (req.file) {
+//             user.profileImage = `/uploads/profile/${req.file.filename}`;
+//         }
 
-        // ✏️ Update basic fields
-        user.firstName = firstName;
-        user.lastName = lastName;
-        user.phone = phone;
-        user.email = email;
-        user.accountType = accountType;
-        user.businessName = accountType === 'business' ? businessName : null;
-        user.businessType = accountType === 'business' ? businessType : null;
+//         // ✏️ Update basic fields
+//         user.firstName = firstName;
+//         user.lastName = lastName;
+//         user.phone = phone;
+//         user.email = email;
+//         user.accountType = accountType;
+//         user.businessName = accountType === 'business' ? businessName : null;
+//         user.businessType = accountType === 'business' ? businessType : null;
 
-        // 🔐 Password Update
-        if (currentPassword || newPassword || confirmPassword) {
-            const isMatch = await bcrypt.compare(currentPassword, user.password);
-            if (!isMatch) {
-                return res.status(400).json({ message: 'Current password is incorrect' });
-            }
+//         // 🔐 Password Update
+//         if (currentPassword || newPassword || confirmPassword) {
+//             const isMatch = await bcrypt.compare(currentPassword, user.password);
+//             if (!isMatch) {
+//                 return res.status(400).json({ message: 'Current password is incorrect' });
+//             }
 
-            if (newPassword !== confirmPassword) {
-                return res.status(400).json({ message: 'New password and confirmation do not match' });
-            }
+//             if (newPassword !== confirmPassword) {
+//                 return res.status(400).json({ message: 'New password and confirmation do not match' });
+//             }
 
-            const salt = await bcrypt.genSalt(10);
-            user.password = await bcrypt.hash(newPassword, salt);
-        }
+//             const salt = await bcrypt.genSalt(10);
+//             user.password = await bcrypt.hash(newPassword, salt);
+//         }
 
-        await user.save();
+//         await user.save();
 
-        res.status(200).json({ message: 'Profile updated successfully', user });
+//         res.status(200).json({ message: 'Profile updated successfully', user });
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: 'Server error' });
+//     }
+// };
 
 export const getUserById = async (req, res) => {
     try {
