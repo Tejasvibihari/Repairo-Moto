@@ -70,8 +70,8 @@ export default function EmployeeBooking() {
         if (filters.searchTerm) {
             const searchLower = filters.searchTerm.toLowerCase();
             results = results.filter(booking =>
-                (booking.customerName && booking.customerName.toLowerCase().includes(searchLower)) ||
-                (booking.orderNumber && booking.orderNumber.toLowerCase().includes(searchLower))
+                (booking.name && booking.name.toLowerCase().includes(searchLower)) ||
+                (booking.orderId && booking.orderId.toLowerCase().includes(searchLower))
             );
         }
 

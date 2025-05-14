@@ -115,6 +115,7 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                     <div className="w-full md:w-3/4 p-4">
                         <div className="mb-4 flex flex-col md:flex-row md:justify-between md:items-start">
                             <div>
+                                Order ID: <span className="font-semibold">{booking.orderId}</span>
                                 <h2 className="text-xl font-bold text-gray-800">{booking.name}</h2>
                                 <p className="text-gray-600 text-sm">{booking.city}</p>
                                 <div className="flex items-center mt-1">
@@ -128,6 +129,7 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                                     </button>
                                 </div>
                             </div>
+
                         </div>
 
                         <div className="mb-4">
