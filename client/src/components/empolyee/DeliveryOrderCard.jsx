@@ -1,18 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MapPin, Phone, User, Package, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
+import axiosClient from '../../service/axiosClient';
 
 export default function DeliveryOrderCard({ order, vendor }) {
     const [expanded, setExpanded] = useState(false);
-
+    const [loading, setLoading] = useState(true);
+    const [vendorOrder, setVendorOrder] = useState(null);
     const getGoogleMapsLink = () => {
-        const address = `${vendor.address}, ${vendor.city}, ${vendor.state}, ${vendor.pincode}`;
-        return `${vendor?.googleLocation}`;
+        // Fallback to address search if googleLocation is not present
+        if (vendor?.googleLocation) {
+            return vendor.googleLocation;
+        }
     };
 
     const handleLocationClick = () => {
-        window.open(getGoogleMapsLink(), '_blank');
+        const url = getGoogleMapsLink();
+        if (url) {
+            window.open(url, '_blank');
+        }
     };
 
+    const changeExpand = async (id) => {
+        console.log(order._id)
+        try {
+            setExpanded(!expanded);
+            setLoading(true);
+            const response = await axiosClient.get(`/api/vendor/vendororder/getvendorOrder/orderid/${order._id}`);
+            setVendorOrder(response.data.vendorOrder);
+            setLoading(false);
+        } catch (error) {
+            console.log(error)
+        }
+    }
     return (
         <div className="max-w-md mx-auto bg-white rounded-xl overflow-hidden shadow-lg">
             {/* Card Header */}
@@ -113,7 +132,7 @@ export default function DeliveryOrderCard({ order, vendor }) {
             <div className="p-4">
                 <button
                     className="flex items-center justify-between w-full font-semibold"
-                    onClick={() => setExpanded(!expanded)}
+                    onClick={() => changeExpand(order._id)}
                 >
                     <div className="flex items-center">
                         <Package className="text-blue-500 mr-2 h-5 w-5" />
@@ -126,34 +145,48 @@ export default function DeliveryOrderCard({ order, vendor }) {
                 </button>
 
                 {expanded && (
-                    <div className="mt-3 ml-7">
-                        <table className="min-w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-gray-200">
-                                    <th className="text-left py-2 font-medium text-gray-500">Item</th>
-                                    <th className="text-center py-2 font-medium text-gray-500">Qty</th>
-                                    <th className="text-right py-2 font-medium text-gray-500">Price</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {order.partsUsed.map((part, index) => (
-                                    <tr key={index} className="border-b border-gray-100">
-                                        <td className="py-2">{part.partName}</td>
-                                        <td className="py-2 text-center">{part.quantity}</td>
-                                        <td className="py-2 text-right">₹{part.price}</td>
+                    loading ? (
+                        <div className="flex items-center justify-center h-12 w-12">
+                            <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-50" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <circle className="opacity-75" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <circle className="opacity-100" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            </svg>
+                        </div>
+                    ) : (
+                        <div className="mt-3 ml-7">
+                            <table className="min-w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-gray-200">
+                                        <th className="text-left py-2 font-medium text-gray-500">Item</th>
+                                        <th className="text-center py-2 font-medium text-gray-500">Qty</th>
+                                        <th className="text-center py-2 font-medium text-gray-500">Price</th>
+                                        <th className="text-center py-2 font-medium text-gray-500">Discount</th>
+                                        <th className="text-right py-2 font-medium text-gray-500">Total</th>
                                     </tr>
-                                ))}
-                                <tr className="font-medium">
-                                    <td colSpan={2} className="py-2 text-right">Total:</td>
-                                    <td className="py-2 text-right">
-                                        ₹{order.partsUsed.reduce((sum, part) => sum + (part.price * part.quantity), 0)}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {vendorOrder?.partsUsed?.map((part, index) => (
+                                        <tr key={index} className="border-b border-gray-100">
+                                            <td className="py-2">{part.partName}</td>
+                                            <td className="py-2 text-center">{part.quantity}</td>
+                                            <td className="py-2 text-center">₹{part.price}</td>
+                                            <td className="py-2 text-center">₹{part.discountPrice}</td>
+                                            <td className="py-2 text-right">₹{(part.price - part.discountPrice) * part.quantity}</td>
+                                        </tr>
+                                    ))}
+                                    <tr className="font-medium">
+                                        <td colSpan={4} className="py-2 text-right">Total:</td>
+                                        <td className="py-2 text-right">
+                                            ₹{vendorOrder?.partsUsed?.reduce((sum, part) => sum + ((part.price - part.discountPrice) * part.quantity), 0)}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    )
                 )}
             </div>
-        </div>
+        </div >
     );
-}
+} 
