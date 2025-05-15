@@ -27,6 +27,6 @@ export const vendorAuthSlice = createSlice({
         },
     },
 });
-export const { setVendorSignIn, setVendorSignOut, setLoading, setError } = vendorAuthSlice.actions;
+export const { setVendorSignIn, setVendorLogout, setLoading, setError } = vendorAuthSlice.actions;
 
 export default vendorAuthSlice.reducer;

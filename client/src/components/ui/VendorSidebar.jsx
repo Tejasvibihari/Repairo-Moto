@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Home, Bike, FileText, NotebookPen, User2, Briefcase,
-    ShoppingCart, QrCode, Menu, ChevronRight,
+    ShoppingCart, QrCode, Menu, ChevronRight, HandCoins
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -21,8 +21,8 @@ const VendorSidebar = ({ children }) => {
 
     const menuItems = [
         { id: 'vendor/dashboard', path: '/vendor/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-        { id: 'vendor/all-order', path: '/vendor/all-order', label: 'All Order', icon: <Home size={20} /> },
-        { id: 'vendor/referral', path: '/vendor/referral', label: 'Referrai & Earnings', icon: <Home size={20} /> },
+        { id: 'vendor/all-order', path: '/vendor/all-order', label: 'All Order', icon: <ShoppingCart size={20} /> },
+        { id: 'vendor/referral', path: '/vendor/referral', label: 'Referral & Earnings', icon: <HandCoins size={20} /> },
     ];
 
     const handleNavigation = (path) => {

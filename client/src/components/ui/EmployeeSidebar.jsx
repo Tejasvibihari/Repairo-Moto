@@ -22,7 +22,7 @@ const EmployeeSidebar = ({ children }) => {
 
     const highmenuItems = [
         { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-        { id: 'invoice', path: '/employee/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
+        // { id: 'invoice', path: '/employee/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
         { id: 'model', path: '/employee/model', label: 'Bike Model', icon: <Bike size={20} /> },
         { id: 'admin-order-form', path: '/employee/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
         { id: 'manage-order', path: '/employee/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
@@ -34,7 +34,7 @@ const EmployeeSidebar = ({ children }) => {
     const lowmenuItems = [
         { id: 'employee/dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
         { id: 'employee/all-booking', path: '/employee/all-booking', label: 'All Booking', icon: <ShoppingCart size={20} /> },
-        { id: 'employee/referral', path: '/employee/referral', label: 'Referrai & Earnings', icon: <HandCoins size={20} /> },
+        { id: 'employee/referral', path: '/employee/referral', label: 'Referral & Earnings', icon: <HandCoins size={20} /> },
         // { id: 'employeeall-booking', path: '/employee/profile', label: 'Profile', icon: <Home size={20} /> },
     ];
 
