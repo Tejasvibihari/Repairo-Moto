@@ -37,7 +37,7 @@ export default function OrderCard({ booking, vendorOrder }) {
     const handleOpenPriceDialog = () => {
         if (status?.toLowerCase() !== 'in progress') return;
 
-        const initialParts = Array.isArray(vendorOrder?.partsUsed) ? vendorOrder?.partsUsed?.map(part => ({
+        const initialParts = Array.isArray(partsUsed) ? partsUsed?.map(part => ({
             ...part,
             price: part.price || 0,
             discountPrice: part.discountPrice || 0
