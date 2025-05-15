@@ -3,6 +3,6 @@ import { getVendorOrderByVendorId } from '../Controllers/vendorOrderController.j
 
 const router = express.Router();
 
-router.get("/getvendorOrder/:vendorId", getVendorOrderByVendorId);
+router.get("/getvendororder/:vendorId", getVendorOrderByVendorId);
 // /api/vendor/vendororder/getvendorOrder/:orderId
 export default router;

@@ -11,12 +11,13 @@ export default function VendorDashboard() {
     const vendor = useSelector((state) => state.vendorAuth.vendor);
     const [fetchOrder, setFetchOrder] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
+    console.log(vendor);
 
     useEffect(() => {
         const fetchVendorOrder = async () => {
             try {
                 setLoading(true);
-                const response = await axiosClient.get(`/api/vendor/vendororder/getvendorOrder/${vendor._id}`);
+                const response = await axiosClient.get(`/api/vendor/vendororder/getvendororder/${vendor._id}`);
                 setFetchOrder(response.data.vendorOrders);
             } catch (error) {
                 console.log(error);
