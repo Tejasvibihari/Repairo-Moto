@@ -37,7 +37,7 @@ export default function OrderCard({ booking, vendorOrder }) {
     const handleOpenPriceDialog = () => {
         if (status?.toLowerCase() !== 'in progress') return;
 
-        const initialParts = Array.isArray(vendorOrder.partsUsed) ? vendorOrder.partsUsed.map(part => ({
+        const initialParts = Array.isArray(vendorOrder.partsUsed) ? vendorOrder?.partsUsed?.map(part => ({
             ...part,
             price: part.price || 0,
             discountPrice: part.discountPrice || 0
@@ -246,7 +246,7 @@ export default function OrderCard({ booking, vendorOrder }) {
                             <div className="col-span-2 text-right">Total (₹)</div>
                         </div>
 
-                        {Array.isArray(vendorOrder.partsUsed) && vendorOrder.partsUsed.map((part, index) => (
+                        {Array.isArray(vendorOrder?.partsUsed) && vendorOrder?.partsUsed?.map((part, index) => (
                             <div
                                 key={index}
                                 className={`grid grid-cols-12 text-sm py-2 ${index !== (partsUsed || []).length - 1 ? 'border-b' : ''}`}
@@ -266,13 +266,13 @@ export default function OrderCard({ booking, vendorOrder }) {
                             </div>
                         ))}
 
-                        {(!Array.isArray(partsUsed) || partsUsed.length === 0) && (
+                        {(!Array.isArray(partsUsed) || partsUsed?.length === 0) && (
                             <div className="text-sm py-2 text-gray-500 text-center">
                                 No parts have been added yet
                             </div>
                         )}
 
-                        {Array.isArray(partsUsed) && partsUsed.length > 0 && (
+                        {Array.isArray(partsUsed) && partsUsed?.length > 0 && (
                             <div className="mt-3 pt-3 border-t flex justify-between items-center text-sm" style={{ borderColor: `${primaryColor}20` }}>
                                 <div className="text-xs text-gray-500 flex items-center">
                                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -289,7 +289,7 @@ export default function OrderCard({ booking, vendorOrder }) {
                                         return acc + (price * part.quantity);
                                     }, 0).toFixed(2)} */}
                                     Total: ₹{
-                                        vendorOrder.partsUsed.reduce(
+                                        vendorOrder?.partsUsed?.reduce(
                                             (sum, part) =>
                                                 sum + (part.price - part.discountPrice) * part.quantity,
                                             0
