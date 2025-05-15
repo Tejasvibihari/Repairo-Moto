@@ -372,7 +372,6 @@ const GenerateInvoiceForm = () => {
                                                             <option value="service">Service</option>
                                                         </select>
                                                     </td>
-                                                    {console.log(item, "item")}
                                                     <td className="p-3 border-b border-gray-200">
                                                         <input
                                                             type="text"

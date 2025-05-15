@@ -530,7 +530,7 @@ export default function JobAsssignForm({ id }) {
                                                 <div className="flex mb-2 items-center justify-between">
                                                     <div>
                                                         <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full" style={{ backgroundColor: '#e2a731', color: 'white' }}>
-                                                            Current Status
+                                                            Status
                                                         </span>
                                                     </div>
                                                 </div>
@@ -540,8 +540,10 @@ export default function JobAsssignForm({ id }) {
                                                         style={{
                                                             width: orderId.status === 'Pending' ? '25%' :
                                                                 orderId.status === 'In Progress' ? '50%' :
-                                                                    orderId.status === 'Completed' ? '100%' :
-                                                                        orderId.status === 'Cancelled' ? '100%' : '0%',
+                                                                    orderId.status === 'Mechanic Assigned' ? '75%' :
+                                                                        orderId.status === 'Completed' ? '100%' :
+                                                                            orderId.status === 'Invoice Generated' ? '100%' :
+                                                                                orderId.status === 'Cancelled' ? '100%' : '0%',
                                                             backgroundColor: orderId.status === 'Cancelled' ? '#ef4444' : '#e2a731'
                                                         }}>
                                                     </div>
@@ -552,8 +554,10 @@ export default function JobAsssignForm({ id }) {
                                         <select
                                             className={`p-2 rounded border-2 transition-colors duration-200 outline-none ${orderId.status === 'Pending' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
                                                 orderId.status === 'In Progress' ? 'border-blue-500 text-blue-700 bg-blue-50' :
-                                                    orderId.status === 'Completed' ? 'border-green-500 text-green-700 bg-green-50' :
-                                                        'border-red-500 text-red-700 bg-red-50'
+                                                    orderId.status === 'Mechanic Assigned' ? 'border-indigo-500 text-indigo-700 bg-indigo-50' :
+                                                        orderId.status === 'Completed' ? 'border-green-500 text-green-700 bg-green-50' :
+                                                            orderId.status === 'Invoice Generated' ? 'border-purple-500 text-purple-700 bg-purple-50' :
+                                                                'border-red-500 text-red-700 bg-red-50'
                                                 }`}
                                             value={orderId.status || 'Pending'}
                                             onChange={(e) => {
@@ -566,9 +570,12 @@ export default function JobAsssignForm({ id }) {
                                         >
                                             <option value="Pending" className="text-yellow-700 bg-yellow-50">Pending</option>
                                             <option value="In Progress" className="text-blue-700 bg-blue-50">In Progress</option>
+                                            <option value="Mechanic Assigned" className="text-indigo-700 bg-indigo-50">Mechanic Assigned</option>
                                             <option value="Completed" className="text-green-700 bg-green-50">Completed</option>
                                             <option value="Cancelled" className="text-red-700 bg-red-50">Cancelled</option>
+                                            <option value="Invoice Generated" disabled className="text-purple-700 bg-purple-50">Invoice Generated</option>
                                         </select>
+
 
                                         <button
                                             onClick={updateOrderStatus}
@@ -596,27 +603,63 @@ export default function JobAsssignForm({ id }) {
 
                                             {/* Timeline points */}
                                             <div className="space-y-6 relative pl-10 pt-2 pb-2">
+
+                                                {/* Order Placed */}
                                                 <div className="relative">
                                                     <div className={`absolute -left-6 h-4 w-4 rounded-full ${orderId.createdAt ? 'bg-green-500' : 'bg-gray-300'} border-2 border-white`}></div>
                                                     <h5 className="text-sm font-medium">Order Placed</h5>
-                                                    <p className="text-xs text-gray-500">{orderId.createdAt ? new Date(orderId.createdAt).toLocaleString() : 'Pending'}</p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {orderId.createdAt ? new Date(orderId.createdAt).toLocaleString() : 'Pending'}
+                                                    </p>
                                                 </div>
+
+                                                {/* Mechanic Assigned */}
                                                 <div className="relative">
                                                     <div className={`absolute -left-6 h-4 w-4 rounded-full ${orderId.assignedMechanic ? 'bg-green-500' : 'bg-gray-300'} border-2 border-white`}></div>
                                                     <h5 className="text-sm font-medium">Mechanic Assigned</h5>
-                                                    <p className="text-xs text-gray-500">{orderId.assignedMechanic || 'Pending'}</p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {orderId.assignedMechanic || 'Pending'}
+                                                    </p>
                                                 </div>
+
+                                                {/* Work In Progress */}
                                                 <div className="relative">
-                                                    <div className={`absolute -left-6 h-4 w-4 rounded-full ${orderId.status === 'In Progress' || orderId.status === 'Completed' ? 'bg-green-500' : 'bg-gray-300'} border-2 border-white`}></div>
+                                                    <div className={`absolute -left-6 h-4 w-4 rounded-full ${['In Progress', 'Completed', 'Invoice Generated'].includes(orderId.status) ? 'bg-green-500' : 'bg-gray-300'} border-2 border-white`}></div>
                                                     <h5 className="text-sm font-medium">Work In Progress</h5>
-                                                    <p className="text-xs text-gray-500">{orderId.status === 'In Progress' || orderId.status === 'Completed' ? 'Started' : 'Pending'}</p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {['In Progress', 'Completed', 'Invoice Generated'].includes(orderId.status) ? 'Started' : 'Pending'}
+                                                    </p>
                                                 </div>
+
+                                                {/* Service Completed */}
                                                 <div className="relative">
-                                                    <div className={`absolute -left-6 h-4 w-4 rounded-full ${orderId.status === 'Completed' ? 'bg-green-500' : 'bg-gray-300'} border-2 border-white`}></div>
+                                                    <div className={`absolute -left-6 h-4 w-4 rounded-full ${['Completed', 'Invoice Generated'].includes(orderId.status) ? 'bg-green-500' : 'bg-gray-300'} border-2 border-white`}></div>
                                                     <h5 className="text-sm font-medium">Service Completed</h5>
-                                                    <p className="text-xs text-gray-500">{orderId.status === 'Completed' ? 'Finished' : 'Pending'}</p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {['Completed', 'Invoice Generated'].includes(orderId.status) ? 'Finished' : 'Pending'}
+                                                    </p>
                                                 </div>
+
+                                                {/* Invoice Generated */}
+                                                <div className="relative">
+                                                    <div className={`absolute -left-6 h-4 w-4 rounded-full ${orderId.status === 'Invoice Generated' ? 'bg-green-500' : 'bg-gray-300'} border-2 border-white`}></div>
+                                                    <h5 className="text-sm font-medium">Invoice Generated</h5>
+                                                    <p className="text-xs text-gray-500">
+                                                        {orderId.status === 'Invoice Generated' ? 'Generated' : 'Pending'}
+                                                    </p>
+                                                </div>
+
+                                                {/* Cancelled */}
+                                                <div className="relative">
+                                                    <div className={`absolute -left-6 h-4 w-4 rounded-full ${orderId.status === 'Cancelled' ? 'bg-red-500' : 'bg-gray-300'} border-2 border-white`}></div>
+                                                    <h5 className="text-sm font-medium text-red-600">Cancelled</h5>
+                                                    <p className="text-xs text-red-500">
+                                                        {orderId.status === 'Cancelled' ? 'Order Cancelled' : 'Not Cancelled'}
+                                                    </p>
+                                                </div>
+
                                             </div>
+
                                         </div>
                                     </div>
                                 </div>
@@ -634,17 +677,19 @@ export default function JobAsssignForm({ id }) {
                                 Cancel
                             </button> */}
                             <Link
-                                to={orderId.status === 'Completed' ? `/generate-invoice-form/${orderId._id}` : '#'}
+                                to={(orderId.status === 'Completed' || orderId.status === "Invoice Generated") ? `/generate-invoice-form/${orderId._id}` : '#'}
                                 onClick={(e) => {
-                                    if (loading || orderId.status !== 'Completed') {
-                                        e.preventDefault(); // Prevent navigation if loading or status is not 'Completed'
+                                    if (loading || (orderId.status !== 'Completed' && orderId.status !== "Invoice Generated")) {
+                                        e.preventDefault(); // Prevent navigation
                                     } else {
-                                        updateOrderStatus(); // Call the update function if needed
+                                        updateOrderStatus(); // Optional function call
                                     }
                                 }}
-                                className={`px-6 py-2 rounded-md flex items-center justify-center text-white shadow-sm transition-all hover:shadow-md ${loading || orderId.status !== 'Completed' ? 'bg-gray-400 cursor-not-allowed' : 'hover:bg-yellow-600'
+                                className={`px-6 py-2 rounded-md flex items-center justify-center text-white shadow-sm transition-all hover:shadow-md 
+        ${(orderId.status === 'Completed' || orderId.status === "Invoice Generated") && !loading
+                                        ? 'hover:bg-yellow-600 bg-[#e2a731]'
+                                        : 'bg-gray-400 cursor-not-allowed'
                                     }`}
-                                style={{ backgroundColor: loading || orderId.status !== 'Completed' ? '#d1d5db' : '#e2a731' }}
                             >
                                 {loading ? (
                                     <CircularLoading size={24} color="white" />
@@ -655,6 +700,23 @@ export default function JobAsssignForm({ id }) {
                                     </>
                                 )}
                             </Link>
+
+                            <Link
+                                to={orderId.status === 'Invoice Generated' ? `/order/invoice/${orderId._id}` : '#'}
+                                onClick={(e) => {
+                                    if (orderId.status !== 'Invoice Generated') {
+                                        e.preventDefault(); // Prevent navigation if not Invoice Generated
+                                    }
+                                }}
+                                className={`px-6 py-2 rounded-md flex items-center justify-center shadow-sm transition-all hover:shadow-md border-2
+        ${orderId.status === 'Invoice Generated'
+                                        ? 'border-purple-500 text-purple-700 bg-purple-100 hover:bg-purple-200'
+                                        : 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed'
+                                    }`}
+                            >
+                                View Invoice
+                            </Link>
+
                         </div>
                     </div>
                 </div >

@@ -404,6 +404,7 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             invoiceDate: data.invoiceDetails.invoiceDate,
             partsUsed,
             serviceProvided,
+            status: "Invoice Generated",
             total: {
                 subTotal: data.total.subtotal,
                 discount: data.total.discount,

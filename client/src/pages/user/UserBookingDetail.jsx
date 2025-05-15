@@ -224,17 +224,29 @@ export default function UserBookingDetail() {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {booking.partsUsed?.map((part, index) => (
-                                                            <tr key={index} className="border-b border-orange-100 last:border-0">
-                                                                <td className="py-2 px-2">{part.partName}</td>
-                                                                <td className="py-2 px-2 text-center">{part.quantity}</td>
-                                                                <td className="py-2 px-2 text-right">₹{part.price}</td>
-                                                                <td className="py-2 px-2 text-right">₹{part.discountPrice}</td>
-                                                                <td className="py-2 px-2 text-right font-medium">
-                                                                    ₹{part.discountPrice * part.quantity}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
+                                                        {booking.partsUsed?.map((part, index) => {
+                                                            let finalPricePerUnit = part.price;
+
+                                                            if (part.discountType === "amount") {
+                                                                finalPricePerUnit = part.price - part.discountPrice;
+                                                            } else if (part.discountType === "percentage") {
+                                                                finalPricePerUnit = part.price - (part.price * part.discountPrice / 100);
+                                                            }
+
+                                                            const total = finalPricePerUnit * part.quantity;
+                                                            return (
+
+                                                                <tr key={index} className="border-b border-orange-100 last:border-0">
+                                                                    <td className="py-2 px-2">{part.partName}</td>
+                                                                    <td className="py-2 px-2 text-center">{part.quantity}</td>
+                                                                    <td className="py-2 px-2 text-right">₹{part.price}</td>
+                                                                    <td className="py-2 px-2 text-right">{part.discountType === "amount" && "₹"}{part.discountPrice}{part.discountType === "percentage" && "%"}</td>
+                                                                    <td className="py-2 px-2 text-right font-medium">
+                                                                        ₹{total}
+                                                                    </td>
+                                                                </tr>
+                                                            )
+                                                        })}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -257,19 +269,30 @@ export default function UserBookingDetail() {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {booking.serviceProvided?.map((service, index) => (
-                                                            <tr key={index} className="border-b border-teal-100 last:border-0">
-                                                                <td className="py-2 px-2">{service.serviceName}</td>
-                                                                <td className="py-2 px-2 text-center">{service.quantity}</td>
-                                                                <td className="py-2 px-2 text-right">₹{service.price}</td>
-                                                                <td className="py-2 px-2 text-right">
-                                                                    ₹{service.discountPrice || service.price}
-                                                                </td>
-                                                                <td className="py-2 px-2 text-right font-medium">
-                                                                    ₹{(service.discountPrice || service.price) * service.quantity}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
+                                                        {booking.serviceProvided?.map((service, index) => {
+                                                            let finalPricePerUnit = service.price;
+
+                                                            if (service.discountType === "amount") {
+                                                                finalPricePerUnit = service.price - service.discountPrice;
+                                                            } else if (service.discountType === "percentage") {
+                                                                finalPricePerUnit = service.price - (service.price * service.discountPrice / 100);
+                                                            }
+
+                                                            const total = finalPricePerUnit * service.quantity;
+                                                            return (
+                                                                <tr key={index} className="border-b border-teal-100 last:border-0">
+                                                                    <td className="py-2 px-2">{service.serviceName}</td>
+                                                                    <td className="py-2 px-2 text-center">{service.quantity}</td>
+                                                                    <td className="py-2 px-2 text-right">{service.price}</td>
+                                                                    <td className="py-2 px-2 text-right">
+                                                                        {service.discountPrice ? `₹${service.discountPrice}` : "-"}
+                                                                    </td>
+                                                                    <td className="py-2 px-2 text-right font-medium">
+                                                                        ₹{total}
+                                                                    </td>
+                                                                </tr>
+                                                            )
+                                                        })}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -286,16 +309,16 @@ export default function UserBookingDetail() {
                                     <div className="grid grid-cols-1 gap-1">
                                         <div className="flex justify-between items-center py-1">
                                             <span>Subtotal:</span>
-                                            <span className="font-medium">₹{booking.total?.subTotal ? booking.total?.subTotal : "00"}</span>
+                                            <span className="font-medium">₹{booking?.total?.subTotal ? booking?.total?.subTotal : "00"}</span>
                                         </div>
                                         <div className="flex justify-between items-center py-1">
-                                            <span>Discount ({booking.total?.discountType === 'percentage' ? `${booking.total?.discount}%` : `₹${booking.total?.discount ? booking.total?.discount : "N/A"}`}):</span>
-                                            <span className="font-medium">-₹{booking.total?.subTotal - booking.total?.total}</span>
+                                            <span>Discount ({booking?.total?.discountType === 'percentage' ? `${booking?.total?.discount}%` : `₹${booking.total?.discount ? booking.total?.discount : "N/A"}`}):</span>
+                                            <span className="font-medium">₹{booking?.total?.subTotal - booking?.total?.total}</span>
                                         </div>
                                         <div className="h-px bg-white/30 my-2"></div>
                                         <div className="flex justify-between items-center py-1">
                                             <span className="text-lg font-bold">Total:</span>
-                                            <span className="text-lg font-bold">₹{booking.total?.total}</span>
+                                            <span className="text-lg font-bold">₹{booking?.total?.total}</span>
                                         </div>
                                     </div>
                                 </div>
