@@ -6,9 +6,9 @@ import authAdmin from "../Middleware/authAdmin.js";
 
 const router = express.Router();
 
-router.post("/addemployee", authAdmin, employeeUpload.single('profileImage'), createEmployee);
+router.post("/addemployee", employeeUpload.single('profileImage'), createEmployee);
 router.get("/getallemployee", getAllEmployee);
-router.delete("/deleteemployee/:id", authAdmin, deleteEmployeeById);
+router.delete("/deleteemployee/:id", deleteEmployeeById);
 router.put("/updateemployee/:id", employeeUpload.single("profileImage"), updateEmployeeById);
 
 
