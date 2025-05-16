@@ -1,13 +1,46 @@
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const AllUsersTable = ({ users }) => {
-    // Sample users data
 
+    const exportToExcel = () => {
+        const excelData = users.map((user, index) => ({
+            "S.No": index + 1,
+            "Name": `${user.firstName} ${user.lastName}`,
+            "Email": user.email,
+            "Phone": user.phone,
+            "Account Type": user.accountType.toUpperCase(),
+            "Business Name": user.businessName || "-",
+            "Address": user.address || "-",
+            "City": user.city || "-",
+            "State": user.state || "-",
+            "Pin Code": user.pincode || "-",
+            "Referral Code": user.referralCode,
+            "Created At": user.createdAt ? new Date(user.createdAt).toLocaleDateString() : ''
+        }));
 
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "All Users");
+
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const file = new Blob([excelBuffer], { type: 'application/octet-stream' });
+        saveAs(file, 'All_Users.xlsx');
+    };
     return (
         <div className="bg-white p-4 rounded-lg shadow">
+            <div className="flex justify-end mb-2">
+                <button
+                    onClick={exportToExcel}
+                    className="bg-primary text-white px-4 py-2 rounded hover:bg-yellow-600 cursor-pointer transition"
+                >
+                    Export to Excel
+                </button>
+            </div>
             <div className="overflow-x-auto">
+
                 <table className="w-full text-sm text-left text-gray-500">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
@@ -54,7 +87,7 @@ const AllUsersTable = ({ users }) => {
                     </thead>
                     <tbody>
                         {users?.map((user, index) => (
-                            <tr key={user.id} className="bg-white border-b hover:bg-gray-50">
+                            <tr key={user._id} className="bg-white border-b hover:bg-gray-50">
                                 <td className="px-6 py-4">{index + 1}</td>
                                 <td className="px-6 py-4 flex items-center">
                                     <div className="w-8 h-8 rounded-full bg-gray-200 mr-2 flex-shrink-0 overflow-hidden">
@@ -90,18 +123,6 @@ const AllUsersTable = ({ users }) => {
                     </tbody>
                 </table >
             </div >
-
-            {/* <div className="flex justify-between items-center mt-4">
-                <div>
-                    <span className="text-sm text-gray-700">
-                        Showing <span className="font-medium">{users.length}</span> users
-                    </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Previous</button>
-                    <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Next</button>
-                </div>
-            </div> */}
         </div >
     );
 };
