@@ -24,6 +24,8 @@ export default function AddEmployeeForm() {
         city: '',
         state: '',
         pinCode: '',
+        aadhar: '',
+        dl: '',
         profileImage: null,
     });
 
@@ -76,6 +78,8 @@ export default function AddEmployeeForm() {
                 city: '',
                 state: '',
                 pinCode: '',
+                aadhar: '',
+                dl: '',
                 profileImage: null,
             });
         } catch (err) {
@@ -115,11 +119,13 @@ export default function AddEmployeeForm() {
             />
             <Heading heading="Add Employee" />
             <form className='shadow-sm border border-gray-300 rounded p-4' onSubmit={handleSubmit}>
-                <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-6'>
+                <div className='grid grid-cols-1 md:grid-cols-4 gap-4 mt-6'>
                     <InputField label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} />
                     <InputField label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} />
                     <InputField label="Phone Number" type='number' name="phone" value={formData.phone} onChange={handleChange} />
                     <InputField label="Email" name="email" value={formData.email} type="email" onChange={handleChange} />
+                    <InputField label="Aadhar" name="aadhar" value={formData.aadhar} type="number" onChange={handleChange} />
+                    <InputField label="Driving Licence" name="dl" value={formData.dl} type="text" onChange={handleChange} />
                     <div>
                         <label className='text-gray-700 font-semibold mb-2 block text-sm'>Position</label>
                         <select name="position" value={formData.position} onChange={handleChange} required className='border-2 border-gray-300 rounded-md p-2 w-full'>

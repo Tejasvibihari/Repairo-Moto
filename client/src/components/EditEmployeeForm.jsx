@@ -16,6 +16,8 @@ export default function EditEmployeeForm({ initialData, onSuccess }) {
         city: initialData?.city || '',
         state: initialData?.state || '',
         pinCode: initialData?.pinCode || '',
+        aadhar: initialData?.aadhar || '',
+        dl: initialData?.dl || '',
         profileImage: null, // File input
     });
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
@@ -136,6 +138,30 @@ export default function EditEmployeeForm({ initialData, onSuccess }) {
                             className="border-2 border-gray-300 rounded-md p-2 w-full"
                             required
                             placeholder="Email"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Aadhar No.</label>
+                        <input
+                            type="number"
+                            name="aadhar"
+                            value={formData.aadhar}
+                            onChange={handleChange}
+                            className="border-2 border-gray-300 rounded-md p-2 w-full"
+                            required
+                            placeholder="Aadhar Number"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Driving Licence</label>
+                        <input
+                            type="text"
+                            name="dl"
+                            value={formData.dl}
+                            onChange={handleChange}
+                            className="border-2 border-gray-300 rounded-md p-2 w-full"
+                            required
+                            placeholder="Driving Licence"
                         />
                     </div>
                     <div>

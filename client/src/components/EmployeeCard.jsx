@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Check, CircleX, Trash, UserPen, X } from 'lucide-react'
+import { Check, CircleX, Trash, UserPen, X, Mail, Phone, MapPin, BadgeInfo, IdCard, UserCheck } from 'lucide-react'
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
@@ -16,7 +16,7 @@ import CircularLoading from './ui/CircularLoading';
 import { useDispatch } from 'react-redux';
 import { setEmployee } from '../app/slice/employeeSlice';
 
-export default function EmployeeCard({ id, firstName, lastName, position, phone, email, profileImage, address, city, state, pinCode, referralCode }) {
+export default function EmployeeCard({ id, firstName, lastName, position, phone, email, profileImage, address, city, state, pinCode, referralCode, aadhar, dl }) {
     const [open, setOpen] = React.useState(false);
     const [openDelete, setOpenDelete] = React.useState(false);
     const [snackBarOpen, setSnackBarOpen] = useState(false);
@@ -76,10 +76,9 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
                 onClose={handleCloseSnackBar}
             />
 
-            {/* Redesigned Employee Card */}
             <div className='bg-white rounded-lg shadow-lg overflow-hidden border-t-4 border-primary my-4'>
                 <div className='flex flex-col p-6'>
-                    {/* Profile Image Section */}
+                    {/* Profile Image */}
                     <div className='flex justify-center mb-4'>
                         <div className='relative'>
                             <img
@@ -93,15 +92,41 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
                         </div>
                     </div>
 
-                    {/* Employee Details Section */}
+                    {/* Basic Info */}
                     <div className='text-center mb-4'>
-                        <h3 className='text-lg font-bold text-primary mb-1'>{firstName} {lastName}</h3>
-                        <span className='inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-2'>{position}</span>
+                        <h3 className='text-xl font-bold text-primary'>
+                            {firstName} {lastName}
+                        </h3>
+                        <span className='inline-block bg-purple-100 text-primary px-3 py-1 rounded-full text-sm font-medium mt-1'>
+                            {position?.toUpperCase()}
+                        </span>
+                    </div>
 
-                        <div className='grid grid-cols-1 gap-2 mt-3'>
-                            <div className='text-sm text-gray-700'>{phone}</div>
-                            <div className='text-sm text-gray-700'>{email}</div>
-                            <div className='text-sm font-semibold text-primary'>{referralCode}</div>
+                    {/* Contact & Identity Info */}
+                    <div className='grid grid-cols-1 gap-2 text-sm text-gray-700 mb-4'>
+                        <div className='flex items-center gap-2'>
+                            <Phone size={14} className='text-primary' /> {phone}
+                        </div>
+                        <div className='flex items-center gap-2'>
+                            <Mail size={14} className='text-primary' /> {email}
+                        </div>
+                        <div className='flex items-center gap-2'>
+                            <MapPin size={14} className='text-primary' />
+                            {address}, {city}, {state} - {pinCode}
+                        </div>
+                        <div className='flex items-center gap-2'>
+                            <BadgeInfo size={14} className='text-primary' /> Referral Code:
+                            <span className='font-semibold text-primary'>{referralCode}</span>
+                        </div>
+                    </div>
+
+                    {/* Documents */}
+                    <div className='grid grid-cols-2 gap-2 text-sm text-gray-600 mb-4'>
+                        <div className='flex items-center gap-2'>
+                            <IdCard size={14} className='text-primary' /> Aadhar: {aadhar}
+                        </div>
+                        <div className='flex items-center gap-2'>
+                            <UserCheck size={14} className='text-primary' /> DL: {dl}
                         </div>
                     </div>
 
@@ -109,13 +134,13 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
                     <div className='flex gap-3 mt-2'>
                         <button
                             onClick={handleEditOpen}
-                            className='flex-1 flex items-center justify-center bg-primary text-white py-2 rounded-md text-sm font-medium transition-all duration-300 hover:bg-transparent hover:text-primary border border-primary'
+                            className='flex-1 flex items-center justify-center bg-primary text-white py-2 rounded-md text-sm font-medium transition-all hover:bg-transparent hover:text-primary border border-primary'
                         >
                             <UserPen size={16} className='mr-2' /> Edit
                         </button>
                         <button
                             onClick={handleDeleteOpen}
-                            className='flex-1 flex items-center justify-center bg-transparent text-red-600 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:bg-red-600 hover:text-white border border-red-600'
+                            className='flex-1 flex items-center justify-center bg-transparent text-red-600 py-2 rounded-md text-sm font-medium transition-all hover:bg-red-600 hover:text-white border border-red-600'
                         >
                             <Trash size={16} className='mr-2' /> Delete
                         </button>
@@ -154,6 +179,8 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
                             city: city,
                             state: state,
                             pinCode: pinCode,
+                            aadhar: aadhar,
+                            dl: dl,
                             profileImage: profileImage
                         }}
                     />

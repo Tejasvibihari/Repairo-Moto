@@ -49,6 +49,13 @@ const empleyeeSchema = new mongoose.Schema({
             }
         }
     ],
+    aadhar: {
+        type: Number,
+        required: true
+    },
+    dl: {
+        type: String
+    },
     averageRating: {
         type: Number,
         default: 0,
@@ -67,6 +74,8 @@ const empleyeeSchema = new mongoose.Schema({
         type: String,
         enum: ["admin", "employee", "mechanic", "manager", "operational manager", "telecaller", "delivery"],
     }
+}, {
+    timestamps: true
 })
 
 const Employee = mongoose.model("Employee", empleyeeSchema);

@@ -35,7 +35,25 @@ const vendorSchema = new mongoose.Schema({
     googleLocation: {
         type: String,
     },
-    rating: {
+    ratings: [
+        {
+            rating: {
+                type: Number,
+                min: 1,
+                max: 5,
+            },
+            reviewer: {
+                type: mongoose.Schema.Types.ObjectId, // optional
+                ref: "User", // or "Customer" if you have that model
+            },
+            comment: String,
+            date: {
+                type: Date,
+                default: Date.now,
+            }
+        }
+    ],
+    averageRating: {
         type: Number,
         default: 0,
     },
@@ -55,6 +73,8 @@ const vendorSchema = new mongoose.Schema({
         type: String,
         default: "vendor"
     }
+}, {
+    timestamps: true
 })
 
 const Vendor = mongoose.model("Vendor", vendorSchema);

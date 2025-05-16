@@ -5,7 +5,7 @@ import fs from "fs";
 import jwt from "jsonwebtoken";
 
 export const createEmployee = async (req, res) => {
-    const { firstName, lastName, email, phone, position, address, city, state, pinCode, profileImage } = req.body;
+    const { firstName, lastName, email, phone, position, address, city, state, pinCode, profileImage, aadhar, dl } = req.body;
     // console.log(pinCodAe, "Pincode");
     try {
         const employee = await Employee.findOne({ email });
@@ -36,6 +36,8 @@ export const createEmployee = async (req, res) => {
             state,
             pinCode,
             referralCode,
+            aadhar,
+            dl,
             profileImage // Placeholder URL
         });
         await newEmployee.save();
@@ -182,6 +184,8 @@ export const updateEmployeeById = async (req, res) => {
                 city: req.body.city,
                 state: req.body.state,
                 pinCode: req.body.pinCode,
+                aadhar: req.body.aadhar,
+                dl: req.body.dl,
                 profileImage, // Update the profile image
             },
             { new: true } // Return the updated document

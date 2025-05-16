@@ -53,9 +53,9 @@ const AllUsersTable = ({ users }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {users?.map((user) => (
+                        {users?.map((user, index) => (
                             <tr key={user.id} className="bg-white border-b hover:bg-gray-50">
-                                <td className="px-6 py-4">{1}</td>
+                                <td className="px-6 py-4">{index + 1}</td>
                                 <td className="px-6 py-4 flex items-center">
                                     <div className="w-8 h-8 rounded-full bg-gray-200 mr-2 flex-shrink-0 overflow-hidden">
                                         {user.profileImage ? (
