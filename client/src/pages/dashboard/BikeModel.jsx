@@ -12,7 +12,6 @@ export default function BikeModel() {
     const { brands } = useSelector((state) => state.brand)
     const [loading, setLoading] = React.useState(false);
     const [models, setModels] = React.useState({});
-    console.log(brands)
 
     useEffect(() => {
         const fetchBrands = async () => {
@@ -50,6 +49,7 @@ export default function BikeModel() {
                             <div className='flex text-center justify-center my-4 font-semibold'>No Brand Found<br /> Add Brand and Model</div>
                             :
                             <BrandCard brands={brands} />
+                        // <div>Hello</div>
 
                     )}
                 </div>

@@ -62,6 +62,8 @@ import UserAllBooking from './pages/user/UserAllBooking';
 import UserBookingDetail from './pages/user/UserBookingDetail';
 import MyReferral from './pages/user/MyReferral';
 import UserProfile from './pages/user/UserProfile';
+import AllUser from './pages/dashboard/AllUser';
+import EmployeeAllUser from './pages/employee/EmployeeAllUser';
 
 
 
@@ -225,6 +227,14 @@ export default function App() {
             }
           />
           <Route
+            path='/employee/all-user'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeAllUser /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
             path='/employee/invoice'
             element={
               <EmployeePrivateRoute>
@@ -354,6 +364,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><ManageQr /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/all-user'
+            element={
+              <PrivateRoute>
+                <Sidebar><AllUser /></Sidebar>
               </PrivateRoute>
             }
           />
