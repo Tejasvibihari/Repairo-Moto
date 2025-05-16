@@ -180,8 +180,8 @@ export default function UserAllBooking() {
                                                 Cancel Service
                                             </button>
                                         ) : (
-                                            <Link to={`/order/invoice/${bike._id}`}
-                                                className={`flex items-center justify-center ${bike.status === "Completed" ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"} text-white px-4 py-2 rounded-md text-sm font-medium w-1/2`}
+                                            <Link to={`${bike.status === "Invoice Generated" ? `/invoice/${bike._id}` : "#"}`}
+                                                className={`flex items-center justify-center ${bike.status === "Invoice Generated" ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"} text-white px-4 py-2 rounded-md text-sm font-medium w-1/2`}
                                                 disabled={bike.status !== "Completed"}
                                             >
                                                 <CreditCard size={16} className="mr-1" />

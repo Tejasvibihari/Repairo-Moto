@@ -72,6 +72,23 @@ export default function Dashboard() {
         fetchVendor();
         fetchEmployee()
     }, [])
+    const calculateRevenue = () => {
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth(); // 0-based
+        const currentYear = currentDate.getFullYear();
+
+        return order.reduce((sum, order) => {
+            const orderDate = new Date(order.createdAt);
+            const orderMonth = orderDate.getMonth();
+            const orderYear = orderDate.getFullYear();
+
+            if (orderMonth === currentMonth && orderYear === currentYear) {
+                return sum + (order?.total?.total || 0);
+            }
+            console.log(sum)
+            return sum;
+        }, 0);
+    };
 
 
     const handleCloseSnackBar = (event, reason) => {
@@ -101,7 +118,7 @@ export default function Dashboard() {
                     <OrderStatusCard status="Completed" count={order.filter((o) => o.status === "Completed").length} />
 
                     {/* Total Revenue */}
-                    <TotalRevenueCard revenue={order.reduce((sum, order) => sum + (order.total || 0), 0)} />
+                    <TotalRevenueCard revenue={calculateRevenue()} />
 
                     {/* Staff Count Cards */}
                     <StaffCountCard
@@ -113,9 +130,7 @@ export default function Dashboard() {
                 </div>
             </div>
             <div className='grid grid-cols-1 md:grid-cols-2'>
-                <MechanicManagement m={employee.filter((e) => e.position === "mechanic")} />
-                {/* 
-                < MechanicManagement /> */}
+
             </div>
         </>
 
