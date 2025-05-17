@@ -1,7 +1,7 @@
 import { UserPen, Plus } from 'lucide-react';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
-import axiosClient from '../service/axiosClient'
+import axiosClient from '../service/axiosClient';
 import Slide from '@mui/material/Slide';
 import React, { useEffect, useState } from 'react';
 
@@ -12,32 +12,45 @@ import JobAsssignForm from './JobAsssignForm';
 const Transition = React.forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
 });
-export default function OrderTable({ orders }) {
-    const [open, setOpen] = React.useState(false);
-    const [orderId, setOrderId] = useState(null);
 
+export default function OrderTable({ orders: initialOrders }) {
+    const [open, setOpen] = useState(false);
+    const [orderId, setOrderId] = useState(null);
+    const [orders, setOrders] = useState(initialOrders);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const handleClickOpen = (id) => {
         setOrderId(id);         // Set the ID for JobAssignForm
         setOpen(true);          // Open the Dialog
-
     };
-
 
     const handleClose = () => {
         setOpen(false);
+        // Trigger a refresh when dialog closes
+        setRefreshTrigger(prev => prev + 1);
     };
 
+    // Function to fetch updated orders from your API
+    const fetchUpdatedOrders = async () => {
+        try {
+            const response = await axiosClient.get('/orders'); // Replace with your actual API endpoint
+            setOrders(response.data);
+        } catch (error) {
+            console.error('Error fetching updated orders:', error);
+        }
+    };
+
+    // Update orders when parent component sends new props
     useEffect(() => {
+        setOrders(initialOrders);
+    }, [initialOrders]);
 
-    })
-
-
-    const handleMechanicChange = (orderId, mechanicId) => {
-        // You can update your backend here, or local state
-        console.log(`Assigning mechanic ${mechanicId} to order ${orderId}`);
-        // e.g., updateOrder(orderId, { assignedMechanic: mechanicId });
-    };
+    // Refresh orders when dialog closes or refreshTrigger changes
+    useEffect(() => {
+        if (refreshTrigger > 0) {
+            fetchUpdatedOrders();
+        }
+    }, [refreshTrigger]);
 
     return (
         <>
@@ -134,7 +147,7 @@ export default function OrderTable({ orders }) {
                 className='p-4'
             >
                 <JobAsssignForm id={orderId} />
-            </Dialog >
+            </Dialog>
         </>
     );
 }

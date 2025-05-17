@@ -2,37 +2,39 @@ import React, { useEffect, useState } from 'react'
 import OrderTable from '../../components/OrderTable'
 import axiosClient from "../../service/axiosClient"
 import AlertSnackBar from '../../components/ui/AlertSnackBar';
+import CircularLoading from '../../components/ui/CircularLoading';
+import OrderFilter from '../../components/ui/OrderFilter';
 
-export default function EmployeeManageOrder() {
+
+export default function ManageOrder() {
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
     const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
-    const [allOrders, SetAllOrders] = useState([]); // State to store all orders
+    const [allOrders, setAllOrders] = useState([]); // State to store all orders
+    const [filteredOrders, setFilteredOrders] = useState([]); // State to store filtered orders
+    const [loading, setLoading] = useState(false); // State to control loading state
 
     useEffect(() => {
         const getAllOrders = async () => {
             try {
+                setLoading(true); // Set loading to true before making the request
                 const response = await axiosClient.get('/api/admin/order/getallorder');
-                // console.log(response.data)
-                SetAllOrders(response.data); // Update state with the fetched orders
+                setAllOrders(response.data); // Update state with the fetched orders
+                setFilteredOrders(response.data); // Initialize filtered orders with all orders
+                setLoading(false)
             } catch (error) {
-                console.log(error);
-                // Check if the error is an AxiosError and has a response
                 if (error.response) {
-                    // Extract the error message from the response
                     const errorMessage = error.response.data.message || `Error: ${error.response.status}`;
-                    setSnackBarMessage(errorMessage); // Set the message to display in the Snackbar
+                    setSnackBarMessage(errorMessage);
                 } else if (error.request) {
-                    // Handle errors where the request was made but no response was received
                     setSnackBarMessage('No response from the server. Please try again later.');
                 } else {
-                    // Handle other errors (e.g., network issues)
                     setSnackBarMessage(error.message || 'An unexpected error occurred.');
                 }
-                setSnackBarSeverity('error'); // Set severity to error
-                setSnackBarOpen(true); // Open the Snackbar
+                setSnackBarSeverity('error');
+                setSnackBarOpen(true);
+                setLoading(false);
             }
-
         }
         getAllOrders()
     }, [])
@@ -44,6 +46,7 @@ export default function EmployeeManageOrder() {
 
         setSnackBarOpen(false);
     }
+
     return (
         <>
             <AlertSnackBar
@@ -52,12 +55,28 @@ export default function EmployeeManageOrder() {
                 severity={snackBarSeverity}
                 onClose={handleCloseSnackBar} // Close function for the Snackbar
             />
-            {allOrders <= 0 ?
-                <div className='flex text-center justify-center font-semibold'>No Order Found</div> :
-
-                <OrderTable orders={allOrders} />
-            }
-
+            {loading ? (
+                <div className="flex flex-col text-center justify-center items-center font-semibold">
+                    <span>
+                        <CircularLoading />
+                    </span>
+                    <span>
+                        Loading Please Wait...
+                    </span>
+                </div>
+            ) : allOrders.length <= 0 ? (
+                <div className='flex text-center justify-center font-semibold'>No Order Found</div>
+            ) : (
+                <div>
+                    {/* Add the OrderFilter component */}
+                    <OrderFilter
+                        orders={allOrders}
+                        setFilteredOrders={setFilteredOrders}
+                    />
+                    {/* Pass the filtered orders to the OrderTable */}
+                    <OrderTable orders={filteredOrders} />
+                </div>
+            )}
         </>
     )
 }

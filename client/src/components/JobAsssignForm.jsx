@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import Heading from './ui/Heading'
 import axiosClient from '../service/axiosClient';
 import AlertSnackBar from './ui/AlertSnackBar';
@@ -22,6 +22,7 @@ export default function JobAsssignForm({ id }) {
     const [modalloading, setModalLoading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('user');
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const [mechanicDialogOpen, setMechanicDialogOpen] = useState(false);
     const [deliveryDialogOpen, setDeliveryDialogOpen] = useState(false);
@@ -29,57 +30,72 @@ export default function JobAsssignForm({ id }) {
 
     // Dialog handlers
     const handleMechanicDialogOpen = () => setMechanicDialogOpen(true);
-    const handleMechanicDialogClose = () => setMechanicDialogOpen(false);
+    const handleMechanicDialogClose = () => {
+        setMechanicDialogOpen(false);
+        // Trigger refresh after closing dialog
+        setRefreshTrigger(prev => prev + 1);
+    };
+
     const handleDeliveryDialogOpen = () => setDeliveryDialogOpen(true);
-    const handleDeliveryDialogClose = () => setDeliveryDialogOpen(false);
+    const handleDeliveryDialogClose = () => {
+        setDeliveryDialogOpen(false);
+        // Trigger refresh after closing dialog
+        setRefreshTrigger(prev => prev + 1);
+    };
+
     const handleVendorDialogOpen = () => setVendorDialogOpen(true);
-    const handleVendorDialogClose = () => setVendorDialogOpen(false);
-    console.log(orderId);
-    useEffect(() => {
-        if (id) { // Only fetch data when id is available
-            const fetchDetails = async () => {
-                try {
-                    setModalLoading(true);
+    const handleVendorDialogClose = () => {
+        setVendorDialogOpen(false);
+        // Trigger refresh after closing dialog
+        setRefreshTrigger(prev => prev + 1);
+    };
 
-                    const results = await Promise.allSettled([
-                        axiosClient.get('/api/vendor/getallvendor'),
-                        axiosClient.get('/api/admin/employee/getallemployee?position=mechanic'),
-                        axiosClient.get('/api/admin/employee/getallemployee?position=delivery'),
-                        axiosClient.get(`/api/admin/order/employee/getorderbyid/${id}`),
-                    ]);
+    // Extract fetchDetails to a separate function so it can be called after updates
+    const fetchDetails = useCallback(async () => {
+        if (!id) return;
 
-                    // Handle each result individually
-                    const vendorsData = results[0].status === "fulfilled" ? results[0].value.data.vendors : [];
-                    const employeesData = results[1].status === "fulfilled" ? results[1].value.data.employees : [];
-                    const deliveryData = results[2].status === "fulfilled" ? results[2].value.data.employees : [];
-                    const orderDetail = results[3].status === "fulfilled" ? results[3].value.data : null;
+        try {
+            setModalLoading(true);
 
-                    // Update state
-                    setVendors(vendorsData);
-                    setMechanic(employeesData);
-                    setDelivery(deliveryData);
+            const results = await Promise.allSettled([
+                axiosClient.get('/api/vendor/getallvendor'),
+                axiosClient.get('/api/admin/employee/getallemployee?position=mechanic'),
+                axiosClient.get('/api/admin/employee/getallemployee?position=delivery'),
+                axiosClient.get(`/api/admin/order/employee/getorderbyid/${id}`),
+            ]);
 
-                    if (orderDetail) {
-                        setOrderById(orderDetail);
-                    } else {
-                        setSnackBarMessage("Failed to fetch order details.");
-                        setSnackBarSeverity("error");
-                        setSnackBarOpen(true);
-                    }
+            // Handle each result individually
+            const vendorsData = results[0].status === "fulfilled" ? results[0].value.data.vendors : [];
+            const employeesData = results[1].status === "fulfilled" ? results[1].value.data.employees : [];
+            const deliveryData = results[2].status === "fulfilled" ? results[2].value.data.employees : [];
+            const orderDetail = results[3].status === "fulfilled" ? results[3].value.data : null;
 
-                    setModalLoading(false);
-                } catch (error) {
-                    console.error("Error fetching data:", error);
-                    setSnackBarMessage("An unexpected error occurred.");
-                    setSnackBarSeverity("error");
-                    setSnackBarOpen(true);
-                    setModalLoading(false);
-                }
-            };
+            // Update state
+            setVendors(vendorsData);
+            setMechanic(employeesData);
+            setDelivery(deliveryData);
 
-            fetchDetails();
+            if (orderDetail) {
+                setOrderById(orderDetail);
+            } else {
+                setSnackBarMessage("Failed to fetch order details.");
+                setSnackBarSeverity("error");
+                setSnackBarOpen(true);
+            }
+
+            setModalLoading(false);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            setSnackBarMessage("An unexpected error occurred.");
+            setSnackBarSeverity("error");
+            setSnackBarOpen(true);
+            setModalLoading(false);
         }
-    }, [id]); // Only run when id changes
+    }, [id]);
+
+    useEffect(() => {
+        fetchDetails();
+    }, [fetchDetails, refreshTrigger]); // Add refreshTrigger as a dependency
 
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') return;
@@ -105,6 +121,9 @@ export default function JobAsssignForm({ id }) {
                 setSnackBarMessage("Order status updated successfully!");
                 setSnackBarSeverity('success');
                 setSnackBarOpen(true);
+                // Refresh data after successful update
+                fetchDetails();
+
             } else {
                 setSnackBarMessage("Failed to update order status. Please try again.");
                 setSnackBarSeverity('error');
@@ -654,7 +673,7 @@ export default function JobAsssignForm({ id }) {
                                                     <div className={`absolute -left-6 h-4 w-4 rounded-full ${orderId.status === 'Cancelled' ? 'bg-red-500' : 'bg-gray-300'} border-2 border-white`}></div>
                                                     <h5 className="text-sm font-medium text-red-600">Cancelled</h5>
                                                     <p className="text-xs text-red-500">
-                                                        {orderId.status === 'Cancelled' ? 'Order Cancelled' : 'Not Cancelled'}
+                                                        {orderId.status === 'Cancelled' ? 'Order Cancelled' : ''}
                                                     </p>
                                                 </div>
 

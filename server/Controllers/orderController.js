@@ -28,7 +28,6 @@ export const createManualOrder = async (req, res) => {
         if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime || !estimatedBudget) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
-
         // Format today's date as DDMMYY
         const now = new Date();
         const dd = String(now.getDate()).padStart(2, '0');
@@ -36,8 +35,8 @@ export const createManualOrder = async (req, res) => {
         const yy = String(now.getFullYear()).slice(-2);
         const todayFormatted = `${dd}${mm}${yy}`;
 
-        // Get the latest order for today
-        const latestOrder = await Order.findOne({ orderId: { $regex: `^ORD-${todayFormatted}` } })
+        // Get the latest order globally (not filtered by date)
+        const latestOrder = await Order.findOne({})
             .sort({ createdAt: -1 })
             .lean();
 
@@ -45,11 +44,15 @@ export const createManualOrder = async (req, res) => {
         if (latestOrder && latestOrder.orderId) {
             const parts = latestOrder.orderId.split('-');
             if (parts.length === 3) {
-                serial = parseInt(parts[2], 10) + 1;
+                const lastSerial = parseInt(parts[2], 10);
+                if (!isNaN(lastSerial)) {
+                    serial = lastSerial + 1;
+                }
             }
         }
 
         const orderId = `ORD-${todayFormatted}-${String(serial).padStart(3, '0')}`;
+
 
         const newOrder = new Order({
             orderId,
@@ -126,7 +129,9 @@ export const updateMechanic = async (req, res) => {
         // Update the order with the mechanic's name and ID
         const updatedOrder = await Order.findByIdAndUpdate(
             id,
+
             {
+                status: "Mechanic Assigned",
                 assignedMechanic: `${mechanic.firstName} ${mechanic.lastName}`, // Update with the mechanic's full name
                 mechanicId: mechanic._id, // Update with the mechanic's ID
             },
@@ -460,12 +465,12 @@ export const userOrder = async (req, res) => {
         // Format today's date as DDMMYY
         const now = new Date();
         const dd = String(now.getDate()).padStart(2, '0');
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
         const yy = String(now.getFullYear()).slice(-2);
         const todayFormatted = `${dd}${mm}${yy}`;
 
-        // Get latest order with today's date in orderId
-        const latestOrder = await Order.findOne({ orderId: { $regex: `^ORD-${todayFormatted}` } })
+        // Get the latest order globally (not filtered by date)
+        const latestOrder = await Order.findOne({})
             .sort({ createdAt: -1 })
             .lean();
 
@@ -473,11 +478,15 @@ export const userOrder = async (req, res) => {
         if (latestOrder && latestOrder.orderId) {
             const parts = latestOrder.orderId.split('-');
             if (parts.length === 3) {
-                serial = parseInt(parts[2], 10) + 1;
+                const lastSerial = parseInt(parts[2], 10);
+                if (!isNaN(lastSerial)) {
+                    serial = lastSerial + 1;
+                }
             }
         }
 
         const orderId = `ORD-${todayFormatted}-${String(serial).padStart(3, '0')}`;
+
 
         const newOrder = new Order({
             orderId,
