@@ -52,6 +52,7 @@ export default function UserBookingForm() {
         estimatedBudget: '',
         issues: '',
     });
+    console.log(user._id)
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(

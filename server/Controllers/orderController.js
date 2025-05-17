@@ -457,7 +457,7 @@ export const userOrder = async (req, res) => {
             estimatedBudget,
             issues
         } = req.body;
-
+        console.log(userId)
         if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime || !estimatedBudget) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
