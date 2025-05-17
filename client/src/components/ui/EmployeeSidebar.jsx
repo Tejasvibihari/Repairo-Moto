@@ -6,6 +6,7 @@ import {
     Home, Bike, FileText, NotebookPen, User2, Briefcase,
     ShoppingCart, QrCode, Menu, ChevronRight,
     HandCoins,
+    User,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 

@@ -377,7 +377,8 @@ const InvoiceTemplate = () => {
                   5c/12 Manna Singh Lane, Vivekanand Marg,<br />
                   North S.K Puri, Boring Road, Patna - 13 India<br />
                   Phone: +91 9229207021<br />
-                  Email: contact@repairomoto.in
+                  Email: contact@repairomoto.in<br />
+                  Gst No: <strong>10AAXCS3327A1ZO</strong><br />
                 </p>
               </div>
             </div>

@@ -82,7 +82,7 @@ const orderSchema = new mongoose.Schema({
     status: {
         type: String,
         default: 'Pending',
-        enum: ['Pending', 'In Progress', "Mechanic Assigned", 'Completed', "Invoice Generated", 'Cancelled'],
+        enum: [],
     },
     assignedMechanic: {
         type: String,

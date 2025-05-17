@@ -84,6 +84,8 @@ export default function AllBookingCard({ booking, onSaveParts }) {
         switch (booking.status) {
             case "Pending": return "bg-yellow-100 text-yellow-800";
             case "In Progress": return "bg-blue-100 text-blue-800";
+            case "Mechanic Assigned": return "bg-indigo-50 text-indigo-700";
+            case "Invoice Generated": return "bg-purple-50 text-purple-700";
             case "Completed": return "bg-green-100 text-green-800";
             case "Cancelled": return "bg-red-100 text-red-800";
             default: return "bg-gray-100 text-gray-800";
@@ -104,7 +106,7 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                 </div>
 
                 <div className="flex flex-col md:flex-row">
-                    <div className="w-full md:w-1/4 p-4 flex justify-center items-center">
+                    <div className="w-full md:w-1/4 p-4 flex justify-center items-start">
                         <img
                             src={user?.profileImage ? `${import.meta.env.VITE_API_URL}${user?.profileImage}` : '/profileplaceholder.png'}
                             alt={`${booking.name}'s bike`}

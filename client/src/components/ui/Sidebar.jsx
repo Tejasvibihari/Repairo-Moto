@@ -16,7 +16,6 @@ const Sidebar = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const admin = useSelector((state) => state.admin.admin.user);
-    console.log(admin)
 
     const currentPath = location.pathname === '/' ? 'dashboard' : location.pathname.substring(1);
 

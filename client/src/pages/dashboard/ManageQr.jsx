@@ -11,11 +11,11 @@ export default function ManageQr() {
     return (
         <>
             <Heading heading={"Manage Qr"} />
-            <div className='grid grid-cols-4 gap-4'>
-                <div className='col-span-3'>
+            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-3 col-span-1">
                     <QrTable onGenerateQR={handleGenerateQR} />
                 </div>
-                <div>
+                <div className="col-span-1">
                     <QRGenerator text={qrText} />
                 </div>
             </div>
