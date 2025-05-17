@@ -36,7 +36,7 @@ export default function UserBookingForm() {
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
     const [loading, setLoading] = useState(false); // State to control loading spinner
     const [formData, setFormData] = useState({
-        userId: user._id,
+        userId: user.id,
         name: '',
         contactNo: '',
         email: user.email,
