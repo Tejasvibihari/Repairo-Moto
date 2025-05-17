@@ -1,14 +1,19 @@
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { User, Menu, X, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { setLogOut } from '../../app/slice/authSlice';
+import { setUserLogout } from '../../app/slice/userSlice';
 
 export default function NavBar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const user = useSelector((state) => state.user.isAuthenticated);
-
-    const toggleMenu = () => {
-        setIsMenuOpen(!isMenuOpen);
-    };
+    const navigate = useNavigate();
+    const location = useLocation();
+    const dispatch = useDispatch();
+    const userDropdownRef = useRef(null);
+    const mobileMenuRef = useRef(null);
 
     // Array of navigation links
     const navLinks = [
@@ -18,114 +23,266 @@ export default function NavBar() {
         { name: 'Contact', path: '/contact' },
         { name: 'Blog', path: '/blog' },
         { name: 'Gallery', path: '/gallery' },
-        {
-            name: 'Referral & Earning', path: '/referral'
-        },
+        { name: 'Referral & Earning', path: '/referral' },
     ];
 
+    useEffect(() => {
+        console.log('NavBar component mounted');
+        console.log('User authenticated:', user);
+        console.log('Current path:', location.pathname);
+
+        // function handleClickOutside(event) {
+        //     if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        //         setUserDropdownOpen(false);
+        //     }
+
+        //     if (window.innerWidth < 768 && mobileMenuRef.current &&
+        //         !mobileMenuRef.current.contains(event.target) &&
+        //         !event.target.closest('button[aria-label="Toggle menu"]')) {
+        //         setIsMenuOpen(false);
+        //     }
+        // }
+
+        // document.addEventListener('mousedown', handleClickOutside);
+        // return () => {
+        //     document.removeEventListener('mousedown', handleClickOutside);
+        // };
+    }, [user, location.pathname]);
+
+    // Close menu when route changes
+    useEffect(() => {
+        setIsMenuOpen(false);
+        setUserDropdownOpen(false);
+    }, [location.pathname]);
+
+    const handleLogout = () => {
+        dispatch(setLogOut())
+        dispatch(setUserLogout())
+        setUserDropdownOpen(false);
+        navigate('/user-signin');
+    };
+
+    // Direct navigation handlers
+    const navigateTo = (path) => {
+        console.log('Navigating to:', path);
+        setIsMenuOpen(false);
+        setUserDropdownOpen(false);
+        navigate(path);
+    };
+
+    const navigateToProfile = () => {
+        console.log('Navigating to profile');
+        setUserDropdownOpen(false);
+        setIsMenuOpen(false);
+        setTimeout(() => {
+            navigate('/user/dashboard');
+        }, 10);
+    };
+
     return (
-        <nav className="bg-white shadow-md w-full">
-            <div className="container mx-auto px-4 py-3 flex items-center justify-between md:w-7xl">
+        <nav className="bg-white shadow-md w-full sticky top-0 z-40">
+            <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                 {/* Logo */}
-                <Link to="/" className="text-xl font-bold text-primary">
-                    <img src="/logo/textlogo150.png" alt="Logo" className="h-12 inline-block mr-2" />
-                </Link>
+                <div
+                    className="flex items-center text-xl font-bold text-primary cursor-pointer"
+                    onClick={() => navigateTo('/')}
+                >
+                    <img src="/logo/textlogo150.png" alt="Logo" className="h-10 md:h-12" />
+                </div>
 
                 {/* Desktop Menu */}
-                <div className="hidden md:flex items-center space-x-6 mx-auto">
-                    {navLinks.map((link, index) => (
-                        <Link
-                            key={index}
-                            to={link.path}
-                            className="text-gray-700 hover:text-primary font-semibold font-nunito hover:border-b-2 pb-1"
-                        >
-                            {link.name}
-                        </Link>
-                    ))}
+                <div className="hidden md:flex items-center space-x-3 lg:space-x-6 mx-auto">
+                    {navLinks.map((link, index) => {
+                        const isActive = location.pathname === link.path;
+                        return (
+                            <div
+                                key={index}
+                                className={`text-gray-700 hover:text-primary font-semibold font-nunito py-2 px-1 transition-all duration-200 cursor-pointer ${isActive
+                                    ? 'text-primary border-b-2 border-primary'
+                                    : 'hover:border-b-2 border-primary'
+                                    }`}
+                                onClick={() => navigateTo(link.path)}
+                            >
+                                {link.name}
+                            </div>
+                        );
+                    })}
                 </div>
-                {user ?
-                    <Link to="/user/dashboard">
-                        <button className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary hidden md:block rounded-lg">
-                            Profile
-                        </button>
-                    </Link>
-                    :
-                    <Link to="/user-order-booking">
-                        <button className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary hidden md:block rounded-lg">
+
+                {/* Desktop User Controls */}
+                <div className="hidden md:flex items-center space-x-4">
+                    {user ? (
+                        <div className="relative" ref={userDropdownRef}>
+                            <button
+                                className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-full text-gray-700 transition-colors duration-200"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    console.log('User dropdown toggle clicked');
+                                    setUserDropdownOpen((prev) => !prev);
+                                }}
+                                aria-label="User menu"
+                                aria-expanded={userDropdownOpen}
+                            >
+                                <User size={20} />
+                                <ChevronDown size={16} className={`transform transition-transform duration-200 ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {userDropdownOpen && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg overflow-hidden z-50 border border-gray-100">
+                                    <div
+                                        className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors duration-200 cursor-pointer"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            console.log('Profile clicked - desktop');
+                                            navigateToProfile();
+                                        }}
+                                    >
+                                        Profile
+                                    </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            console.log('Logout clicked');
+                                            handleLogout();
+                                        }}
+                                        className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors duration-200 border-t border-gray-100"
+                                    >
+                                        Logout
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <button
+                            className="bg-primary hover:bg-secondary text-white px-5 py-2 rounded-lg font-medium transition-colors duration-200 transform hover:scale-105"
+                            onClick={() => navigateTo('/user-order-booking')}
+                        >
                             Book Appointment
                         </button>
-                    </Link>
-                }
+                    )}
+                </div>
 
-                {/* Hamburger Icon for Mobile */}
-                <div className="md:hidden">
-                    <button onClick={toggleMenu} className="text-gray-700 focus:outline-none">
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 6h16M4 12h16M4 18h16"
-                            ></path>
-                        </svg>
+                {/* Mobile Controls */}
+                <div className="flex items-center space-x-3 md:hidden">
+                    {user && (
+                        <div className="relative" ref={userDropdownRef}>
+                            <button
+                                className="p-2 text-gray-700 hover:text-primary focus:outline-none"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    console.log('Mobile user dropdown toggle clicked');
+                                    setUserDropdownOpen((prev) => !prev);
+                                }}
+                                aria-label="User menu"
+                            >
+                                <User size={24} />
+                            </button>
+
+                            {userDropdownOpen && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg overflow-hidden z-50 border border-gray-100">
+                                    <div
+                                        className="block px-4 py-3 text-gray-700 hover:bg-gray-50 cursor-pointer"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            console.log('Profile clicked - mobile');
+                                            navigateToProfile();
+                                        }}
+                                    >
+                                        Profile
+                                    </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            console.log('Mobile logout clicked');
+                                            handleLogout();
+                                        }}
+                                        className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 border-t border-gray-100"
+                                    >
+                                        Logout
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <button
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className="p-2 text-gray-700 hover:text-primary focus:outline-none"
+                        aria-label="Toggle menu"
+                        aria-expanded={isMenuOpen}
+                    >
+                        {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
                 </div>
             </div>
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu - Slide-in from right */}
             <div
-                className={`fixed top-0 right-0 h-full w-64 z-50 bg-white shadow-lg transform ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+                ref={mobileMenuRef}
+                className={`fixed top-0 right-0 h-full w-72 z-50 bg-white shadow-lg transform ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
                     } transition-transform duration-300 ease-in-out md:hidden`}
             >
-                <div className="flex items-center justify-between px-4 py-3 border-b">
-                    <div className="text-xl font-bold text-primary">
-                        <img src="/logo/textlogo150.png" alt="Logo" className="h-12 inline-block mr-2" />
+                <div className="flex items-center justify-between px-4 py-5 border-b">
+                    <div
+                        className="text-xl font-bold text-primary cursor-pointer"
+                        onClick={() => navigateTo('/')}
+                    >
+                        <img src="/logo/textlogo150.png" alt="Logo" className="h-8" />
                     </div>
-                    <button onClick={toggleMenu} className="text-gray-700 focus:outline-none">
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M6 18L18 6M6 6l12 12"
-                            ></path>
-                        </svg>
+                    <button
+                        onClick={() => setIsMenuOpen(false)}
+                        className="text-gray-500 hover:text-primary focus:outline-none"
+                        aria-label="Close menu"
+                    >
+                        <X size={24} />
                     </button>
                 </div>
-                <div className="flex flex-col space-y-4 px-4 py-6">
-                    {navLinks.map((link, index) => (
-                        <Link
-                            key={index}
-                            to={link.path}
-                            className="text-gray-700 hover:text-primary"
-                        >
-                            {link.name}
-                        </Link>
-                    ))}
-                    {user ?
-                        <Link to="/user/dashboard" className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary text-center rounded-lg">
-                            Profile
-                        </Link>
-                        :
-                        <Link to="/user-order-booking" className="bg-primary text-white px-4 py-2 cursor-pointer hover:bg-secondary text-center rounded-lg">
-                            Book Appointment
-                        </Link>
-                    }
 
+                <div className="flex flex-col py-4">
+                    {navLinks.map((link, index) => {
+                        const isActive = location.pathname === link.path;
+                        return (
+                            <div
+                                key={index}
+                                className={`px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors cursor-pointer ${isActive ? 'text-primary font-semibold bg-gray-50' : ''
+                                    }`}
+                                onClick={() => navigateTo(link.path)}
+                            >
+                                {link.name}
+                            </div>
+                        );
+                    })}
+
+                    {user ? (
+                        <div className="px-6 pt-4 mt-2 border-t">
+                            <div
+                                className="block w-full bg-primary hover:bg-secondary text-white text-center py-3 rounded-lg font-medium transition-colors duration-200 cursor-pointer"
+                                onClick={navigateToProfile}
+                            >
+                                Profile
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="px-6 pt-4 mt-2 border-t">
+                            <div
+                                className="block w-full bg-primary hover:bg-secondary text-white text-center py-3 rounded-lg font-medium transition-colors duration-200 cursor-pointer"
+                                onClick={() => navigateTo('/user-order-booking')}
+                            >
+                                Book Appointment
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Mobile Menu Overlay */}
+            {isMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+                    onClick={() => setIsMenuOpen(false)}
+                    aria-hidden="true"
+                ></div>
+            )}
         </nav>
     );
 }
