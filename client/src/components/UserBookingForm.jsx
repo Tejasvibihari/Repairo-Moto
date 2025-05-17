@@ -27,6 +27,7 @@ import { useSelector } from 'react-redux';
 export default function UserBookingForm() {
     const user = useSelector((state) => state.user.user);
     console.log(user)
+    console.log(user)
     const [location, setLocation] = useState({ lat: '', lng: '' });
     const [locationError, setLocationError] = useState('');
     console.log('Location:', location);
