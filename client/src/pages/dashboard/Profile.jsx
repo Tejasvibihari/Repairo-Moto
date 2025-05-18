@@ -39,10 +39,10 @@ export default function Profile() {
                                     src={profileImageUrl}
                                     alt={`${user.firstName} ${user.lastName}`}
                                     className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-inner"
-                                    onError={(e) => {
-                                        e.target.onerror = null;
-                                        e.target.src = "https://via.placeholder.com/150";
-                                    }}
+                                // onError={(e) => {
+                                //     e.target.onerror = null;
+                                //     e.target.src = "https://via.placeholder.com/150";
+                                // }}
                                 />
                             </div>
                             <div className="absolute bottom-1 right-1 bg-white p-1 rounded-full">

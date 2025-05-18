@@ -2,6 +2,7 @@ import Order from "../Models/orderModel.js";
 import Employee from "../Models/employeeModel.js";
 import Vendor from '../Models/vendorModel.js'
 import VendorOrder from "../Models/vendorOrderModel.js";
+import { sendBookingConfirmationEmail } from "../Utils/mailer.js";
 // @desc Create a new service booking
 // @route POST /api/bookings
 // @access Public
@@ -17,6 +18,7 @@ export const createManualOrder = async (req, res) => {
             selectedModel,
             modelName,
             cc,
+            bs,
             services,
             otherService,
             preferredDate,
@@ -63,6 +65,7 @@ export const createManualOrder = async (req, res) => {
             selectedModel,
             modelName,
             cc,
+            bs,
             services,
             otherService,
             preferredDate,
@@ -437,7 +440,6 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error });
     }
 };
-
 export const userOrder = async (req, res) => {
     try {
         const {
@@ -450,6 +452,7 @@ export const userOrder = async (req, res) => {
             selectedModel,
             modelName,
             cc,
+            bs, // corrected spelling
             services,
             otherService,
             preferredDate,
@@ -457,19 +460,22 @@ export const userOrder = async (req, res) => {
             estimatedBudget,
             issues
         } = req.body;
-        console.log(userId)
-        if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime || !estimatedBudget) {
+        const { latitude, longitude } = req.body.location;
+        console.log(req.body);
+        console.log(latitude, longitude);
+
+        if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime || !estimatedBudget || !latitude || !longitude) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
 
         // Format today's date as DDMMYY
         const now = new Date();
         const dd = String(now.getDate()).padStart(2, '0');
-        const mm = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
         const yy = String(now.getFullYear()).slice(-2);
         const todayFormatted = `${dd}${mm}${yy}`;
 
-        // Get the latest order globally (not filtered by date)
+        // Get the latest order globally
         const latestOrder = await Order.findOne({})
             .sort({ createdAt: -1 })
             .lean();
@@ -487,7 +493,6 @@ export const userOrder = async (req, res) => {
 
         const orderId = `ORD-${todayFormatted}-${String(serial).padStart(3, '0')}`;
 
-
         const newOrder = new Order({
             orderId,
             userId,
@@ -495,10 +500,15 @@ export const userOrder = async (req, res) => {
             contactNo,
             email,
             city,
+            location: {
+                latitude,
+                longitude
+            },
             selectedBrand,
             selectedModel,
             modelName,
             cc,
+            bs,
             services,
             otherService,
             preferredDate,
@@ -508,6 +518,7 @@ export const userOrder = async (req, res) => {
         });
 
         const savedOrder = await newOrder.save();
+        await sendBookingConfirmationEmail(newOrder);
 
         return res.status(201).json({
             message: 'Order Confirmed!',
@@ -519,6 +530,7 @@ export const userOrder = async (req, res) => {
         return res.status(500).json({ message: 'Server error while creating Order' });
     }
 };
+
 
 
 export const getOrderByEmail = async (req, res) => {

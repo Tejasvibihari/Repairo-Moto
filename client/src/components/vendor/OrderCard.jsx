@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axiosClient from '../../service/axiosClient';
 
 export default function OrderCard({ booking, vendorOrder }) {
+    console.log(vendorOrder, "Venbdor Order")
     // Extract data from booking object
     const {
         name,
@@ -10,6 +11,7 @@ export default function OrderCard({ booking, vendorOrder }) {
         selectedModel,
         modelName,
         cc,
+        bs,
         status,
         assignedDelivery,
         issues,
@@ -35,18 +37,25 @@ export default function OrderCard({ booking, vendorOrder }) {
 
     // When dialog opens, initialize updatedParts with existing parts data
     const handleOpenPriceDialog = () => {
-        if (status?.toLowerCase() !== 'in progress') return;
-
-        const initialParts = Array.isArray(partsUsed) ? partsUsed?.map(part => ({
-            ...part,
-            price: part.price || 0,
-            discountPrice: part.discountPrice || 0
-        })) : [];
-
+        let initialParts = [];
+        if (vendorOrder?.partsUsed && Array.isArray(vendorOrder.partsUsed) && vendorOrder.partsUsed.length > 0) {
+            initialParts = vendorOrder.partsUsed.map(part => ({
+                ...part,
+                price: part.price || 0,
+                discountPrice: part.discountPrice || 0
+            }));
+        } else if (Array.isArray(partsUsed) && partsUsed.length > 0) {
+            initialParts = partsUsed.map(part => ({
+                ...part,
+                price: part.price || 0,
+                discountPrice: part.discountPrice || 0
+            }));
+        }
         setUpdatedParts(initialParts);
         setSaveMessage({ type: '', message: '' });
         setShowPriceDialog(true);
     };
+
 
     // Function to handle price and discount changes
     const handlePriceChange = (index, field, value) => {
@@ -92,8 +101,11 @@ export default function OrderCard({ booking, vendorOrder }) {
             }));
             // Make API call to update parts pricing
             const response = await axiosClient.put(`/api/admin/order/bookings/${_id}/update-parts-price`, { partsUsed: partsData });
-            console.log(response);
+
             setSaveMessage({ type: 'success', message: 'Parts pricing updated successfully' });
+            if (vendorOrder) {
+                vendorOrder.partsUsed = partsData;
+            }
             setTimeout(() => {
                 setShowPriceDialog(false);
             }, 2000);
@@ -123,8 +135,10 @@ export default function OrderCard({ booking, vendorOrder }) {
     };
 
     // Check if the order status allows price updates
-    const canUpdatePrices = status?.toLowerCase() === 'in progress';
-
+    const canUpdatePrices =
+        status?.toLowerCase() === 'in progress' ||
+        status?.toLowerCase() === 'mechanic assigned';
+    console.log(canUpdatePrices)
     // Calculate totals for display
     const { total, discountTotal } = calculateTotals();
 
@@ -190,6 +204,7 @@ export default function OrderCard({ booking, vendorOrder }) {
                             <p className="text-xs text-gray-500">Bike Model</p>
                             <p className="text-sm font-semibold" style={{ color: primaryColor }}>{selectedModel === "other" ? modelName : selectedModel}</p>
                             <p className="text-xs text-gray-500">{cc || ''}</p>
+                            <p className="text-xs text-gray-500">BS {bs || ''}</p>
                         </div>
                     </div>
 
@@ -261,7 +276,7 @@ export default function OrderCard({ booking, vendorOrder }) {
                                 </div>
                                 <div className="col-span-2 text-right">
                                     {/* {((part.discountPrice || part.price) * part.quantity).toFixed(2)} */}
-                                    {part.price - part.discountPrice}
+                                    {(part.price - part.discountPrice) * part.quantity}
                                 </div>
                             </div>
                         ))}
@@ -308,10 +323,10 @@ export default function OrderCard({ booking, vendorOrder }) {
                         {/* <div className="mt-1">Budget: ₹{estimatedBudget || 'N/A'}</div> */}
                     </div>
                     <button
-                        className={`text-xs font-medium px-3 py-1 rounded-full ${!canUpdatePrices && status?.toLowerCase() === 'completed' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`text-xs font-medium px-3 py-1 rounded-full ${!canUpdatePrices ? 'opacity-50 cursor-not-allowed' : ''}`}
                         style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                         onClick={canUpdatePrices ? handleOpenPriceDialog : undefined}
-                        disabled={!canUpdatePrices && status?.toLowerCase() === 'completed'}
+                        disabled={!canUpdatePrices}
                     >
                         {showParts ? (canUpdatePrices ? 'Update Parts Price' : 'View Details') : 'View Details'}
                     </button>
@@ -367,38 +382,48 @@ export default function OrderCard({ booking, vendorOrder }) {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {updatedParts.map((part, index) => (
-                                        <tr key={index}>
-                                            <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{part.partName}</td>
-                                            <td className="px-3 py-4 whitespace-nowrap text-sm text-center text-gray-500">{part.quantity}</td>
-                                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    className="border border-gray-300 rounded-md p-1 w-24 text-center"
-                                                    value={part.price || 0}
-                                                    onChange={(e) => handlePriceChange(index, 'price', e.target.value)}
-                                                />
-                                            </td>
-                                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    className="border border-gray-300 rounded-md p-1 w-24 text-center"
-                                                    value={part.discountPrice || 0}
-                                                    onChange={(e) => handlePriceChange(index, 'discountPrice', e.target.value)}
-                                                />
-                                            </td>
-                                            <td className="px-3 py-4 whitespace-nowrap text-sm text-right text-gray-500">
-                                                ₹{((part.price || 0) * (part.quantity || 0)).toFixed(2)}
-                                                {part.discountPrice > 0 && (
-                                                    <div className="text-xs text-green-600">
-                                                        ₹{((part.discountPrice || 0) * (part.quantity || 0)).toFixed(2)}
-                                                    </div>
-                                                )}
+                                    {updatedParts.length > 0 ? (
+                                        updatedParts.map((part, index) => (
+                                            <tr key={index}>
+                                                <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{part.partName}</td>
+                                                <td className="px-3 py-4 whitespace-nowrap text-sm text-center text-gray-500">{part.quantity}</td>
+                                                <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        className="border border-gray-300 rounded-md p-1 w-24 text-center"
+                                                        value={part.price || 0}
+                                                        onChange={(e) => handlePriceChange(index, 'price', e.target.value)}
+                                                    // disabled={!!(vendorOrder?.partsUsed && vendorOrder.partsUsed.length > 0)}
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        className="border border-gray-300 rounded-md p-1 w-24 text-center"
+                                                        value={part.discountPrice || 0}
+                                                        onChange={(e) => handlePriceChange(index, 'discountPrice', e.target.value)}
+                                                    // disabled={!!(vendorOrder?.partsUsed && vendorOrder.partsUsed.length > 0)}
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-4 whitespace-nowrap text-sm text-right text-gray-500">
+                                                    ₹{((part.price || 0) * (part.quantity || 0)).toFixed(2)}
+                                                    {part.discountPrice > 0 && (
+                                                        <div className="text-xs text-green-600">
+                                                            ₹{((part.discountPrice || 0) * (part.quantity || 0)).toFixed(2)}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={5} className="text-center py-4 text-gray-500">
+                                                No parts used or assigned
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                                 <tfoot>
                                     <tr className="bg-gray-50">

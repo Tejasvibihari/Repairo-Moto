@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Edit, Plus, X } from 'lucide-react';
+import { Phone, Edit, Plus, X, MapPin } from 'lucide-react';
 import axiosClient from '../../service/axiosClient';
 
 export default function AllBookingCard({ booking, onSaveParts }) {
@@ -130,8 +130,17 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                                         <Phone size={16} />
                                     </button>
                                 </div>
+                                <div className="mt-2">
+                                    <button
+                                        onClick={() => window.open(`https://www.google.com/maps?q=${booking?.location?.latitude},${booking?.location?.longitude}`, '_blank', 'noopener,noreferrer')}
+                                        className={`flex items-center text-blue-600 hover:text-blue-800`}
+                                        aria-label="View customer location"
+                                    >
+                                        <MapPin size={16} className="mr-1" />
+                                        <span>View Customer Location</span>
+                                    </button>
+                                </div>
                             </div>
-
                         </div>
 
                         <div className="mb-4">
@@ -149,6 +158,10 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                                 <div className="bg-gray-100 p-2 rounded">
                                     <span className="text-xs text-gray-500">Engine CC</span>
                                     <p className="font-medium">{booking.cc} CC</p>
+                                </div>
+                                <div className="bg-gray-100 p-2 rounded">
+                                    <span className="text-xs text-gray-500">Bs</span>
+                                    <p className="font-medium">BS {booking.bs} </p>
                                 </div>
                             </div>
                         </div>

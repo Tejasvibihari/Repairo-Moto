@@ -126,24 +126,22 @@ const EmployeeSidebar = ({ children }) => {
                     </ul>
                 </nav>
 
-                {/* User Profile at Bottom (Desktop only) */}
-                {!isMobile && (
-                    <div className={`absolute bottom-0 border-t border-gray-700 ${collapsed ? 'w-20' : 'w-64'}`}>
-                        <div className="flex items-center p-4 hover:bg-gray-700 cursor-pointer">
-                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-medium">
-                                JS
-                            </div>
-                            {!collapsed && (
-                                <Link to="/employee/profile">
-                                    <div className="ml-3">
-                                        <p className="text-sm font-medium font-nunito">{employee.firstName} {employee.lastName}</p>
-                                        <p className="text-xs text-gray-400">{employee.position.toUpperCase()}</p>
-                                    </div>
-                                </Link>
-                            )}
+                {/* User Profile at Bottom (Now visible on both mobile and desktop) */}
+                <div className={`absolute bottom-0 border-t border-gray-700 ${isMobile ? 'w-3/4' : (collapsed ? 'w-20' : 'w-64')}`}>
+                    <div className="flex items-center p-4 hover:bg-gray-700 cursor-pointer">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-medium">
+                            JS
                         </div>
+                        {(!collapsed || isMobile) && (
+                            <Link to="/employee/profile">
+                                <div className="ml-3">
+                                    <p className="text-sm font-medium font-nunito">{employee.firstName} {employee.lastName}</p>
+                                    <p className="text-xs text-gray-400">{employee.position.toUpperCase()}</p>
+                                </div>
+                            </Link>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Content Area */}

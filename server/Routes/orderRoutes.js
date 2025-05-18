@@ -25,7 +25,7 @@ router.put('/bookings/:id/update-parts', updatePartsUsed);
 router.put('/bookings/:id/update-parts-price', updatePartsPrice);
 router.put('/:id/update-order/generate-invoice', updateOrderandGenerateInvoice);
 
-router.get('/by-email', getOrderByEmail);
+router.get('/by-email', authUser, getOrderByEmail);
 router.put('/cancel/:id', cancelOrder);
 
 router.get('/by-position', getOrdersByPosition);

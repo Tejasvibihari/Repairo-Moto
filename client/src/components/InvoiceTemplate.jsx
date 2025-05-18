@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Printer, Download } from 'lucide-react';
 import axiosClient from '../service/axiosClient';
 import { useParams } from 'react-router-dom';
+import { QRCodeCanvas } from "qrcode.react";
+
 const InvoiceTemplate = () => {
   const [invoiceData, setInvoiceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const { id } = useParams();
+  const qrRef = useRef();
+  const [upiURL, setUpiURL] = useState("")
 
   useEffect(() => {
     // Simulating data fetch from backend
@@ -24,7 +28,7 @@ const InvoiceTemplate = () => {
       }
     }
     getOrderDetail()
-
+    setUpiURL(`upi://pay?pa=9308389960@okbizaxis&pn=MS%20SHANTRAM%20PRIVATE%20LIMITED&mc=5511&aid=uGICAgKD0oIiSCA&ver=01&mode=01&tr=BCR2DN7TZSFKVPBT&am=${invoiceData?.total?.total.toFixed(2)}`)
     setLoading(false);
   }, [id]);
 
@@ -362,7 +366,7 @@ const InvoiceTemplate = () => {
             </div>
             <div className="text-right">
               <h1 className="text-2xl font-bold text-gray-800">INVOICE</h1>
-              <p className="text-gray-600">Invoice No: {invoiceNumber}</p>
+              <p className="text-gray-600">Order No: {invoiceData.orderId}</p>
               <p className="text-gray-600">Date: {invoiceDate}</p>
               {/* <p className="text-gray-600">Due Date: {formattedDueDate}</p> */}
             </div>
@@ -520,6 +524,7 @@ const InvoiceTemplate = () => {
               <div>
                 <p className="text-gray-700"><strong>Brand:</strong> {invoiceData?.selectedBrand}</p>
                 <p className="text-gray-700"><strong>Model:</strong> {invoiceData?.selectedModel !== 'other' ? invoiceData.selectedModel : invoiceData.modelName}</p>
+                <p className="text-gray-700"><strong>Bs:</strong> {invoiceData?.bs}</p>
               </div>
               <div>
                 <p className="text-gray-700"><strong>CC Rating:</strong> {invoiceData?.cc}</p>
@@ -549,7 +554,17 @@ const InvoiceTemplate = () => {
                 Thank you for choosing Repairo Moto Service Center!
               </div>
             </div>
-            <img className="w-32 h-32" src="/paymentqr.jpeg" alt="Payment QR Code" />
+            <div ref={qrRef} className=''>
+              <QRCodeCanvas
+                value={`upi://pay?pa=9308389960@okbizaxis&pn=MS%20SHANTRAM%20PRIVATE%20LIMITED&mc=5511&aid=uGICAgKD0oIiSCA&ver=01&mode=01&tr=BCR2DN7TZSFKVPBT&am=${invoiceData?.total?.total.toFixed(2)}`}
+                size={150}
+                bgColor={"#ffffff"}
+                fgColor={"#000"}
+                level={"H"}
+                includeMargin={true}
+              />
+            </div>
+            {/* <img className="w-32 h-32" src="/paymentqr.jpeg" alt="Payment QR Code" /> */}
           </div>
         </div>
         <div className="flex justify-center mb-4 space-x-4 my-4">

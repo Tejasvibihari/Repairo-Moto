@@ -33,6 +33,13 @@ export default function UserAllBooking() {
             } catch (error) {
                 console.log(error);
                 setLoading(false)
+                setSnackBarMessage(
+                    error?.response?.data?.message ||
+                    error?.message ||
+                    "An unexpected error occurred"
+                );
+                setSnackBarSeverity('error'); // Set severity to error
+                setSnackBarOpen(true);
             }
         }
         fetchOrder();
@@ -180,7 +187,7 @@ export default function UserAllBooking() {
                                                 Cancel Service
                                             </button>
                                         ) : (
-                                            <Link to={`${bike.status === "Invoice Generated" ? `/invoice/${bike._id}` : "#"}`}
+                                            <Link to={`${bike.status === "Invoice Generated" ? `/order/invoice/${bike._id}` : "#"}`}
                                                 className={`flex items-center justify-center ${bike.status === "Invoice Generated" ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"} text-white px-4 py-2 rounded-md text-sm font-medium w-1/2`}
                                                 disabled={bike.status !== "Completed"}
                                             >

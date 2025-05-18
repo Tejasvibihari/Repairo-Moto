@@ -130,6 +130,10 @@ export default function UserBookingDetail() {
                                             <span className="text-gray-500">CC:</span>
                                             <span className="font-medium">{booking.cc}</span>
                                         </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-500">BS:</span>
+                                            <span className="font-medium">{booking.bs}</span>
+                                        </div>
                                     </div>
                                 </div>
 

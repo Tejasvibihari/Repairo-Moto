@@ -43,33 +43,7 @@ app.use("/api/admin/blog", blogRouter);
 app.use("/api/vendor/vendororder", vendorOrderRouter);
 
 
-const transporter = nodemailer.createTransport({
-    host: "smtpout.secureserver.net",
-    port: 465,
-    secure: true, // Use true for 465, false for other ports
-    auth: {
-        user: "contact@repairomoto.in", // GoDaddy email
-        pass: "Heybro@11",       // GoDaddy email password
-    },
-});
-const sendEmail = async () => {
-    try {
-        const info = await transporter.sendMail({
-            from: '"Your Name" <admin@repairomoto.in>', // Sender address
-            to: "tejasvibihari2000@gmail.com",                     // List of receivers
-            subject: "Test Email from MERN App",             // Subject line
-            text: "Hello, this is a test email using GoDaddy SMTP and Nodemailer.",
-            html: "<b>Hello, this is a test email using GoDaddy SMTP and Nodemailer.</b>",
-        });
-
-        console.log("Email sent: " + info.response);
-        console.log("Message ID: " + info);
-    } catch (error) {
-        console.error("Error sending email:", error);
-    }
-};
 app.get("/", (req, res) => {
-    sendEmail();
     res.send("Welcome to the Admin API");
 })
 // Mongodb Server 

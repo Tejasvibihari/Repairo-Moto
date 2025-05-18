@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { MapPin, Phone, User, Package, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
 import axiosClient from '../../service/axiosClient';
+import CircularLoading from '../ui/CircularLoading';
 
 export default function DeliveryOrderCard({ order, vendor }) {
     const [expanded, setExpanded] = useState(false);
     const [loading, setLoading] = useState(true);
     const [vendorOrder, setVendorOrder] = useState(null);
+
+    console.log(order)
     const getGoogleMapsLink = () => {
         // Fallback to address search if googleLocation is not present
         if (vendor?.googleLocation) {
@@ -30,6 +33,7 @@ export default function DeliveryOrderCard({ order, vendor }) {
             setLoading(false);
         } catch (error) {
             console.log(error)
+            setLoading(false)
         }
     }
     return (
@@ -37,7 +41,7 @@ export default function DeliveryOrderCard({ order, vendor }) {
             {/* Card Header */}
             <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4">
                 <h2 className="text-xl font-bold text-white">{vendor?.businessName}</h2>
-                <p className="text-white text-opacity-80 text-sm">Order Details</p>
+                <p className="text-white text-opacity-80 text-sm">Order Id:-<span className='font-semibold'> {order?.orderId}</span></p>
             </div>
 
             {/* Vendor Information */}
@@ -60,7 +64,7 @@ export default function DeliveryOrderCard({ order, vendor }) {
                     <div className="flex items-start">
                         <MapPin className="text-gray-500 mr-2 h-4 w-4 mt-1 flex-shrink-0" />
                         <button
-                            onClick={handleLocationClick}
+                            onClick={() => window.open(`${vendor?.googleLocation}`, '_blank', 'noopener,noreferrer')}
                             className="text-left text-blue-600 hover:underline"
                         >
                             {vendor?.address}, {vendor?.city}, {vendor?.state} - {vendor?.pincode}
@@ -89,6 +93,17 @@ export default function DeliveryOrderCard({ order, vendor }) {
                     <div className="flex items-center">
                         <MapPin className="text-gray-500 mr-2 h-4 w-4" />
                         <span>{order.city}</span>
+                    </div>
+                    <div className="flex items-center">
+                        <MapPin className="text-gray-500 mr-2 h-4 w-4" />
+                        <a
+                            href={`https://www.google.com/maps?q=${order?.location?.latitude},${order?.location?.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                        >
+                            View On Map
+                        </a>
                     </div>
                 </div>
             </div>
@@ -125,6 +140,10 @@ export default function DeliveryOrderCard({ order, vendor }) {
                         <span className="text-gray-500">Engine:</span>
                         <span className="ml-1 font-medium">{order.cc}</span>
                     </div>
+                    <div>
+                        <span className="text-gray-500">Bs:</span>
+                        <span className="ml-1 font-medium">{order.bs}</span>
+                    </div>
                 </div>
             </div>
 
@@ -146,12 +165,11 @@ export default function DeliveryOrderCard({ order, vendor }) {
 
                 {expanded && (
                     loading ? (
-                        <div className="flex items-center justify-center h-12 w-12">
-                            <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-50" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <circle className="opacity-75" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <circle className="opacity-100" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            </svg>
+                        <div className="flex items-center space-x-4 justify-center my-4">
+                            <CircularLoading size={20} />
+                            <span className='font-semibold text-gray-500 text-sm'>
+                                Loading Please Wait ......
+                            </span>
                         </div>
                     ) : (
                         <div className="mt-3 ml-7">
@@ -166,7 +184,7 @@ export default function DeliveryOrderCard({ order, vendor }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {vendorOrder?.partsUsed?.map((part, index) => (
+                                    {(vendorOrder ? vendorOrder.partsUsed : order.partsUsed)?.map((part, index) => (
                                         <tr key={index} className="border-b border-gray-100">
                                             <td className="py-2">{part.partName}</td>
                                             <td className="py-2 text-center">{part.quantity}</td>

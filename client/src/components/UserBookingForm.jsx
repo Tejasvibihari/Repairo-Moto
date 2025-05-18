@@ -26,17 +26,14 @@ import { useSelector } from 'react-redux';
 
 export default function UserBookingForm() {
     const user = useSelector((state) => state.user.user);
-    console.log(user)
-    console.log(user)
-    const [location, setLocation] = useState({ lat: '', lng: '' });
     const [locationError, setLocationError] = useState('');
-    console.log('Location:', location);
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
     const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
     const [loading, setLoading] = useState(false); // State to control loading spinner
+    const [location, setLocation] = useState({ lat: '', lng: '' });
     const [formData, setFormData] = useState({
         userId: user.id,
         name: '',
@@ -45,8 +42,12 @@ export default function UserBookingForm() {
         city: 'Patna',
         selectedBrand: '',
         selectedModel: '',
-        // modelName: '',
         cc: '',
+        bs: '',
+        location: {
+            latitude: '',
+            longitude: ''
+        },
         services: [],
         otherService: '',
         preferredDate: null,
@@ -54,15 +55,24 @@ export default function UserBookingForm() {
         estimatedBudget: '',
         issues: '',
     });
-    console.log(user._id)
+
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 position => {
-                    setLocation({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    });
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    setLocation({ lat, lng });
+
+                    // Set to formData as well
+                    setFormData(prev => ({
+                        ...prev,
+                        location: {
+                            latitude: lat,
+                            longitude: lng
+                        }
+                    }));
                 },
                 error => {
                     setLocationError('Unable to retrieve location.');
@@ -107,7 +117,7 @@ export default function UserBookingForm() {
                 : prev.services.filter((service) => service !== value),
         }));
     };
-
+    console.log(location)
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -129,6 +139,11 @@ export default function UserBookingForm() {
                 selectedModel: '',
                 // modelName: '',
                 cc: '',
+                bs: '',
+                location: {
+                    latitude: '',
+                    longitude: ''
+                },
                 services: [],
                 otherService: '',
                 preferredDate: null,
@@ -256,7 +271,7 @@ export default function UserBookingForm() {
                             <FormHelperText>Select Brand Name from the dropdown</FormHelperText>
                         </div>
                     </div>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
+                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4 my-6'>
                         <div>
                             <Select
                                 name="selectedModel"
@@ -299,6 +314,29 @@ export default function UserBookingForm() {
                                     },
                                 }}
                             />
+                        </div>
+                        {/* Make select feild to select bs  */}
+                        <div>
+                            <Select
+                                name="bs"
+                                value={formData.bs}
+                                onChange={handleInputChange}
+                                fullWidth
+                                displayEmpty
+                                required
+                                inputProps={{ 'aria-label': 'Select Model' }}
+                            >
+                                <MenuItem value="">
+                                    <em>Select BS</em>
+                                </MenuItem>
+                                <MenuItem value="I">Bs 1</MenuItem>
+                                <MenuItem value="II">Bs II</MenuItem>
+                                <MenuItem value="III">Bs III</MenuItem>
+                                <MenuItem value="IV">Bs IV</MenuItem>
+                                <MenuItem value="V">Bs V</MenuItem>
+                                <MenuItem value="VI">Bs VI</MenuItem>
+                            </Select>
+                            <FormHelperText>Select BS from the dropdown</FormHelperText>
                         </div>
                     </div>
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
@@ -453,7 +491,6 @@ export default function UserBookingForm() {
                                 label="Elaborate your Two wheeler's Issues"
                                 variant="outlined"
                                 placeholder="Elaborate your Two wheeler Issues"
-                                required
                                 value={formData.issues}
                                 onChange={handleInputChange}
                                 slotProps={{
@@ -478,8 +515,8 @@ export default function UserBookingForm() {
                             <span className='flex flex-row items-center justify-center'><Plus className='mr-2' /> Create Order</span>
                         )}
                     </button>
-                </form>
-            </div>
+                </form >
+            </div >
         </>
     );
 }

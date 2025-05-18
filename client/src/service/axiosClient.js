@@ -29,22 +29,22 @@ axiosClient.interceptors.request.use((config) => {
 });
 
 // 🔁 Handle 401 error and redirect to sign-in
-axiosClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (
-            error.response?.status === 401 &&
-            error.response?.data?.message === "Invalid token Please Login Again"
-        ) {
-            // Optional: clear localStorage or redux tokens here
-            localStorage.removeItem("token"); // Clear the token from localStorage
-            // store.dispatch(logoutAction()); // Optional: Dispatch a logout action if using Redux
+// axiosClient.interceptors.response.use(
+//     (response) => response,
+//     (error) => {
+//         if (
+//             error.response?.status === 401 &&
+//             error.response?.data?.message === "Invalid token Please Login Again"
+//         ) {
+//             // Optional: clear localStorage or redux tokens here
+//             localStorage.removeItem("token"); // Clear the token from localStorage
+//             // store.dispatch(logoutAction()); // Optional: Dispatch a logout action if using Redux
 
-            window.location.href = "/admin-sign-in"; // Redirect to the sign-in page
-        }
+//             // window.location.href = "/user-signin"; // Redirect to the sign-in page
+//         }
 
-        return Promise.reject(error);
-    }
-);
+//         return Promise.reject(error);
+//     }
+// );
 
 export default axiosClient;

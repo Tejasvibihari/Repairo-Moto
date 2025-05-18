@@ -298,6 +298,10 @@ export default function JobAsssignForm({ id }) {
                                                 <span className="font-semibold w-20">CC:</span>
                                                 <span className="text-gray-700">{orderId.cc || 'N/A'}</span>
                                             </div>
+                                            <div className="flex items-center">
+                                                <span className="font-semibold w-20">Bs:</span>
+                                                <span className="text-gray-700">{orderId.bs || 'N/A'}</span>
+                                            </div>
                                         </div>
                                     </div>
 

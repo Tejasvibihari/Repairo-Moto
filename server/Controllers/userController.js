@@ -5,8 +5,10 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { sendWelcomeEmail } from '../Utils/mailer.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 
 export const createUser = async (req, res) => {
     try {
@@ -69,6 +71,8 @@ export const createUser = async (req, res) => {
 
         // Save to DB
         await newUser.save();
+        const emailSubject = "Welcome to Repair Moto!";
+        await sendWelcomeEmail({ firstName, lastName, email, accountType, referralCode })
 
         res.status(201).json({
             message: "User created successfully",
