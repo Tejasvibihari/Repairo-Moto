@@ -37,6 +37,7 @@ export default function ManualBookingForm() {
         selectedModel: '',
         // modelName: '',
         cc: '',
+        bs: '',
         services: [],
         otherService: '',
         preferredDate: null,
@@ -99,6 +100,7 @@ export default function ManualBookingForm() {
                 selectedModel: '',
                 // modelName: '',
                 cc: '',
+                bs: '',
                 services: [],
                 otherService: '',
                 preferredDate: null,
@@ -225,7 +227,7 @@ export default function ManualBookingForm() {
                             <FormHelperText>Select Brand Name from the dropdown</FormHelperText>
                         </div>
                     </div>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
+                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4 my-6'>
                         <div>
                             <Select
                                 name="selectedModel"
@@ -268,6 +270,29 @@ export default function ManualBookingForm() {
                                     },
                                 }}
                             />
+                        </div>
+                        {/* Make select feild to select bs  */}
+                        <div>
+                            <Select
+                                name="bs"
+                                value={formData.bs}
+                                onChange={handleInputChange}
+                                fullWidth
+                                displayEmpty
+                                required
+                                inputProps={{ 'aria-label': 'Select Model' }}
+                            >
+                                <MenuItem value="">
+                                    <em>Select BS</em>
+                                </MenuItem>
+                                <MenuItem value="I">Bs 1</MenuItem>
+                                <MenuItem value="II">Bs II</MenuItem>
+                                <MenuItem value="III">Bs III</MenuItem>
+                                <MenuItem value="IV">Bs IV</MenuItem>
+                                <MenuItem value="V">Bs V</MenuItem>
+                                <MenuItem value="VI">Bs VI</MenuItem>
+                            </Select>
+                            <FormHelperText>Select BS from the dropdown</FormHelperText>
                         </div>
                     </div>
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
