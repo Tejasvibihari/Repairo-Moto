@@ -611,3 +611,121 @@ export const getOrdersByPosition = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
+// Completed Orders 
+export const completedOrders = async (req, res) => {
+    const { timeFrame } = req.query;
+
+    try {
+        let matchStage = { status: 'Invoice Generated' };
+        let groupBy, format;
+
+        const now = new Date();
+
+        if (timeFrame === 'month') {
+            // Group by day of current month
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+            matchStage.createdAt = {
+                $gte: startOfMonth,
+                $lte: endOfMonth,
+            };
+
+            groupBy = { $dayOfMonth: '$createdAt' };
+            format = d => ({ label: `Date ${d._id}`, count: d.count });
+
+        } else {
+            // Default: Group by month in current year
+            const startOfYear = new Date(now.getFullYear(), 0, 1);
+            const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+            matchStage.createdAt = {
+                $gte: startOfYear,
+                $lte: endOfYear,
+            };
+
+            groupBy = { $month: '$createdAt' };
+            const monthNames = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            format = d => ({ label: monthNames[d._id - 1], count: d.count });
+        }
+
+        const result = await Order.aggregate([
+            { $match: matchStage },
+            { $group: { _id: groupBy, count: { $sum: 1 } } },
+            { $sort: { _id: 1 } }
+        ]);
+
+        const formatted = result.map(format);
+        res.status(200).json(formatted);
+    } catch (error) {
+        console.error('Error in completedOrders:', error);
+        res.status(500).json({ message: 'Something went wrong' });
+    }
+}
+// /api/admin/order/orderstatus/completed-orders
+
+export const completeRevenue = async (req, res) => {
+    const { timeFrame } = req.query;
+    const now = new Date();
+    let matchStage = { status: 'Invoice Generated' };
+    let groupStage = {};
+    let formatFn;
+
+    if (timeFrame === 'month') {
+        // Current month - daily revenue
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        matchStage.createdAt = { $gte: start, $lte: end };
+        groupStage = {
+            _id: { $dayOfMonth: "$createdAt" },
+            revenue: { $sum: "$total.total" }
+        };
+        formatFn = d => ({ label: `Date ${d._id}`, revenue: d.revenue });
+    } else if (timeFrame === 'last6') {
+        // Last 6 months
+        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+        matchStage.createdAt = { $gte: sixMonthsAgo, $lte: now };
+        groupStage = {
+            _id: {
+                year: { $year: "$createdAt" },
+                month: { $month: "$createdAt" }
+            },
+            revenue: { $sum: "$total.total" }
+        };
+        formatFn = d => {
+            const date = new Date(d._id.year, d._id.month - 1);
+            return { label: date.toLocaleString('default', { month: 'long' }), revenue: d.revenue };
+        };
+    } else {
+        // Full current year - monthly
+        const start = new Date(now.getFullYear(), 0, 1);
+        const end = new Date(now.getFullYear(), 11, 31);
+        matchStage.createdAt = { $gte: start, $lte: end };
+        groupStage = {
+            _id: { $month: "$createdAt" },
+            revenue: { $sum: "$total.total" }
+        };
+        formatFn = d => {
+            const monthName = new Date(now.getFullYear(), d._id - 1).toLocaleString('default', { month: 'long' });
+            return { label: monthName, revenue: d.revenue };
+        };
+    }
+
+    try {
+        const result = await Order.aggregate([
+            { $match: matchStage },
+            { $group: groupStage },
+            { $sort: { "_id": 1 } }
+        ]);
+
+        const formatted = result.map(formatFn);
+        res.status(200).json(formatted);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+}

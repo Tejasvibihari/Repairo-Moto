@@ -1,5 +1,5 @@
 import express from "express";
-import { createManualOrder, getAllBookings, getAllBookingsByEmployee, getAllBookingsByVendor, getOrderById, updateDelivery, updateMechanic, updateOrderStatus, updatePartsPrice, updatePartsUsed, updateVendor, updateOrderandGenerateInvoice, userOrder, getOrderByEmail, cancelOrder, getOrdersByPosition } from "../Controllers/orderController.js";
+import { createManualOrder, getAllBookings, getAllBookingsByEmployee, getAllBookingsByVendor, getOrderById, updateDelivery, updateMechanic, updateOrderStatus, updatePartsPrice, updatePartsUsed, updateVendor, updateOrderandGenerateInvoice, userOrder, getOrderByEmail, cancelOrder, getOrdersByPosition, completedOrders, completeRevenue } from "../Controllers/orderController.js";
 import authAdmin from "../Middleware/authAdmin.js";
 import authUser from "../Middleware/authUser.js";
 
@@ -30,5 +30,7 @@ router.put('/cancel/:id', cancelOrder);
 
 router.get('/by-position', getOrdersByPosition);
 
+router.get('/orderstatus/completed-orders', completedOrders);
+router.get('/orderstatus/revenue', completeRevenue);
 
 export default router;

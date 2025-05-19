@@ -19,10 +19,12 @@ export default function EmployeeDashboard() {
         const fetchOrderForEmployee = async () => {
             setLoading(true);
             try {
-                const response = await axiosClient.get(`/api/admin/order/by-position?position=${employee.position}&employeeId=${employee._id}`)
-                console.log(response.data)
-                setFetchOrder(response.data);
-                setLoading(false);
+                if (employee.position === "mechanic" || employee.position === "delivery") {
+                    const response = await axiosClient.get(`/api/admin/order/by-position?position=${employee.position}&employeeId=${employee._id}`)
+                    console.log(response.data)
+                    setFetchOrder(response.data);
+                    setLoading(false);
+                }
             } catch (error) {
                 console.log(error);
                 setLoading(false);

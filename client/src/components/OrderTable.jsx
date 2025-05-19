@@ -4,7 +4,8 @@ import DialogActions from '@mui/material/DialogActions';
 import axiosClient from '../service/axiosClient';
 import Slide from '@mui/material/Slide';
 import React, { useEffect, useState } from 'react';
-
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import AlertSnackBar from './ui/AlertSnackBar';
 import CircularLoading from './ui/CircularLoading';
 import JobAsssignForm from './JobAsssignForm';
@@ -51,11 +52,61 @@ export default function OrderTable({ orders: initialOrders }) {
             fetchUpdatedOrders();
         }
     }, [refreshTrigger]);
+    const exportToExcel = () => {
+        const excelData = orders.map((order, index) => ({
+            "S.No": index + 1,
+            "Order ID": order.orderId,
+            "Name": order.name,
+            "Email": order.email || "-",
+            "Contact No": order.contactNo,
+            "City": order.city,
+            "Selected Brand": order.selectedBrand,
+            "Selected Model": order.selectedModel,
+            "Model Name": order.modelName || "-",
+            "CC": order.cc,
+            "BS": order.bs || "-",
+            "Latitude": order.location?.latitude || "-",
+            "Longitude": order.location?.longitude || "-",
+            "Services": order.services?.join(", ") || "-",
+            "Other Service": order.otherService || "-",
+            "Preferred Date": order.preferredDate ? new Date(order.preferredDate).toLocaleDateString() : "-",
+            "Preferred Time": order.preferredTime || "-",
+            "Estimated Budget": order.estimatedBudget,
+            "Issues": order.issues || "-",
+            "Status": order.status,
+            "Assigned Mechanic": order.assignedMechanic || "-",
+            "Assigned Vendor": order.assignedVendor || "-",
+            "Assigned Delivery": order.assignedDelivery || "-",
+            "Invoice Date": order.invoiceDate ? new Date(order.invoiceDate).toLocaleDateString() : "-",
+            "Sub Total": order.total?.subTotal || "-",
+            "Discount": order.total?.discount || "-",
+            "Discount Type": order.total?.discountType || "-",
+            "Total": order.total?.total || "-",
+            "Created At": order.createdAt ? new Date(order.createdAt).toLocaleString() : "-",
+            "Updated At": order.updatedAt ? new Date(order.updatedAt).toLocaleString() : "-"
+        }));
 
+
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Order");
+
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const file = new Blob([excelBuffer], { type: 'application/octet-stream' });
+        saveAs(file, 'Orders.xlsx');
+    };
     return (
         <>
             <div className="p-4 border border-gray-200 rounded shadow-sm">
                 <div className="overflow-x-auto overflow-y-auto">
+                    <div className='flex items-end justify-end my-4'>
+                        <button
+                            onClick={exportToExcel}
+                            className="bg-primary text-white px-4 py-2 rounded hover:bg-yellow-600 cursor-pointer transition"
+                        >
+                            Export To Excel
+                        </button>
+                    </div>
                     <table className="min-w-full w-full divide-y overflow-x-auto overflow-y-auto divide-gray-200 text-sm">
                         <thead className="bg-gray-100">
                             <tr>

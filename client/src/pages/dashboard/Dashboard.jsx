@@ -9,6 +9,8 @@ import OrderStatusCard from '../../components/OrderStatusCard';
 import TotalRevenueCard from '../../components/TotalRevenueCard';
 import StaffCountCard from '../../components/StaffCountCard';
 import MechanicManagement from '../../components/MechanicStatus';
+import CompletedOrdersChart from '../../components/CompletedOrdersChart';
+import RevenueChart from '../../components/RevenueChart';
 
 
 export default function Dashboard() {
@@ -129,8 +131,13 @@ export default function Dashboard() {
                     <StaffCountCard type="Delivery Staff" count={employee.filter((e) => e.position === "delivery").length} />
                 </div>
             </div>
-            <div className='grid grid-cols-1 md:grid-cols-2'>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div className="w-full">
+                    <CompletedOrdersChart />
+                </div>
+                <div className="w-full">
+                    <RevenueChart />
+                </div>
             </div>
         </>
 
