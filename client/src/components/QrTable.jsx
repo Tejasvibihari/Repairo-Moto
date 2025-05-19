@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { QrCode } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import axiosClient from '../service/axiosClient';
 
@@ -71,7 +71,7 @@ export default function QrTable({ onGenerateQR }) {
                                     <button
                                         onClick={() => onGenerateQR(`${import.meta.env.VITE_FRONTEND_URL}/user-signup/${item.referralCode}`)}
                                         className="flex items-center justify-center bg-transparent text-green-600 py-2 rounded-md px-3 cursor-pointer hover:bg-green-600 hover:text-white border border-green-600">
-                                        <Trash2 size={18} className="mr-0 md:mr-2" />
+                                        <QrCode size={18} className="mr-0 md:mr-2" />
                                         <span className="hidden md:inline">Generate Qr</span>
                                     </button>
                                 </td>
