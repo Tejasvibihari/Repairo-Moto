@@ -64,6 +64,7 @@ import MyReferral from './pages/user/MyReferral';
 import UserProfile from './pages/user/UserProfile';
 import AllUser from './pages/dashboard/AllUser';
 import EmployeeAllUser from './pages/employee/EmployeeAllUser';
+import EmployeeEditBlog from './pages/employee/EmployeeEditBlog';
 
 
 
@@ -207,6 +208,14 @@ export default function App() {
             element={
               <EmployeePrivateRoute>
                 <EmployeeSidebar><EmployeeAddBlog /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+          <Route
+            path='/employee/edit-blog/:id'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeEditBlog /></EmployeeSidebar>
               </EmployeePrivateRoute>
             }
           />

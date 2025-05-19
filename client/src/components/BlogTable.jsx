@@ -1,9 +1,10 @@
 import { UserPen, Trash2 } from 'lucide-react';
-
+import { Link } from 'react-router-dom';
 
 const currentDate = new Date().toLocaleDateString();
 
 export default function BlogTable({ blogs }) {
+    console.log(blogs)
     return (
         <div className="p-4 border border-gray-200 rounded shadow-sm">
             <div className="overflow-x-auto">
@@ -36,10 +37,10 @@ export default function BlogTable({ blogs }) {
                                 </td>
                                 <td className="px-3 py-2">{currentDate}</td>
                                 <td className="px-3 py-2 flex gap-2 flex-wrap justify-end">
-                                    <button className="flex items-center justify-center bg-primary text-white py-2 rounded-md px-3 cursor-pointer hover:bg-transparent hover:text-primary border border-primary">
+                                    <Link to={`/employee/edit-blog/${blog._id}`} className="flex items-center justify-center bg-primary text-white py-2 rounded-md px-3 cursor-pointer hover:bg-transparent hover:text-primary border border-primary">
                                         <UserPen size={18} className="mr-0 md:mr-2" />
                                         <span className="hidden md:inline">Edit</span>
-                                    </button>
+                                    </Link>
                                     <button className="flex items-center justify-center bg-transparent text-red-600 py-2 rounded-md px-3 cursor-pointer hover:bg-red-600 hover:text-white border border-primary">
                                         <Trash2 size={18} className="mr-0 md:mr-2" />
                                         <span className="hidden md:inline">Delete</span>

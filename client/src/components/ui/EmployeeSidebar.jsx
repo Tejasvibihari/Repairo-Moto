@@ -160,11 +160,11 @@ const EmployeeSidebar = ({ children }) => {
                         {/* Notifications + Mobile Menu Toggle */}
                         <div className="flex items-center gap-4">
                             {/* Notification Bell Always */}
-                            <span className="bg-gray-200 border border-gray-300 rounded cursor-pointer p-1">
+                            {/* <span className="bg-gray-200 border border-gray-300 rounded cursor-pointer p-1">
                                 <Badge badgeContent={4} color="success">
                                     <NotificationsIcon color="action" />
                                 </Badge>
-                            </span>
+                            </span> */}
 
                             {/* Mobile Menu Button */}
                             {isMobile && (

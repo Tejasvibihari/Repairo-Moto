@@ -14,7 +14,6 @@ export default function EmployeeManageBlog() {
             try {
                 setLoading(true);
                 const response = await axiosClient.get("/api/admin/blog/getallblog")
-                console.log(response.data.blogs)
                 setAllBlogs(response.data.blogs)
                 setLoading(false);
             } catch (error) {
