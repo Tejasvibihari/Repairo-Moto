@@ -1,4 +1,4 @@
-import { User, Menu, X, ChevronDown } from 'lucide-react';
+import { User, Menu, X, ChevronDown, MessageSquareMore, MessageCircle, Instagram, Twitter, Facebook } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -14,6 +14,11 @@ export default function NavBar() {
     const dispatch = useDispatch();
     const userDropdownRef = useRef(null);
     const mobileMenuRef = useRef(null);
+    const [isSocialOpen, setIsSocialOpen] = useState(false);
+
+    const toggleSocialMenu = () => {
+        setIsSocialOpen(!isSocialOpen);
+    };
 
     // Array of navigation links
     const navLinks = [
@@ -27,9 +32,7 @@ export default function NavBar() {
     ];
 
     useEffect(() => {
-        console.log('NavBar component mounted');
-        console.log('User authenticated:', user);
-        console.log('Current path:', location.pathname);
+
 
         // function handleClickOutside(event) {
         //     if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
@@ -64,14 +67,12 @@ export default function NavBar() {
 
     // Direct navigation handlers
     const navigateTo = (path) => {
-        console.log('Navigating to:', path);
         setIsMenuOpen(false);
         setUserDropdownOpen(false);
         navigate(path);
     };
 
     const navigateToProfile = () => {
-        console.log('Navigating to profile');
         setUserDropdownOpen(false);
         setIsMenuOpen(false);
         setTimeout(() => {
@@ -117,7 +118,7 @@ export default function NavBar() {
                                 className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-full text-gray-700 transition-colors duration-200"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    console.log('User dropdown toggle clicked');
+
                                     setUserDropdownOpen((prev) => !prev);
                                 }}
                                 aria-label="User menu"
@@ -133,7 +134,7 @@ export default function NavBar() {
                                         className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors duration-200 cursor-pointer"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            console.log('Profile clicked - desktop');
+
                                             navigateToProfile();
                                         }}
                                     >
@@ -142,7 +143,7 @@ export default function NavBar() {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            console.log('Logout clicked');
+
                                             handleLogout();
                                         }}
                                         className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors duration-200 border-t border-gray-100"
@@ -170,7 +171,7 @@ export default function NavBar() {
                                 className="p-2 text-gray-700 hover:text-primary focus:outline-none"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    console.log('Mobile user dropdown toggle clicked');
+
                                     setUserDropdownOpen((prev) => !prev);
                                 }}
                                 aria-label="User menu"
@@ -184,7 +185,7 @@ export default function NavBar() {
                                         className="block px-4 py-3 text-gray-700 hover:bg-gray-50 cursor-pointer"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            console.log('Profile clicked - mobile');
+
                                             navigateToProfile();
                                         }}
                                     >
@@ -193,7 +194,7 @@ export default function NavBar() {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            console.log('Mobile logout clicked');
+
                                             handleLogout();
                                         }}
                                         className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 border-t border-gray-100"
@@ -283,6 +284,53 @@ export default function NavBar() {
                     aria-hidden="true"
                 ></div>
             )}
+            {/* Social Media Icon  */}
+            <div className="fixed right-4 bottom-6 z-50">
+                {/* Main contact button */}
+                <button
+                    onClick={toggleSocialMenu}
+                    className="bg-primary cursor-pointer hover:bg-secondary group text-white rounded-full p-3 shadow-lg transition-all duration-300"
+                >
+                    <MessageSquareMore size={24} className='group-hover:text-primary' />
+                </button>
+
+                {/* Social media icons that appear when clicked */}
+                {isSocialOpen && (
+                    <div className="absolute right-0 bottom-16 flex flex-col space-y-2 items-end animate-fadeIn">
+                        <a
+                            href="https://wa.me/919229207021"
+                            className="bg-green-500 hover:bg-green-600 text-white rounded-full p-3 shadow-md transition-all duration-200 flex items-center"
+                        >
+                            <MessageCircle size={24} />
+                            <span className="ml-2 mr-1">WhatsApp</span>
+                        </a>
+
+                        <a
+                            href="https://www.instagram.com/repairomoto"
+                            className="bg-pink-600 hover:bg-pink-700 text-white rounded-full p-3 shadow-md transition-all duration-200 flex items-center"
+                        >
+                            <Instagram size={24} />
+                            <span className="ml-2 mr-1">Instagram</span>
+                        </a>
+
+                        <a
+                            href="https://x.com/Repairomoto"
+                            className="bg-black hover:bg-gray-800 text-white rounded-full p-3 shadow-md transition-all duration-200 flex items-center"
+                        >
+                            <Twitter size={24} />
+                            <span className="ml-2 mr-1">Twitter (X)</span>
+                        </a>
+
+                        <a
+                            href="https://www.facebook.com/share/1D4UWBzREr/"
+                            className="bg-blue-800 hover:bg-blue-900 text-white rounded-full p-3 shadow-md transition-all duration-200 flex items-center"
+                        >
+                            <Facebook size={24} />
+                            <span className="ml-2 mr-1">Facebook</span>
+                        </a>
+                    </div>
+                )}
+            </div>
         </nav>
     );
 }
