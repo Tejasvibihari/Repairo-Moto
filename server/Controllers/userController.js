@@ -119,7 +119,7 @@ export const userSignIn = async (req, res) => {
             message: "Sign-in successful",
             token, // Include the token in the response
             user: {
-                id: user._id,
+                _id: user._id,
                 firstName: user.firstName,
                 lastName: user.lastName,
                 email: user.email,
@@ -278,7 +278,7 @@ export const editUser = async (req, res) => {
             newPassword,
             confirmPassword,
         } = req.body;
-
+        console.log(req.params, "Paramas")
         console.log("Request file:", req.file);
 
         // Find the user by ID

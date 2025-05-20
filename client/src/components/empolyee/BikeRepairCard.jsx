@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 
 export default function BikeRepairCard({
     completedOrders = 16,
-    totalOrders = 24,
     date = new Date()
 }) {
     // Format today's date

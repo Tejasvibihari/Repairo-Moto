@@ -14,6 +14,7 @@ export default function EmployeeDashboard() {
     const [fetchOrder, setFetchOrder] = useState([]);
     const [inProgressOrders, setInProgressOrders] = useState([]);
     const [completedOrders, setCompletedOrders] = useState([]);
+    const [todayCompletedOrders, setTodayCompletedOrders] = useState([]);
     useEffect(() => {
         // Fetch employee data from the API if needed
         const fetchOrderForEmployee = async () => {
@@ -35,7 +36,8 @@ export default function EmployeeDashboard() {
     }, []);
     useEffect(() => {
         setInProgressOrders(fetchOrder.filter(order => order.status === "In Progress"));
-        setCompletedOrders(fetchOrder.filter(order => order.status === "Completed"));
+        setCompletedOrders(fetchOrder.filter(order => order.status === "Invoice Generated"));
+        setTodayCompletedOrders(fetchOrder.filter(order => order.status === "Invoice Generated" && new Date(order.invoiceDate).toDateString() === new Date().toDateString()))
     }, [fetchOrder])
     if (employee.position === "telecaller" || employee.position === "operational manager") {
         return <Dashboard />;
@@ -55,7 +57,7 @@ export default function EmployeeDashboard() {
                         </div>
                         <div className='md:col-span-1'>
                             <BikeRepairCard
-                                completedOrders={18}
+                                completedOrders={todayCompletedOrders.length}
                                 totalOrders={25}
                                 date={new Date()}
                             />

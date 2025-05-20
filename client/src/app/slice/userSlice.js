@@ -12,7 +12,14 @@ export const userAuthSlice = createSlice({
     initialState,
     reducers: {
         setUserSignIn: (state, action) => {
-            state.user = action.payload.user;
+            const user = action.payload.user;
+            // Transform _id to id
+            const formattedUser = {
+                ...user,
+                id: user._id,
+            };
+
+            state.user = formattedUser;
             state.isAuthenticated = true;
             state.token = action.payload.token;
         },

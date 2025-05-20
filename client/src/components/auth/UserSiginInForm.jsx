@@ -60,8 +60,7 @@ export default function UserSignInForm() {
         try {
             const response = await axiosClient.post('api/user/auth/user-sign-in', formData);
             dispatch(setUserSignIn(response.data))
-            dispatch(setUserToken(response.data.token))
-            console.log(response.data)
+            dispatch(setUserToken(response.data.token));
             setSnackBarMessage(response.data.message);
             setSnackBarSeverity('success');
             setSnackBarOpen(true);

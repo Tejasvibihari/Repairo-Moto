@@ -163,6 +163,10 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                                     <span className="text-xs text-gray-500">Bs</span>
                                     <p className="font-medium">BS {booking.bs} </p>
                                 </div>
+                                <div className="bg-gray-100 col-span-2 p-2 rounded">
+                                    <span className="text-xs text-gray-500">Issue</span>
+                                    <p className="font-medium">{booking.issues} </p>
+                                </div>
                             </div>
                         </div>
 
