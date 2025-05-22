@@ -100,7 +100,8 @@ export default function UserProfile() {
             formData.append('currentPassword', passwordData.currentPassword || '');
             formData.append('newPassword', passwordData.newPassword || '');
             formData.append('confirmPassword', passwordData.confirmPassword || '');
-            const response = await axiosClient.put(`/api/user/update-profile/${user._id}`, formData, {
+            console.log(user)
+            const response = await axiosClient.put(`/api/user/update-profile/${user.id}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },

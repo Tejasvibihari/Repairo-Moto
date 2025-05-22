@@ -99,112 +99,100 @@ export default function AllBookingCard({ booking, onSaveParts }) {
 
     return (
         <>
-            <div className="w-full bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 relative">
-                <div className="absolute top-2 right-2">
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle()}`}>
+            <div className="w-full bg-white/70 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden border border-gray-300 relative transition-all duration-300 hover:shadow-2xl">
+                <div className="absolute top-3 right-3">
+                    <div className={`px-4 py-1.5 rounded-full text-xs font-semibold ${getStatusStyle()} shadow`}>
                         {booking.status}
                     </div>
                 </div>
 
                 <div className="flex flex-col md:flex-row">
-                    <div className="w-full md:w-1/4 p-4 flex justify-center items-start">
+                    <div className="w-full md:w-1/4 p-6 flex justify-center items-start bg-gradient-to-br from-blue-50 to-purple-100">
                         <img
                             src={user?.profileImage ? `${import.meta.env.VITE_API_URL}${user?.profileImage}` : '/profileplaceholder.png'}
                             alt={`${booking.name}'s bike`}
-                            className="rounded-lg w-32 h-32 object-cover"
+                            className="rounded-xl w-36 h-36 object-cover border-4 border-white shadow-lg"
                         />
                     </div>
 
-                    <div className="w-full md:w-3/4 p-4">
-                        <div className="mb-4 flex flex-col md:flex-row md:justify-between md:items-start">
-                            <div>
-                                Order ID: <span className="font-semibold">{booking.orderId}</span>
-                                <h2 className="text-xl font-bold text-gray-800">{booking.name}</h2>
+                    <div className="w-full md:w-3/4 p-6 space-y-6">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-start">
+                            <div className="space-y-1">
+                                <p className="text-sm text-gray-500">Order ID: <span className="font-semibold">{booking.orderId}</span></p>
+                                <h2 className="text-2xl font-extrabold text-gray-800">{booking.name}</h2>
                                 <p className="text-gray-600 text-sm">{booking.city}</p>
-                                <div className="flex items-center mt-1">
-                                    <p className="text-gray-600 text-sm">Mobile: {booking.contactNo}</p>
+                                <div className="flex items-center gap-3 mt-2">
+                                    <p className="text-gray-600 text-sm">📞 {booking.contactNo}</p>
                                     <button
                                         onClick={handleCall}
-                                        className="ml-3 bg-green-500 text-white p-2 rounded-full hover:bg-green-600 flex items-center justify-center"
+                                        className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-full shadow-md transition-all"
                                         aria-label="Call customer"
                                     >
                                         <Phone size={16} />
                                     </button>
                                 </div>
-                                <div className="mt-2">
+                                <div className="mt-3">
                                     <button
-                                        onClick={() => window.open(`https://www.google.com/maps?q=${booking?.location?.latitude},${booking?.location?.longitude}`, '_blank', 'noopener,noreferrer')}
-                                        className={`flex items-center text-blue-600 hover:text-blue-800`}
+                                        onClick={() => window.open(`https://www.google.com/maps?q=${booking?.location?.latitude},${booking?.location?.longitude}`, '_blank')}
+                                        className="text-indigo-600 hover:underline flex items-center gap-1 text-sm"
                                         aria-label="View customer location"
                                     >
-                                        <MapPin size={16} className="mr-1" />
-                                        <span>View Customer Location</span>
+                                        <MapPin size={16} />
+                                        View Location
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mb-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <div className="bg-gray-100 p-2 rounded">
-                                    <span className="text-xs text-gray-500">Bike Brand</span>
-                                    <p className="font-medium">{booking.selectedBrand}</p>
-                                </div>
-                                <div className="bg-gray-100 p-2 rounded">
-                                    <span className="text-xs text-gray-500">Bike Model</span>
-                                    <p className="font-medium">
-                                        {booking.selectedModel === "Other" ? booking.modelName : booking.selectedModel}
-                                    </p>
-                                </div>
-                                <div className="bg-gray-100 p-2 rounded">
-                                    <span className="text-xs text-gray-500">Engine CC</span>
-                                    <p className="font-medium">{booking.cc} CC</p>
-                                </div>
-                                <div className="bg-gray-100 p-2 rounded">
-                                    <span className="text-xs text-gray-500">Bs</span>
-                                    <p className="font-medium">BS {booking.bs} </p>
-                                </div>
-                                <div className="bg-gray-100 col-span-2 p-2 rounded">
-                                    <span className="text-xs text-gray-500">Issue</span>
-                                    <p className="font-medium">{booking.issues} </p>
-                                </div>
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <InfoCard title="Bike Brand" value={booking.selectedBrand} />
+                            <InfoCard
+                                title="Bike Model"
+                                value={booking.selectedModel === "Other" ? booking.modelName : booking.selectedModel}
+                            />
+                            <InfoCard title="Engine CC" value={`${booking.cc} CC`} />
+                            <InfoCard title="BS" value={`BS ${booking.bs}`} />
+                            <InfoCard title="Issue" value={booking?.issues ? booking?.issues : "N/A"} wide />
                         </div>
 
-                        <div className="mb-4">
+                        <div>
                             <div className="flex justify-between items-center mb-2">
                                 <h3 className="text-sm font-semibold text-gray-700">Parts Used:</h3>
                                 <button
                                     onClick={openPartsDialog}
-                                    className="bg-blue-500 text-white p-1.5 rounded hover:bg-blue-600 flex items-center justify-center"
+                                    className="bg-indigo-500 text-white p-2 rounded-md hover:bg-indigo-600 transition-all flex items-center gap-1 text-xs"
                                     aria-label="Edit parts"
                                 >
                                     <Edit size={14} />
-                                    <span className="ml-1 text-xs">Edit Parts</span>
+                                    Edit Parts
                                 </button>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                {partsUsedState && partsUsedState.length > 0 ? partsUsedState.map((part, index) => (
-                                    <span key={index} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                                        {part.partName || part.name}{` x${part.quantity}`}
+                                {partsUsedState && partsUsedState.length > 0 ? partsUsedState.map((part, i) => (
+                                    <span key={i} className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-medium shadow-sm">
+                                        {part.partName || part.name} x{part.quantity}
                                     </span>
                                 )) : (
                                     <span className="text-gray-400 text-xs">No parts added</span>
                                 )}
                             </div>
                         </div>
-                        <div className='flex items-end justify-end'>
-                            <Link to={`${booking.status === "Invoice Generated" ? `/order/invoice/${booking._id}` : "#"}`}
-                                className={`flex items-center justify-center ${booking.status === "Invoice Generated" ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"} text-white px-4 py-2 rounded-md text-sm font-medium w-1/2`}
-                                disabled={booking.status !== "Invoice Generated"}
+
+                        <div className="flex justify-end">
+                            <Link
+                                to={`${booking.status === "Invoice Generated" ? `/order/invoice/${booking._id}` : "#"}`}
+                                className={`flex items-center gap-2 justify-center w-1/2 px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all 
+                        ${booking.status === "Invoice Generated" ? "bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600" : "bg-gray-400 cursor-not-allowed"}
+                    `}
                             >
-                                <CreditCard size={16} className="mr-1" />
+                                <CreditCard size={16} />
                                 Get Invoice
                             </Link>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             {/* Dialog */}
             {isDialogOpen && (
@@ -276,3 +264,10 @@ export default function AllBookingCard({ booking, onSaveParts }) {
         </>
     );
 }
+
+const InfoCard = ({ title, value, wide = false }) => (
+    <div className={`bg-gradient-to-br from-gray-100 to-gray-200 p-3 rounded-lg shadow-inner ${wide ? 'md:col-span-2' : ''}`}>
+        <span className="text-xs text-gray-500">{title}</span>
+        <p className="font-medium text-sm mt-1">{value}</p>
+    </div>
+);
