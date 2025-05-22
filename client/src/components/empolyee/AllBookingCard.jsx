@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Edit, Plus, X, MapPin } from 'lucide-react';
+import { Phone, Edit, Plus, X, MapPin, CreditCard } from 'lucide-react';
 import axiosClient from '../../service/axiosClient';
+import { Link } from 'react-router-dom';
 
 export default function AllBookingCard({ booking, onSaveParts }) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -191,6 +192,15 @@ export default function AllBookingCard({ booking, onSaveParts }) {
                                     <span className="text-gray-400 text-xs">No parts added</span>
                                 )}
                             </div>
+                        </div>
+                        <div className='flex items-end justify-end'>
+                            <Link to={`${booking.status === "Invoice Generated" ? `/order/invoice/${booking._id}` : "#"}`}
+                                className={`flex items-center justify-center ${booking.status === "Invoice Generated" ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"} text-white px-4 py-2 rounded-md text-sm font-medium w-1/2`}
+                                disabled={booking.status !== "Invoice Generated"}
+                            >
+                                <CreditCard size={16} className="mr-1" />
+                                Get Invoice
+                            </Link>
                         </div>
                     </div>
                 </div>

@@ -11,8 +11,8 @@ router.post("/auth/user-sign-in", userSignIn);
 router.get("/getalluser", getAllUser);
 
 
-router.get("/getalluser/:referalcode", authUser, getAllUserByReferralCode);
+router.get("/getalluser/:referalcode", getAllUserByReferralCode);
 router.put('/update-profile/:userId', userUpload.single('profileImage'), editUser)
-router.get('/get-user-by-id/:userId', authUser, getUserById)
+router.get('/get-user-by-id/:userId', getUserById)
 
 export default router;

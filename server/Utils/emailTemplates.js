@@ -216,7 +216,7 @@ export const welcomeEmailTemplate = ({ firstName, lastName, email, accountType, 
               <p>This is an automated message, please do not reply to this email.</p>
               <div class="contact-info">
                   <p>© 2025 Repairo Moto. All rights reserved.</p>
-                  <p>Contact: contact@repairomoto.in | Phone: +91 6205731150</p>
+                  <p>Contact: contact@repairomoto.in | Phone: +91 9229207021</p>
               </div>
           </div>
       </div>
@@ -347,7 +347,7 @@ export const passwordResetTemplate = (user, resetToken) => {
               <p>This is an automated message, please do not reply to this email.</p>
               <div class="contact-info">
                   <p>© 2025 Repairo Moto. All rights reserved.</p>
-                  <p>Contact: support@repairomoto.in | Phone: +91 6205731150</p>
+                  <p>Contact: support@repairomoto.in | Phone: +91 9229207021</p>
               </div>
           </div>
       </div>
@@ -534,7 +534,7 @@ export const bookingConfirmationTemplate = (order) => {
               <p>This is an automated message, please do not reply to this email.</p>
               <div class="contact-info">
                   <p>© 2025 Repairo Moto. All rights reserved.</p>
-                  <p>Contact: support@repairomoto.in | Phone: +91 6205731150</p>
+                  <p>Contact: support@repairomoto.in | Phone: +91 9229207021</p>
               </div>
           </div>
       </div>
