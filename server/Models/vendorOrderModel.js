@@ -6,9 +6,16 @@ const vendorOrderSchema = new mongoose.Schema({
             partName: { type: String, required: true, trim: true },
             quantity: { type: Number, required: true, min: 1 },
             price: { type: Number, required: true, min: 0 },
+            discountType: { type: String },
             discountPrice: { type: Number, default: 0, min: 0 }, // New field for discount price
         }
     ],
+    pricing: {
+        subTotal: { type: Number },
+        discountType: { type: String },
+        discountAmount: { type: Number },
+        total: { type: Number }
+    },
     orderId: {
         type: mongoose.Schema.Types.ObjectId, // Unique identifier for the order
         required: true,

@@ -8,7 +8,7 @@ import authUser from "../Middleware/authUser.js";
 const router = express.Router();
 
 router.post("/manualorder", createManualOrder);
-router.post("/userorder", authUser, userOrder);
+router.post("/userorder", userOrder);
 router.get("/getallorder", getAllBookings);
 router.get("/getorderbyid/:id", getOrderById);
 router.put("/update/updateMechanic/:id", updateMechanic);

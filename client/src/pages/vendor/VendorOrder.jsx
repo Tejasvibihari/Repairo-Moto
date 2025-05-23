@@ -16,7 +16,10 @@ export default function VendorOrder() {
                 const response = await axiosClient.get(`/api/admin/order/getorder/${vendor._id}`); // Use the vendor's _id
                 if (response.status === 200) {
                     console.log("Bookings fetched successfully:", response);
-                    setBookings(response.data.data);
+                    const sortedOrders = response.data.data.sort(
+                        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                    );
+                    setBookings(sortedOrders);
                 } else {
                     console.error("Failed to fetch bookings");
                 }

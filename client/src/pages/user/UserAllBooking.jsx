@@ -27,8 +27,11 @@ export default function UserAllBooking() {
             try {
                 setLoading(true)
                 const response = await axiosClient.get(`/api/admin/order/by-email?email=${user.email}`)
-                console.log(response.data.orders)
-                setAllOrder(response.data.orders)
+                // Sort orders by createdAt descending so newest is on top
+                const sortedOrders = response.data.orders.sort(
+                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                );
+                setAllOrder(sortedOrders)
                 setLoading(false)
             } catch (error) {
                 console.log(error);

@@ -318,11 +318,9 @@ export const updatePartsUsed = async (req, res) => {
         res.status(500).json({ message: 'Server error while updating parts' });
     }
 };
-
 export const updatePartsPrice = async (req, res) => {
     const { id } = req.params; // Order ID
-    const { partsUsed } = req.body; // Array of partsUsed
-    console.log(partsUsed);
+    const { partsUsed, pricing } = req.body; // Array of partsUsed and pricing object
 
     try {
         // 1. Find the order
@@ -352,6 +350,12 @@ export const updatePartsPrice = async (req, res) => {
                 price: part.price,
                 discountPrice: part.discountPrice // Save discountPrice only in VendorOrder
             }));
+            vendorOrder.pricing = {
+                subTotal: pricing.subTotal,
+                discountType: pricing.discountType,
+                discountAmount: pricing.discountAmount,
+                total: pricing.total
+            };
             vendorOrder.orderDate = new Date(); // Update the order date
             await vendorOrder.save();
         } else {
@@ -364,10 +368,16 @@ export const updatePartsPrice = async (req, res) => {
                     price: part.price,
                     discountPrice: part.discountPrice // Save discountPrice only in VendorOrder
                 })),
+                pricing: {
+                    subTotal: pricing.subTotal,
+                    discountType: pricing.discountType,
+                    discountAmount: pricing.discountAmount,
+                    total: pricing.total
+                },
                 vendorId: order.vendorId,
                 deliveryBoyId: order.deliveryId,
                 deliveryBoyName: order.assignedDelivery,
-                orderDate: new Date() // Optional, defaults to now
+                orderDate: new Date()
             });
             await vendorOrder.save();
         }
@@ -384,7 +394,6 @@ export const updatePartsPrice = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
-
 
 export const updateOrderandGenerateInvoice = async (req, res) => {
     const { id } = req.params;

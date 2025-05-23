@@ -110,9 +110,10 @@ export default function App() {
           <Route path="/user-qrcode" element={<UserPrivateRoute>
             <UserQrCode />
           </UserPrivateRoute>} />
-          <Route path="/user-allbooking" element={<UserPrivateRoute>
-            <UserAllBooking />
-          </UserPrivateRoute>} />
+          <Route path="/user-allbooking" element={
+            <UserPrivateRoute>
+              <UserAllBooking />
+            </UserPrivateRoute>} />
           <Route path="/user-booking/:id" element={<UserPrivateRoute>
             <UserBookingDetail />
           </UserPrivateRoute>} />

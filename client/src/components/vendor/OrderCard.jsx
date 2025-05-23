@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axiosClient from '../../service/axiosClient';
 
 export default function OrderCard({ booking, vendorOrder }) {
-    console.log(vendorOrder, "Venbdor Order")
+
     // Extract data from booking object
     const {
         name,
@@ -19,6 +19,8 @@ export default function OrderCard({ booking, vendorOrder }) {
         _id,
         estimatedBudget
     } = booking || {};
+    const [globalDiscount, setGlobalDiscount] = useState(0);
+    const [globalDiscountType, setGlobalDiscountType] = useState('amount'); // or 'percent'
 
     // Show/hide parts list toggle
     const [showParts, setShowParts] = useState(false);
@@ -58,12 +60,16 @@ export default function OrderCard({ booking, vendorOrder }) {
 
 
     // Function to handle price and discount changes
+
     const handlePriceChange = (index, field, value) => {
         const newParts = [...updatedParts];
-        newParts[index][field] = parseFloat(value) || 0;
+        if (field === 'discountType') {
+            newParts[index][field] = value;
+        } else {
+            newParts[index][field] = parseFloat(value) || 0;
+        }
         setUpdatedParts(newParts);
     };
-
     // Calculate totals
     const calculateTotals = () => {
         if (!Array.isArray(updatedParts) || updatedParts.length === 0) return { total: 0, discountTotal: 0 };
@@ -72,16 +78,26 @@ export default function OrderCard({ booking, vendorOrder }) {
             (acc, part) => {
                 const quantity = part.quantity || 0;
                 const price = part.price || 0;
-                const discountPrice = part.discountPrice || 0;
+                const discount = part.discountPrice || 0;
+                const discountType = part.discountType || 'flat';
+
+                const unitDiscount = discountType === 'percentage'
+                    ? (price * discount) / 100
+                    : discount;
+
+                const total = price * quantity;
+                const discounted = (unitDiscount) * quantity;
 
                 return {
-                    total: acc.total + (price * quantity),
-                    discountTotal: acc.discountTotal + (discountPrice * quantity)
+                    total: acc.total + total,
+                    discountTotal: acc.discountTotal + discounted
                 };
             },
             { total: 0, discountTotal: 0 }
         );
     };
+
+
 
     // Function to save price updates to the backend
     const handleSavePrices = async () => {
@@ -99,8 +115,21 @@ export default function OrderCard({ booking, vendorOrder }) {
                 price: part.price,
                 discountPrice: part.discountPrice
             }));
+            const subTotal = total; // original total before global discount
+            const discountAmount = globalDiscountValue;
+            const totalAfterDiscount = finalTotal; // after applying global discount
+            const totalDiscountType = globalDiscountType;
+            console.log(subTotal, discountAmount, totalAfterDiscount, totalDiscountType)
             // Make API call to update parts pricing
-            const response = await axiosClient.put(`/api/admin/order/bookings/${_id}/update-parts-price`, { partsUsed: partsData });
+            const response = await axiosClient.put(`/api/admin/order/bookings/${_id}/update-parts-price`, {
+                partsUsed: partsData,
+                pricing: {
+                    subTotal: subTotal,
+                    discountType: globalDiscountType,
+                    discountAmount: discountAmount,
+                    total: totalAfterDiscount
+                }
+            });
 
             setSaveMessage({ type: 'success', message: 'Parts pricing updated successfully' });
             if (vendorOrder) {
@@ -141,6 +170,14 @@ export default function OrderCard({ booking, vendorOrder }) {
     console.log(canUpdatePrices)
     // Calculate totals for display
     const { total, discountTotal } = calculateTotals();
+    const afterPartsDiscount = total - discountTotal;
+
+    const globalDiscountValue =
+        globalDiscountType === 'percent'
+            ? (afterPartsDiscount * globalDiscount) / 100
+            : globalDiscount;
+
+    const finalTotal = afterPartsDiscount - globalDiscountValue;
 
     return (
         <div className="bg-white rounded-lg shadow-md p-6 max-w-lg border-t-4 border-primary my-4">
@@ -394,26 +431,52 @@ export default function OrderCard({ booking, vendorOrder }) {
                                                         className="border border-gray-300 rounded-md p-1 w-24 text-center"
                                                         value={part.price || 0}
                                                         onChange={(e) => handlePriceChange(index, 'price', e.target.value)}
-                                                    // disabled={!!(vendorOrder?.partsUsed && vendorOrder.partsUsed.length > 0)}
                                                     />
                                                 </td>
-                                                <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        className="border border-gray-300 rounded-md p-1 w-24 text-center"
-                                                        value={part.discountPrice || 0}
-                                                        onChange={(e) => handlePriceChange(index, 'discountPrice', e.target.value)}
-                                                    // disabled={!!(vendorOrder?.partsUsed && vendorOrder.partsUsed.length > 0)}
-                                                    />
+
+                                                <td className="px-3 py-4  text-sm text-gray-500">
+                                                    <div className="flex  gap-1">
+                                                        <select
+                                                            className="border border-gray-300 rounded-md p-1 text-sm"
+                                                            value={part.discountType || 'amouunt'}
+                                                            onChange={(e) => handlePriceChange(index, 'discountType', e.target.value)}
+                                                        >
+                                                            <option value="amount">₹ </option>
+                                                            <option value="percentage">%</option>
+                                                        </select>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            className="border border-gray-300 rounded-md p-1 w-24 text-center"
+                                                            value={part.discountPrice || 0}
+                                                            onChange={(e) => handlePriceChange(index, 'discountPrice', e.target.value)}
+                                                        />
+                                                    </div>
                                                 </td>
+
                                                 <td className="px-3 py-4 whitespace-nowrap text-sm text-right text-gray-500">
-                                                    ₹{((part.price || 0) * (part.quantity || 0)).toFixed(2)}
-                                                    {part.discountPrice > 0 && (
-                                                        <div className="text-xs text-green-600">
-                                                            ₹{((part.discountPrice || 0) * (part.quantity || 0)).toFixed(2)}
-                                                        </div>
-                                                    )}
+                                                    {(() => {
+                                                        const quantity = part.quantity || 0;
+                                                        const price = part.price || 0;
+                                                        const discount = part.discountPrice || 0;
+                                                        const discountType = part.discountType || 'flat';
+                                                        const unitDiscount =
+                                                            discountType === 'percentage'
+                                                                ? (price * discount) / 100
+                                                                : discount;
+                                                        const discountedPrice = (price - unitDiscount) * quantity;
+
+                                                        return (
+                                                            <>
+                                                                ₹{(price * quantity).toFixed(2)}
+                                                                {discount > 0 && (
+                                                                    <div className="text-xs text-green-600">
+                                                                        ₹{discountedPrice.toFixed(2)}
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
                                                 </td>
                                             </tr>
                                         ))
@@ -425,24 +488,65 @@ export default function OrderCard({ booking, vendorOrder }) {
                                         </tr>
                                     )}
                                 </tbody>
+
                                 <tfoot>
                                     <tr className="bg-gray-50">
-                                        <td colSpan="4" className="px-3 py-3 text-sm font-medium text-right text-gray-700">Total Amount:</td>
-                                        <td className="px-3 py-3 text-sm font-medium text-right text-gray-900">₹{total.toFixed(2)}</td>
+                                        <td colSpan="4" className="px-3 py-3 text-sm font-medium text-right text-gray-700">
+                                            Total Amount:
+                                        </td>
+                                        <td className="px-3 py-3 text-sm font-medium text-right text-gray-900">
+                                            ₹{total.toFixed(2)}
+                                        </td>
                                     </tr>
+
                                     {discountTotal > 0 && (
                                         <tr className="bg-gray-50">
-                                            <td colSpan="4" className="px-3 py-3 text-sm font-medium text-right text-gray-700">Discounted Total:</td>
-                                            <td className="px-3 py-3 text-sm font-medium text-right text-green-600">₹{discountTotal.toFixed(2)}</td>
+                                            <td colSpan="4" className="px-3 py-3 text-sm font-medium text-right text-gray-700">
+                                                Discount Amount:
+                                            </td>
+                                            <td className="px-3 py-3 text-sm font-medium text-right text-green-600">
+                                                ₹{discountTotal.toFixed(2)}
+                                            </td>
                                         </tr>
                                     )}
-                                    {discountTotal > 0 && (
+
+                                    <tr className="bg-gray-50">
+                                        <td colSpan="3" className="px-3 py-3 text-sm font-medium text-right text-gray-700">
+                                            Overall Discount:
+                                        </td>
+                                        <td className="px-3 py-3">
+                                            <div className="flex gap-2 items-center justify-end">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="border border-gray-300 rounded-md p-1 w-24 text-right"
+                                                    value={globalDiscount}
+                                                    onChange={(e) => setGlobalDiscount(parseFloat(e.target.value) || 0)}
+                                                />
+                                                <select
+                                                    className="border border-gray-300 rounded-md p-1"
+                                                    value={globalDiscountType}
+                                                    onChange={(e) => setGlobalDiscountType(e.target.value)}
+                                                >
+                                                    <option value="amount">₹</option>
+                                                    <option value="percent">%</option>
+                                                </select>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    {(discountTotal > 0 || globalDiscountValue > 0) && (
                                         <tr className="bg-gray-50">
-                                            <td colSpan="4" className="px-3 py-3 text-sm font-medium text-right text-gray-700">You Save:</td>
-                                            <td className="px-3 py-3 text-sm font-medium text-right text-green-600">₹{(total - discountTotal).toFixed(2)}</td>
+                                            <td colSpan="4" className="px-3 py-3 text-sm font-medium text-right text-gray-700">
+                                                Final Payable:
+                                            </td>
+                                            <td className="px-3 py-3 text-sm font-bold text-right text-blue-600">
+                                                ₹{finalTotal.toFixed(2)}
+                                            </td>
                                         </tr>
                                     )}
                                 </tfoot>
+
                             </table>
                         </div>
 
