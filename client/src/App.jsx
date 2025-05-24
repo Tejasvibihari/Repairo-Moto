@@ -66,6 +66,7 @@ import AllUser from './pages/dashboard/AllUser';
 import EmployeeAllUser from './pages/employee/EmployeeAllUser';
 import EmployeeEditBlog from './pages/employee/EmployeeEditBlog';
 import EmployeeDetail from './pages/dashboard/EmployeeDetail';
+import AddBikeProfile from './pages/user/AddBikeProfile';
 
 
 
@@ -123,6 +124,9 @@ export default function App() {
           </UserPrivateRoute>} />
           <Route path="/user/profile" element={<UserPrivateRoute>
             <UserProfile />
+          </UserPrivateRoute>} />
+          <Route path="/user/add-bike-profile" element={<UserPrivateRoute>
+            <AddBikeProfile />
           </UserPrivateRoute>} />
 
 

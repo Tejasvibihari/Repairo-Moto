@@ -49,6 +49,14 @@ export default function UserDashboard() {
             icon: <BookOpen size={24} />,
             color: "bg-red-500",
             link: "/user/profile"
+        },
+        {
+            id: "bikeprofile",
+            title: "Add Bike Profile",
+            description: "Add Bike Profile",
+            icon: <BookOpen size={24} />,
+            color: "bg-red-500",
+            link: "/user/add-bike-profile"
         }
     ];
 

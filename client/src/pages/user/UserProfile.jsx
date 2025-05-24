@@ -10,6 +10,9 @@ import axiosClient from '../../service/axiosClient';
 import { setUserSignIn } from '../../app/slice/userSlice';
 import AlertSnackBar from '../../components/ui/AlertSnackBar';
 import CircularLoading from '../../components/ui/CircularLoading';
+import { BikeProfileCard } from '../../components/ui/BikeProfileCard';
+
+
 
 export default function UserProfile() {
     const user = useSelector((state) => state.user.user);
@@ -28,6 +31,20 @@ export default function UserProfile() {
     });
     const [passwordError, setPasswordError] = useState('');
     const [userForm, setUserForm] = useState(user);
+    const [bikeProfile, setBikeProfile] = useState([])
+
+    // Get Bike Profile
+    useEffect(() => {
+        const getBikeProfile = async () => {
+            try {
+                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile/${user._id}`)
+                setBikeProfile(response.data)
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        getBikeProfile()
+    }, [])
 
     // Handle field changes
 
@@ -600,6 +617,22 @@ export default function UserProfile() {
                                 </div>
                             )}
                         </div>
+                    </div>
+                    <div className='my-10 grid grid-cols-1 md:grid-cols-2 gap-6'>
+                        {Array.isArray(bikeProfile) && bikeProfile.length > 0 ? (
+                            bikeProfile.map((bike, index) => (
+                                <div key={bike._id || index}>
+                                    <BikeProfileCard
+                                        key={bike._id}
+                                        bikeProfile={bike}
+                                    // onEdit={handleEdit}
+                                    // onDelete={handleDelete}
+                                    />
+                                </div>
+                            ))
+                        ) : (
+                            <div>No Bike Profile Found</div>
+                        )}
                     </div>
                 </div>
             </div>

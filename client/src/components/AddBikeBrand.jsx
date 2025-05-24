@@ -12,10 +12,10 @@ export default function AddBikeBrand() {
     const dispatch = useDispatch();
     const { loading } = useSelector((state) => state.brand);
     const [brand, setBrand] = useState('');
-    const [snackBarOpen, setSnackBarOpen] = useState(false); 
-    const [snackBarMessage, setSnackBarMessage] = useState(''); 
+    const [snackBarOpen, setSnackBarOpen] = useState(false);
+    const [snackBarMessage, setSnackBarMessage] = useState('');
     const [snackBarSeverity, setSnackBarSeverity] = useState('success');
-    
+
     const addBrand = async (e) => {
         e.preventDefault();
         try {
