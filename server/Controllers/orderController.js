@@ -473,7 +473,7 @@ export const userOrder = async (req, res) => {
         console.log(req.body);
         console.log(latitude, longitude);
 
-        if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime || !estimatedBudget || !latitude || !longitude) {
+        if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime || !estimatedBudget) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
 

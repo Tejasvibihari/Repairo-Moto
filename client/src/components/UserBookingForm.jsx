@@ -29,6 +29,8 @@ export default function UserBookingForm() {
     const [locationError, setLocationError] = useState('');
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
+    const [bikeProfile, setBikeProfile] = useState([]);
+    const [bike, setBike] = useState("")
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
     const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
@@ -55,6 +57,18 @@ export default function UserBookingForm() {
         estimatedBudget: '',
         issues: '',
     });
+    // Get Bike Profile 
+    useEffect(() => {
+        const getBikeProfile = async () => {
+            try {
+                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile/${user._id}`)
+                setBikeProfile(response.data)
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        getBikeProfile()
+    }, [])
 
     useEffect(() => {
         if (navigator.geolocation) {
@@ -99,7 +113,22 @@ export default function UserBookingForm() {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
+    const handleBikeProfileChange = (e) => {
+        const selectedBikeId = e.target.value;
+        setBike(selectedBikeId);
 
+        // Find the selected bike profile by _id
+        const selectedBike = bikeProfile.find(bike => bike._id === selectedBikeId);
+
+        if (selectedBike) {
+            setFormData(prev => ({
+                ...prev,
+                selectedBrand: selectedBike.brand || '',
+                selectedModel: selectedBike.model || '',
+                bs: selectedBike.bs || ''
+            }));
+        }
+    };
     const handleBrandChange = (e) => {
         const brandId = e.target.value;
         setFormData((prev) => ({ ...prev, selectedBrand: brandId, selectedModel: '' }));
@@ -108,6 +137,7 @@ export default function UserBookingForm() {
         setModels(selectedBrandData ? selectedBrandData.models : []);
     };
 
+    console.log(bike)
     const handleServiceChange = (e) => {
         const { value, checked } = e.target;
         setFormData((prev) => ({
@@ -229,7 +259,7 @@ export default function UserBookingForm() {
                         />
 
                     </div>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
+                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4 my-6'>
                         <div>
                             <TextField
                                 fullWidth
@@ -248,6 +278,31 @@ export default function UserBookingForm() {
                                     },
                                 }}
                             />
+                        </div>
+                        <div>
+                            <Select
+                                name="selectedBrand"
+                                value={bike}
+                                onChange={handleBikeProfileChange}
+                                fullWidth
+                                required
+                                displayEmpty
+                                inputProps={{ 'aria-label': 'Select Bike Profile' }}
+                            >
+                                <MenuItem value="">
+                                    <em>Select a Bike</em>
+                                </MenuItem>
+                                {bikeProfile ? bikeProfile?.map((bike) => (
+                                    <MenuItem key={bike._id} value={bike._id}>
+                                        {bike.brand} {bike.model} {bike.cc} BS {bike.bs}
+                                    </MenuItem>
+                                )) : <>
+                                    <MenuItem>
+                                        First Create Bike Profile
+                                    </MenuItem>
+                                </>}
+                            </Select>
+                            <FormHelperText>Select Brand Name from the dropdown</FormHelperText>
                         </div>
                         <div>
                             <Select
@@ -285,6 +340,10 @@ export default function UserBookingForm() {
                                 <MenuItem value="">
                                     <em>Select a Model</em>
                                 </MenuItem>
+                                {!models.some(m => m.name === formData.selectedModel) && formData.selectedModel && (
+                                    <MenuItem value={formData.selectedModel}>{formData.selectedModel}</MenuItem>
+                                )}
+
                                 {models.map((model) => (
                                     <MenuItem key={model._id} value={model.name}>
                                         {model.name}
