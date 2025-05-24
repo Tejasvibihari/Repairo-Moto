@@ -38,7 +38,7 @@ const EmployeeDetail = () => {
     };
 
     const formatAadhar = (aadhar) => {
-        const str = aadhar.toString();
+        const str = aadhar?.toString();
         return str.replace(/(\d{4})(\d{4})(\d{4})/, '$1 $2 $3');
     };
 
