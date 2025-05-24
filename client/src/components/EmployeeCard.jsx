@@ -15,6 +15,7 @@ import AlertSnackBar from './ui/AlertSnackBar';
 import CircularLoading from './ui/CircularLoading';
 import { useDispatch } from 'react-redux';
 import { setEmployee } from '../app/slice/employeeSlice';
+import { Link } from 'react-router-dom';
 
 export default function EmployeeCard({ id, firstName, lastName, position, phone, email, profileImage, address, city, state, pinCode, referralCode, aadhar, dl }) {
     const [open, setOpen] = React.useState(false);
@@ -79,7 +80,7 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
             <div className='bg-white rounded-lg shadow-lg overflow-hidden border-t-4 border-primary my-4'>
                 <div className='flex flex-col p-6'>
                     {/* Profile Image */}
-                    <div className='flex justify-center mb-4'>
+                    <Link to={`/employee-detail/${id}`} className='flex justify-center mb-4'>
                         <div className='relative'>
                             <img
                                 src={`${import.meta.env.VITE_API_URL}${profileImage}`}
@@ -90,7 +91,7 @@ export default function EmployeeCard({ id, firstName, lastName, position, phone,
                                 <UserPen size={16} />
                             </div>
                         </div>
-                    </div>
+                    </Link>
 
                     {/* Basic Info */}
                     <div className='text-center mb-4'>

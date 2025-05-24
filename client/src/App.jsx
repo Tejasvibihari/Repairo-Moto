@@ -65,6 +65,7 @@ import UserProfile from './pages/user/UserProfile';
 import AllUser from './pages/dashboard/AllUser';
 import EmployeeAllUser from './pages/employee/EmployeeAllUser';
 import EmployeeEditBlog from './pages/employee/EmployeeEditBlog';
+import EmployeeDetail from './pages/dashboard/EmployeeDetail';
 
 
 
@@ -407,6 +408,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><GenerateInvoiceForm /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/employee-detail/:id'
+            element={
+              <PrivateRoute>
+                <Sidebar><EmployeeDetail /></Sidebar>
               </PrivateRoute>
             }
           />

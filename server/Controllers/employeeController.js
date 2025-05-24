@@ -3,27 +3,46 @@ import { generateReferralCode } from "../Utils/generateReferralCode.js";
 import bcrypt from "bcryptjs";
 import fs from "fs";
 import jwt from "jsonwebtoken";
-
+import path from 'path';
 export const createEmployee = async (req, res) => {
-    const { firstName, lastName, email, phone, position, address, city, state, pinCode, profileImage, aadhar, dl } = req.body;
-    // console.log(pinCodAe, "Pincode");
+    const {
+        firstName,
+        lastName,
+        email,
+        phone,
+        position,
+        address,
+        city,
+        state,
+        pinCode,
+        aadhar,
+        dl
+    } = req.body;
+
     try {
-        const employee = await Employee.findOne({ email });
-        if (employee) {
-            console.log("Employee already exists");
+        // Check if employee already exists
+        const existingEmployee = await Employee.findOne({ email });
+        if (existingEmployee) {
             return res.status(400).json({ message: "Employee already exists" });
         }
 
+        // Generate password
         const firstNameDigits = firstName.slice(0, 4);
         const lastPhoneDigits = phone.slice(-4);
         const password = `${firstNameDigits}${lastPhoneDigits}`;
         const hashedPassword = await bcrypt.hash(password, 10);
+
         const referralCode = generateReferralCode(firstName, phone);
 
+        // Extract file paths from multer fields
+        const getRelativePath = (file) => file ? path.join('/uploads', path.relative('uploads', file.path)).replace(/\\/g, '/') : null;
 
-        // Handle uploaded file
-        const profileImage = req.file ? `/uploads/employee/${req.file.filename}` : null;
+        const profileImagePath = getRelativePath(req.files?.profileImage?.[0]);
+        const aadharFrontPath = getRelativePath(req.files?.aadharFront?.[0]);
+        const aadharBackPath = getRelativePath(req.files?.aadharBack?.[0]);
+        const dlImagePath = getRelativePath(req.files?.dlImage?.[0]);
 
+        // Create new employee
         const newEmployee = new Employee({
             firstName,
             lastName,
@@ -38,15 +57,26 @@ export const createEmployee = async (req, res) => {
             referralCode,
             aadhar,
             dl,
-            profileImage // Placeholder URL
+            profileImage: profileImagePath,
+            aadharImages: {
+                front: aadharFrontPath,
+                back: aadharBackPath
+            },
+            dlImage: dlImagePath
         });
-        await newEmployee.save();
-        res.status(201).json({ message: "Employee created successfully", employee: newEmployee });
-    } catch (error) {
-        console.log(error)
 
+        await newEmployee.save();
+
+        res.status(201).json({
+            message: "Employee created successfully",
+            employee: newEmployee
+        });
+
+    } catch (error) {
+        console.error("Error creating employee:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
-}
+};
 
 // Employee Sign In 
 export const employeeSignIn = async (req, res) => {
@@ -108,41 +138,53 @@ export const getAllEmployee = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
-
 export const deleteEmployeeById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Find the employee by ID to get the profile image path
+        // Find the employee by ID to get image paths
         const employee = await Employee.findById(id);
 
         if (!employee) {
             return res.status(404).json({ message: "Employee not found" });
         }
 
-        // Delete the employee by ID
-        await Employee.findByIdAndDelete(id);
+        // Helper to delete a file if it exists
+        const deleteFileIfExists = (filePath) => {
+            if (filePath && fs.existsSync(path.join(process.cwd(), filePath))) {
+                fs.unlink(path.join(process.cwd(), filePath), (err) => {
+                    if (err) {
+                        console.error(`Error deleting ${filePath}:`, err);
+                    } else {
+                        console.log(`Deleted: ${filePath}`);
+                    }
+                });
+            }
+        };
 
-        // Delete the associated profile image if it exists
-        if (employee.profileImage) {
-            fs.unlink(employee.profileImage, (err) => {
-                if (err) {
-                    console.error("Error deleting image:", err);
-                } else {
-                    console.log("Image deleted successfully:", employee.profileImage);
-                }
-            });
-        }
+        // Delete associated images
+        deleteFileIfExists(employee.profileImage);
+        deleteFileIfExists(employee.aadharImages.front);
+        deleteFileIfExists(employee.aadharImages.back);
+        deleteFileIfExists(employee.dlImage);
+
+        // Delete the employee
+        await Employee.findByIdAndDelete(id);
 
         // Fetch all remaining employees
         const getAllEmployees = await Employee.find({}).select("-password");
-        // Return the updated list of employees
-        res.status(200).json({ employees: getAllEmployees, message: "Employee deleted successfully" });
+
+        res.status(200).json({
+            employees: getAllEmployees,
+            message: "Employee and images deleted successfully"
+        });
+
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
 
 export const updateEmployeeById = async (req, res) => {
     try {
@@ -194,6 +236,20 @@ export const updateEmployeeById = async (req, res) => {
         res.status(200).json({ message: "Employee updated successfully", employee: updatedEmployee });
     } catch (error) {
         console.error("Error updating employee:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const getEmployeeById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const employee = await Employee.findById(id).select("-password");
+        if (!employee) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+        res.status(200).json({ message: "Employee fetched successfully", employee });
+    } catch (error) {
+        console.error("Error fetching employee by ID:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };

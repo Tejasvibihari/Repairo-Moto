@@ -63,9 +63,12 @@ const empleyeeSchema = new mongoose.Schema({
     referralCode: {
         type: String,
     },
-    profileImage: {
-        type: String,
+    aadharImages: {
+        front: { type: String },
+        back: { type: String }
     },
+    dlImage: { type: String },
+    profileImage: { type: String },
     role: {
         type: String,
         default: 'employee'
