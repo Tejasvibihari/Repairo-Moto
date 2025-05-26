@@ -7,6 +7,7 @@ import AboutSection from '../../components/landing/AboutSection'
 import WhyChooseUs from '../../components/landing/WhyChooseUs'
 import HowItWorks from '../../components/landing/HowItWork'
 import CTASection from '../../components/landing/CtaSection'
+import BikeEngineComponent from '../../components/landing/BikeEngineComponent'
 
 
 
@@ -15,14 +16,14 @@ export default function Home() {
         <div>
             <NavBar />
             <Hero />
-            <AboutSection/>
+            <BikeEngineComponent />
+            <AboutSection />
             <Feature />
             <WhyChooseUs />
             <HowItWorks />
-            <CTASection/>
-            <Footer/>
-          
+            <CTASection />
+            <Footer />
+
         </div>
     )
 }
- 
