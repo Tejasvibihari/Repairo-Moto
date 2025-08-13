@@ -67,6 +67,8 @@ import EmployeeAllUser from './pages/employee/EmployeeAllUser';
 import EmployeeEditBlog from './pages/employee/EmployeeEditBlog';
 import EmployeeDetail from './pages/dashboard/EmployeeDetail';
 import AddBikeProfile from './pages/user/AddBikeProfile';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 
 
 
@@ -94,6 +96,8 @@ export default function App() {
           <Route path='/user-signup' element={<UserSignUp />} />
           <Route path="/user-signup/:referralId" element={<UserSignUp />} />
           <Route path="/user-signin" element={<UserSigin />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:userType/:token" element={<ResetPassword />} />
 
           <Route path="/order/invoice/:id" element={<InvoiceTemplate />} />
 

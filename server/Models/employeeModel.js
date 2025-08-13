@@ -73,6 +73,14 @@ const empleyeeSchema = new mongoose.Schema({
         type: String,
         default: 'employee'
     },
+    otp: {
+        type: String,
+        default: null,
+    },
+    otpExpires: {
+        type: Date,
+        default: null,
+    },
     position: {
         type: String,
         enum: ["admin", "employee", "mechanic", "manager", "operational manager", "telecaller", "delivery"],

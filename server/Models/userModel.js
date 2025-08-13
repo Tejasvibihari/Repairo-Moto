@@ -70,6 +70,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    otp: {
+        type: String,
+        default: null,
+    },
+    otpExpires: {
+        type: Date,
+        default: null,
+    },
     profileImage: {
         type: String,
         default: null

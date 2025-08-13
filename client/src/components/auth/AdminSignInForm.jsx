@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAdminSignIn, setError, setLoading } from '../../app/slice/adminAuthSlice';
 import axiosClient from '../../service/axiosClient';
-import AlertSnackBar from '../ui/AlertSnackBar'
+import AlertSnackBar from '../ui/AlertSnackBar';
 import { useNavigate } from 'react-router-dom';
 import { setAdminToken } from '../../app/slice/authSlice';
+import { Link } from 'react-router-dom';
+import CircularLoading from '../ui/CircularLoading';
 
 export default function AdminSignInForm() {
     const [formData, setFormData] = useState({
@@ -15,12 +17,11 @@ export default function AdminSignInForm() {
     const admin = useSelector((state) => state.admin);
     const loading = useSelector((state) => state.admin.loading);
     const error = useSelector((state) => state.admin.error);
-    const dispatch = useDispatch()
-    const navigate = useNavigate()
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
-    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
-    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
-
+    const [snackBarOpen, setSnackBarOpen] = useState(false);
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success');
 
     const handleShowPassword = () => {
         setShowPassword(!showPassword);
@@ -37,123 +38,126 @@ export default function AdminSignInForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         dispatch(setLoading(true));
-        dispatch(setError(null))
-        // Basic validation
+        dispatch(setError(null));
+        setSnackBarOpen(false);
+
         if (!formData.email || !formData.password) {
-            setError('Both email and password are required');
-            setLoading(false);
+            dispatch(setError('Both email and password are required'));
+            setSnackBarSeverity('warning');
+            setSnackBarOpen(true);
+            dispatch(setLoading(false));
             return;
         }
+
         try {
-            const response = await axiosClient.post("/api/admin/adminsignin", formData);
-            dispatch(setAdminToken(response.data.token))
-            dispatch(setAdminSignIn(response.data))
-            dispatch(setLoading(false))
-            navigate('/dashboard')
+            const response = await axiosClient.post('/api/admin/adminsignin', formData);
+            dispatch(setAdminToken(response.data.token));
+            dispatch(setAdminSignIn(response.data));
+            dispatch(setLoading(false));
+            navigate('/dashboard');
         } catch (err) {
             if (err.response && err.response.status === 400) {
-                console.log(err);
+                console.error(err);
                 dispatch(setError(err.response.data.message));
-                setSnackBarSeverity("warning");
+                setSnackBarSeverity('warning');
                 setSnackBarOpen(true);
                 dispatch(setLoading(false));
-
             } else {
                 dispatch(setError(err.message));
-                setSnackBarSeverity("error");
+                setSnackBarSeverity('error');
                 setSnackBarOpen(true);
                 dispatch(setLoading(false));
             }
-        } finally {
-            setLoading(false);
         }
     };
+
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') {
             return;
         }
-
         setSnackBarOpen(false);
-    }
+    };
+
     return (
         <>
             <AlertSnackBar
                 open={snackBarOpen}
                 message={error}
                 severity={snackBarSeverity}
-                onClose={handleCloseSnackBar} // Close function for the Snackbar
+                onClose={handleCloseSnackBar}
             />
-            <div className='h-3xl h-9/12 w-3xl bg-opacity-90 backdrop-blur-lg shadow-2xl rounded-lg p-10'>
-                <div className='flex flex-col items-center justify-center'>
-                    <div className='flex flex-col space-y-2'>
-                        <span className='text-primary text-center text-2xl font-extrabold uppercase !leading-snug font-nunito md:text-3xl border-secondary border-l-6 border-r-6 pl-2'>
-                            ADMIN SIGN IN
-                        </span>
-                        <span className='text-base font-bold leading-normal text-white-dark font-nunito'>
-                            Enter your email and password to login
-                        </span>
+            <div className="max-w-md w-full mx-auto bg-white bg-opacity-95 backdrop-blur-xl shadow-lg rounded-2xl p-8 md:p-10 transition-all duration-300 ease-in-out transform hover:shadow-xl">
+                <div className="flex flex-col items-center justify-center space-y-6">
+                    <div className="text-center space-y-2">
+                        <h1 className="text-3xl md:text-4xl font-extrabold uppercase tracking-tight" style={{ fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#292929' }}>
+                            Admin Sign In
+                        </h1>
+                        <p className="text-sm md:text-base" style={{ fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#292929' }}>
+                            Enter your credentials to access the admin dashboard
+                        </p>
                     </div>
 
-                    <form className='flex flex-col my-10 w-74 space-y-4' onSubmit={handleSubmit}>
-                        {/* {error && (
-                            <div className='text-red-500 text-sm font-nunito'>
-                                {error}
-                            </div>
-                        )} */}
+                    <div className="flex flex-col w-full space-y-5">
                         <div>
-                            <label className='font-nunito'>Email</label>
-                            <div className='relative mt-1'>
-                                <Mail className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500' />
+                            <label className="text-sm font-medium" style={{ fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#292929' }}>Email</label>
+                            <div className="relative mt-1">
+                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#78dcca' }} />
                                 <input
-                                    type='email'
-                                    name='email'
+                                    type="email"
+                                    name="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    placeholder='Enter Email'
-                                    className='pl-10 p-2 border border-gray-300 bg-white rounded w-full font-nunito text-sm'
+                                    placeholder="Enter your email"
+                                    className="pl-10 pr-4 py-2 w-full border rounded-lg focus:ring-2 focus:border-transparent text-sm transition-all duration-200 ease-in-out"
+                                    style={{ borderColor: '#78dcca', fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#292929', backgroundColor: '#ffffff', focusRingColor: '#e2a731' }}
                                     required
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className='font-nunito'>Password</label>
-                            <div className='relative mt-1'>
-                                <Lock className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500' />
+                            <label className="text-sm font-medium" style={{ fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#292929' }}>Password</label>
+                            <div className="relative mt-1">
+                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#78dcca' }} />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
-                                    name='password'
+                                    name="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    placeholder='Enter Password'
-                                    className='pl-10 pr-10 p-2 border border-gray-300 bg-white rounded w-full font-nunito text-sm'
+                                    placeholder="Enter your password"
+                                    className="pl-10 pr-10 py-2 w-full border rounded-lg focus:ring-2 focus:border-transparent text-sm transition-all duration-200 ease-in-out"
+                                    style={{ borderColor: '#78dcca', fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#292929', backgroundColor: '#ffffff', focusRingColor: '#e2a731' }}
                                     required
                                 />
                                 {showPassword ? (
                                     <Eye
                                         onClick={handleShowPassword}
-                                        className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer'
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 cursor-pointer hover:text-yellow-600 transition-colors"
+                                        style={{ color: '#78dcca' }}
                                     />
                                 ) : (
                                     <EyeClosed
                                         onClick={handleShowPassword}
-                                        className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer'
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 cursor-pointer hover:text-yellow-600 transition-colors"
+                                        style={{ color: '#78dcca' }}
                                     />
                                 )}
                             </div>
-                            <div>
-                                <span className='text-xs font-nunito cursor-pointer'>
-                                    Forget Password?
-                                </span>
+                            <div className="text-right mt-2">
+                                <Link to="/forgot-password" className="text-sm font-medium hover:underline" style={{ fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#e2a731' }}>
+                                    Forgot Password?
+                                </Link>
                             </div>
                         </div>
                         <button
-                            type='submit'
-                            className='py-2 bg-primary rounded text-white font-semibold font-nunito mt-6 border border-primary hover:bg-secondary hover:text-primary cursor-pointer'
+                            type="button"
+                            onClick={handleSubmit}
+                            className="py-2.5 w-full text-white font-semibold rounded-lg focus:ring-4 focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: '#e2a731', fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#ffffff' }}
                             disabled={loading}
                         >
-                            {loading ? 'Signing In...' : 'Sign In'}
+                            {loading ? <CircularLoading size={20} color="inherit" /> : 'Sign In'}
                         </button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </>

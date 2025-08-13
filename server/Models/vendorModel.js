@@ -69,6 +69,14 @@ const vendorSchema = new mongoose.Schema({
     profileImage: {
         type: String
     },
+    otp: {
+        type: String,
+        default: null,
+    },
+    otpExpires: {
+        type: Date,
+        default: null,
+    },
     role: {
         type: String,
         default: "vendor"

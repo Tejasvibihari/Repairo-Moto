@@ -31,6 +31,14 @@ const adminSchema = new mongoose.Schema({
         type: String,
         default: 'default.jpg',
     },
+    otp: {
+        type: String,
+        default: null,
+    },
+    otpExpires: {
+        type: Date,
+        default: null,
+    },
     createdAt: {
         type: Date,
         default: Date.now,
