@@ -62,7 +62,7 @@ export default function UserBookingForm() {
     useEffect(() => {
         const getBikeProfile = async () => {
             try {
-                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile/${user?._id}`)
+                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile/${userId}`)
                 setBikeProfile(response.data)
             } catch (error) {
                 console.log(error)
