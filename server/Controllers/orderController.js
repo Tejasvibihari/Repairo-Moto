@@ -3,6 +3,7 @@ import Employee from "../Models/employeeModel.js";
 import Vendor from '../Models/vendorModel.js'
 import VendorOrder from "../Models/vendorOrderModel.js";
 import { sendBookingConfirmationEmail } from "../Utils/mailer.js";
+import User from "../Models/userModel.js";
 // @desc Create a new service booking
 // @route POST /api/bookings
 // @access Public
@@ -129,31 +130,31 @@ export const updateMechanic = async (req, res) => {
             return res.status(404).json({ message: "Mechanic not found" });
         }
 
-        // Update the order with the mechanic's name and ID
-        const updatedOrder = await Order.findByIdAndUpdate(
-            id,
-
-            {
-                status: "Mechanic Assigned",
-                assignedMechanic: `${mechanic.firstName} ${mechanic.lastName}`, // Update with the mechanic's full name
-                mechanicId: mechanic._id, // Update with the mechanic's ID
-            },
-            { new: true } // Return the updated document
-        );
-
-        if (!updatedOrder) {
+        // Find the order and also get user info (populate to reduce extra query)
+        const order = await Order.findById(id).populate("userId");
+        if (!order) {
             return res.status(404).json({ message: "Order not found" });
         }
 
+        // Update the order with mechanic details + status
+        order.status = "Mechanic Assigned";
+        order.assignedMechanic = `${mechanic.firstName} ${mechanic.lastName}`;
+        order.mechanicId = mechanic._id;
+
+        // Save updated order
+        await order.save();
+
         return res.status(200).json({
-            message: "Mechanic updated successfully",
-            data: updatedOrder,
+            message: "Mechanic updated successfully & referral logic applied",
+            data: order,
         });
+
     } catch (error) {
         console.error("Error updating mechanic:", error);
         return res.status(500).json({ message: "Server error while updating mechanic" });
     }
 };
+
 export const updateDelivery = async (req, res) => {
     try {
         const { id } = req.params; // Order ID
@@ -221,6 +222,7 @@ export const updateVendor = async (req, res) => {
         res.status(500).json({ message: "Server error while updating vendor" });
     }
 };
+
 export const updateOrderStatus = async (req, res) => {
     try {
         const { id } = req.params; // Extract order ID from the request parameters
@@ -431,16 +433,56 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
         };
 
         // Update the order
-        const updatedOrder = await Order.findByIdAndUpdate(id, {
-            $set: updatedFields
-        }, { new: true });
+        const updatedOrder = await Order.findByIdAndUpdate(
+            id,
+            { $set: updatedFields },
+            { new: true }
+        );
 
         if (!updatedOrder) {
             return res.status(404).json({ message: "Order not found" });
         }
 
+        // ---- Referral Logic ----
+        // ✅ Only apply referral if NOT already processed
+        if (!updatedOrder.referralProcessed) {
+            const user = await User.findById(updatedOrder.userId);
+            if (user?.referredBy) {
+                const referee = await User.findOne({ referralCode: user.referredBy });
+
+                if (referee) {
+                    const userOrderCount = await Order.countDocuments({ userId: user._id });
+
+                    if (referee.accountType === "personal") {
+                        // ✅ Personal: Only if it's the user's FIRST order
+                        if (userOrderCount === 1) {
+                            referee.pendingReferralAmount = Math.max(0, referee.pendingReferralAmount - 50);
+                            referee.referralAmount = (referee.referralAmount || 0) + 50;
+                        }
+                    } else if (referee.accountType === "business") {
+                        // ✅ Business: Rewards based on order total
+                        const orderTotal = updatedOrder.total.total || 0;
+
+                        if (orderTotal >= 5000) {
+                            referee.referralAmount = (referee.referralAmount || 0) + 249;
+                        } else if (orderTotal >= 3500) {
+                            referee.referralAmount = (referee.referralAmount || 0) + 149;
+                        } else if (orderTotal >= 2000) {
+                            referee.referralAmount = (referee.referralAmount || 0) + 50;
+                        }
+                    }
+
+                    await referee.save(); // ✅ Save updated referee after applying logic
+
+                    // ✅ Mark this order as referral processed
+                    updatedOrder.referralProcessed = true;
+                    await updatedOrder.save();
+                }
+            }
+        }
+
         res.status(200).json({
-            message: "Order updated and invoice generated successfully",
+            message: "Order updated, invoice generated, and referral logic applied (only once)",
             order: updatedOrder
         });
 
@@ -449,6 +491,8 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error });
     }
 };
+
+
 export const userOrder = async (req, res) => {
     try {
         const {
@@ -475,6 +519,10 @@ export const userOrder = async (req, res) => {
 
         if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
+        }
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
         }
 
         // Format today's date as DDMMYY
@@ -527,7 +575,7 @@ export const userOrder = async (req, res) => {
         });
 
         const savedOrder = await newOrder.save();
-        await sendBookingConfirmationEmail(newOrder);
+        await sendBookingConfirmationEmail(newOrder, user.email);
 
         return res.status(201).json({
             message: 'Order Confirmed!',

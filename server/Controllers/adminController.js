@@ -568,7 +568,8 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
     const { userType, token } = req.params;
     const { password } = req.body;
-
+    console.log(userType)
+    console.log("hello")
     if (!password) {
         return res.status(400).json({ message: "Password is required" });
     }
@@ -578,6 +579,7 @@ export const resetPassword = async (req, res) => {
         if (userType === "Admin") Model = Admin;
         else if (userType === "User") Model = User;
         else if (userType === "Employee") Model = Employee;
+        else if (userType === "Vendor") Model = Vendor;
         else return res.status(400).json({ message: "Invalid user type" });
 
         // Hash token to match stored hash

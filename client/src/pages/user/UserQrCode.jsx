@@ -15,8 +15,7 @@ export default function UserQrCode() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
-    const url = `${import.meta.env.VITE_FRONTEND_URL}/user-signup/${user.referralCode}`;
-    console.log(url)
+    const url = `${import.meta.env.VITE_FRONTEND_URL}/user-signup/${user.accountType}/${user.referralCode}`;
 
     return (
         <>
@@ -45,7 +44,7 @@ export default function UserQrCode() {
                         <h1 className="text-2xl font-bold text-gray-800">Share Your Referral Code</h1>
                         <p className="text-gray-600 mt-2">Invite friends and earn rewards when they join!</p>
                     </div>
-                    <QRGenerator text={`${import.meta.env.VITE_FRONTEND_URL}/user-signup/${user.referralCode}`} />
+                    <QRGenerator text={`${import.meta.env.VITE_FRONTEND_URL}/user-signup/${user.accountType}/${user.referralCode}`} />
 
 
                     {/* Referral Link */}

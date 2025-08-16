@@ -69,6 +69,8 @@ import EmployeeDetail from './pages/dashboard/EmployeeDetail';
 import AddBikeProfile from './pages/user/AddBikeProfile';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
+import Referral from './pages/dashboard/Referral';
+import DetailReferral from './pages/dashboard/DetailReferral';
 
 
 
@@ -94,7 +96,7 @@ export default function App() {
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
           <Route path='/user-signup' element={<UserSignUp />} />
-          <Route path="/user-signup/:referralId" element={<UserSignUp />} />
+          <Route path="/user-signup/:referralType/:referralId" element={<UserSignUp />} />
           <Route path="/user-signin" element={<UserSigin />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:userType/:token" element={<ResetPassword />} />
@@ -391,6 +393,22 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><AllUser /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manage-referral'
+            element={
+              <PrivateRoute>
+                <Sidebar><Referral /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/detail-manage-referral/:userId'
+            element={
+              <PrivateRoute>
+                <Sidebar><DetailReferral /></Sidebar>
               </PrivateRoute>
             }
           />

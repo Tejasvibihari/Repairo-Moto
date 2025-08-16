@@ -106,6 +106,7 @@ const orderSchema = new mongoose.Schema({
         ref: 'Mechanic',
         default: null,
     },
+    referralProcessed: { type: Boolean, default: false },
     partsUsed: [
         {
             partName: { type: String, required: true, trim: true },

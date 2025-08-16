@@ -1,5 +1,5 @@
 import express from "express";
-import { createUser, editUser, getAllUser, getAllUserByReferralCode, getUserById, userSignIn } from "../Controllers/userController.js";
+import { createUser, editUser, getAllUser, getAllUserByReferralCode, getUserById, getWithdraHistory, updateUserStatus, userSignIn, withdrawRequest } from "../Controllers/userController.js";
 import { userUpload } from "../Middleware/userMulter.js";
 import authUser from "../Middleware/authUser.js";
 
@@ -14,5 +14,9 @@ router.get("/getalluser", getAllUser);
 router.get("/getalluser/:referalcode", getAllUserByReferralCode);
 router.put('/update-profile/:userId', userUpload.single('profileImage'), editUser)
 router.get('/get-user-by-id/:userId', getUserById)
+
+router.get('/withdrawal-history/:userId', getWithdraHistory);
+router.post('/withdrawal-request/:userId', withdrawRequest);
+router.put('/update-status/:userId', updateUserStatus);
 
 export default router;

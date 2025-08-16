@@ -6,6 +6,7 @@ import {
     Home, Bike, FileText, NotebookPen, User2, Briefcase,
     ShoppingCart, QrCode, Menu, ChevronRight,
     User,
+    DollarSign,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -29,6 +30,7 @@ const Sidebar = ({ children }) => {
         { id: 'manage-vendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
         { id: 'manage-qr', path: '/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },
         { id: 'all-user', path: '/all-user', label: 'All User', icon: <User size={20} /> },
+        { id: 'manage-referral', path: '/manage-referral', label: 'Manage Referral', icon: <DollarSign size={20} /> },
         { id: 'add-blog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
         { id: 'manage-blog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
     ];

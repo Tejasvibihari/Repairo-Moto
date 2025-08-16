@@ -1,5 +1,33 @@
 import mongoose from 'mongoose';
 
+const withdrawalSchema = new mongoose.Schema({
+    amount: {
+        type: Number,
+        required: true
+    },
+    requestDate: {
+        type: Date,
+        default: Date.now
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected', 'paid'],
+        default: 'pending'
+    },
+    adminNote: {
+        type: String,
+        default: null
+    },
+    processedDate: {
+        type: Date,
+        default: null
+    },
+    transactionId: {
+        type: String,
+        default: null // payment reference
+    }
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
     firstName: {
         type: String,
@@ -51,21 +79,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    address: {
-        type: String,
-
-    },
-    city: {
-        type: String,
-
-    },
-    state: {
-        type: String,
-
-    },
-    pincode: {
-        type: String,
-    },
+    address: String,
+    city: String,
+    state: String,
+    pincode: String,
     businessType: {
         type: String,
         default: null
@@ -81,10 +98,35 @@ const userSchema = new mongoose.Schema({
     profileImage: {
         type: String,
         default: null
-    }
-}, {
-    timestamps: true
-});
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'suspended'],
+        default: 'pending'
+    },
+
+    // 💰 Referral amounts
+    pendingReferralAmount: {
+        type: Number,
+        default: 0 // Amount earned but not yet unlocked
+    },
+    referralAmount: {
+        type: Number,
+        default: 0 // Usable amount
+    },
+    referralCount: {
+        type: Number,
+        default: 0
+    },
+
+    totalWithdrawn: {
+        type: Number,
+        default: 0
+    },
+
+    withdrawalRequests: [withdrawalSchema], // history of withdrawal requests
+
+}, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
 export default User;

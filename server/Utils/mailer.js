@@ -111,7 +111,7 @@ export const sendPasswordResetEmail = async (email, resetToken) => {
  * @param {Object} bookingDetails - Booking information
  * @returns {Promise<Boolean>} Success status
  */
-export const sendBookingConfirmationEmail = async (newOrder) => {
+export const sendBookingConfirmationEmail = async (newOrder, email) => {
     try {
 
         // Create email content using the template
@@ -120,7 +120,7 @@ export const sendBookingConfirmationEmail = async (newOrder) => {
 
         // Send email
         await sendMail({
-            to: newOrder.email,
+            to: email,
             subject: emailSubject,
             body: emailBody
         });

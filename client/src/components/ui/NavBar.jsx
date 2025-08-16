@@ -285,17 +285,17 @@ export default function NavBar() {
                 ></div>
             )}
             {/* Social Media Icon  */}
-            <div className="fixed right-4 bottom-6 z-50">
-                {/* Main contact button */}
-                <button
+            {/* <div className="fixed right-4 bottom-6 z-50"> */}
+            {/* Main contact button */}
+            {/* <button
                     onClick={toggleSocialMenu}
                     className="bg-primary cursor-pointer hover:bg-secondary group text-white rounded-full p-3 shadow-lg transition-all duration-300"
                 >
                     <MessageSquareMore size={24} className='group-hover:text-primary' />
-                </button>
+                </button> */}
 
-                {/* Social media icons that appear when clicked */}
-                {isSocialOpen && (
+            {/* Social media icons that appear when clicked */}
+            {/* {isSocialOpen && (
                     <div className="absolute right-0 bottom-16 flex flex-col space-y-2 items-end animate-fadeIn">
                         <a
                             href="https://wa.me/919229207021"
@@ -329,8 +329,8 @@ export default function NavBar() {
                             <span className="ml-2 mr-1">Facebook</span>
                         </a>
                     </div>
-                )}
-            </div>
+                )} */}
+            {/* </div> */}
         </nav>
     );
 }

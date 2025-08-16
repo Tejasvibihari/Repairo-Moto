@@ -15,7 +15,8 @@ import { BikeProfileCard } from '../../components/ui/BikeProfileCard';
 
 
 export default function UserProfile() {
-    const user = useSelector((state) => state.user.user);
+    const user = useSelector((state) => state.user.user.user);
+    console.log(user)
     const dispatch = useDispatch();
     const [isEditing, setIsEditing] = useState(false);
     const [editedUser, seteditedUser] = useState(user);
@@ -118,7 +119,7 @@ export default function UserProfile() {
             formData.append('newPassword', passwordData.newPassword || '');
             formData.append('confirmPassword', passwordData.confirmPassword || '');
             console.log(user)
-            const response = await axiosClient.put(`/api/user/update-profile/${user.id}`, formData, {
+            const response = await axiosClient.put(`/api/user/update-profile/${user._id}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -521,6 +522,13 @@ export default function UserProfile() {
                                         <div className="space-y-4">
                                             <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Contact Information</h3>
 
+                                            <div className="flex items-start gap-3">
+                                                <User className="text-primary mt-1" size={18} />
+                                                <div>
+                                                    <p className="text-sm text-gray-500">Name</p>
+                                                    <p className="font-medium">{user?.firstName} {user?.lastName}</p>
+                                                </div>
+                                            </div>
                                             <div className="flex items-start gap-3">
                                                 <Phone className="text-primary mt-1" size={18} />
                                                 <div>

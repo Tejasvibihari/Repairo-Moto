@@ -25,7 +25,8 @@ import { useSelector } from 'react-redux';
 
 
 export default function UserBookingForm() {
-    const user = useSelector((state) => state.user.user);
+    const user = useSelector((state) => state.user.user.user);
+    const [userId, setUserId] = useState(user._id);
     const [locationError, setLocationError] = useState('');
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
@@ -37,7 +38,7 @@ export default function UserBookingForm() {
     const [loading, setLoading] = useState(false); // State to control loading spinner
     const [location, setLocation] = useState({ lat: '', lng: '' });
     const [formData, setFormData] = useState({
-        userId: user.id,
+        userId,
         name: '',
         contactNo: '',
         email: user.email,
@@ -137,7 +138,7 @@ export default function UserBookingForm() {
         setModels(selectedBrandData ? selectedBrandData.models : []);
     };
 
-    console.log(bike)
+
     const handleServiceChange = (e) => {
         const { value, checked } = e.target;
         setFormData((prev) => ({
@@ -147,7 +148,7 @@ export default function UserBookingForm() {
                 : prev.services.filter((service) => service !== value),
         }));
     };
-    console.log(location)
+    console.log(user._id)
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -285,7 +286,6 @@ export default function UserBookingForm() {
                                 value={bike}
                                 onChange={handleBikeProfileChange}
                                 fullWidth
-                                required
                                 displayEmpty
                                 inputProps={{ 'aria-label': 'Select Bike Profile' }}
                             >
@@ -302,7 +302,7 @@ export default function UserBookingForm() {
                                     </MenuItem>
                                 </>}
                             </Select>
-                            <FormHelperText>Select Brand Name from the dropdown</FormHelperText>
+                            <FormHelperText>Select Bike Profile from the dropdown</FormHelperText>
                         </div>
                         <div>
                             <Select

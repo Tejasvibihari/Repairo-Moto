@@ -55,7 +55,7 @@ export default function ResetPassword({ userType, token }) {
         dispatch(setLoading(true));
         setSnackBarMessage('');
         setSnackBarOpen(false);
-
+        console.log(userType, token);
         if (!formData.newPassword || !formData.confirmPassword) {
             setSnackBarMessage('Please fill in all required fields.');
             setSnackBarSeverity('warning');
@@ -94,9 +94,17 @@ export default function ResetPassword({ userType, token }) {
                 newPassword: '',
                 confirmPassword: ''
             });
-            setTimeout(() => navigate('/user-signin'), 2000); // Redirect to sign-in after success
+            if (userType === 'User') {
+                setTimeout(() => navigate('/user-signin'), 2000); // Redirect to sign-in after success
+            } else if (userType === 'Admin') {
+                setTimeout(() => navigate('/admin/sign-in'), 2000); // Redirect to sign-in after success
+            } else if (userType === 'Employee') {
+                setTimeout(() => navigate('/employee/sign-in'), 2000); // Redirect to sign-in after success
+            } else if (userType === 'Vendor') {
+                setTimeout(() => navigate('/vendor/sign-in'), 2000); // Redirect to sign-in after success
+            }
         } catch (err) {
-            // console.error(err);  
+            console.error(err);
             setSnackBarMessage(err.response?.data?.message || 'Failed to reset password.');
             setSnackBarSeverity('error');
             setSnackBarOpen(true);

@@ -8,7 +8,7 @@ export default function Profile() {
     const user = useSelector((state) => state.admin.admin.user);
     const dispatch = useDispatch()
     const profileImageUrl = `${import.meta.env.VITE_API_URL}/uploads/${user.profilePicture}`; // Adjust the path based on your backend setup
-
+    console.log(user)
     // Format date properly with a fallback
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";

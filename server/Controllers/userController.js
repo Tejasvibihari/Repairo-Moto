@@ -18,9 +18,8 @@ export const createUser = async (req, res) => {
             phone,
             email,
             password,
-            referralType,
-            referredBy,
             accountType,
+            referredBy,
             businessName,
             address,
             city,
@@ -29,7 +28,7 @@ export const createUser = async (req, res) => {
             businessType
         } = req.body;
 
-
+        const { accountType: referralType } = req.params;
 
         // Check for existing user
         const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
@@ -43,14 +42,14 @@ export const createUser = async (req, res) => {
             profileImage = `/uploads/user/${req.file.filename}`;
         }
 
-        // Hash the password
+        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Generate a referral code
         const referralCode = generateReferralCode(firstName, phone);
 
-        // Create user object
-        const newUser = new User({
+        // Prepare new user data
+        const newUserData = {
             firstName,
             lastName,
             phone,
@@ -58,7 +57,7 @@ export const createUser = async (req, res) => {
             password: hashedPassword,
             referralCode,
             referralType,
-            referredBy,
+            referredBy: referredBy || null,
             accountType,
             businessName,
             address,
@@ -67,17 +66,45 @@ export const createUser = async (req, res) => {
             pincode,
             businessType,
             profileImage
-        });
+        };
 
-        // Save to DB
+        // 🚀 Referral logic
+        if (referredBy) {
+            // 1. Check if referral code exists
+            const referrer = await User.findOne({ referralCode: referredBy });
+
+            if (!referrer) {
+                return res.status(400).json({ message: "Invalid referral code" });
+            }
+
+            // 2. Handle based on referrer's account type
+            if (referrer.accountType === "personal") {
+                referrer.pendingReferralAmount = (referrer.pendingReferralAmount || 0) + 50;
+                referrer.referralCount = (referrer.referralCount || 0) + 1;
+                await referrer.save();
+            } else if (referrer.accountType === "business") {
+                // Only count referral, no money
+                referrer.referralCount = (referrer.referralCount || 0) + 1;
+                await referrer.save();
+            }
+
+            // Save referredBy for record in the new user
+            newUserData.referredBy = referredBy;
+        }
+        if (accountType === "personal") {
+            newUserData.status = "approved"; // Set status to active for personal accounts
+        }
+        // Create new user
+        const newUser = new User(newUserData);
         await newUser.save();
-        const emailSubject = "Welcome to Repair Moto!";
-        await sendWelcomeEmail({ firstName, lastName, email, accountType, referralCode })
+
+        // Send welcome email
+        await sendWelcomeEmail({ firstName, lastName, email, accountType, referralCode });
 
         res.status(201).json({
             message: "User created successfully",
             user: {
-                id: newUser._id,
+                _id: newUser._id,
                 firstName: newUser.firstName,
                 lastName: newUser.lastName,
                 email: newUser.email,
@@ -91,6 +118,7 @@ export const createUser = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
 
 
 export const userSignIn = async (req, res) => {
@@ -352,3 +380,77 @@ export const editUser = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const getWithdraHistory = async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const user = await User.findById(userId).select("withdrawalHistory");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({
+            message: "Withdrawal history fetched successfully",
+            withdrawalHistory: user.withdrawalHistory || [],
+        });
+    } catch (error) {
+        console.error("Error fetching withdrawal history:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+
+}
+export const withdrawRequest = async (req, res) => {
+    const { amount } = req.body;
+    const { userId } = req.params;
+    console.log(amount, userId, "Amount and User ID for withdrawal request");
+    try {
+        const user = await User.findOne({ _id: userId });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        if (amount <= 0 || amount > user.referralAmount) {
+            return res.status(400).json({ message: "Invalid withdrawal amount" });
+        }
+        // Create a withdrawal request
+        const withdrawalRequest = {
+            amount,
+            status: 'pending',
+            requestedAt: new Date(),
+        };
+        user.withdrawalRequests.push(withdrawalRequest);
+        user.referralAmount -= amount; // Deduct the amount from the user's referral balance
+        user.totalWithdrawn += amount; // Update total withdrawn amount
+        await user.save();
+        res.status(200).json({
+            message: "Withdrawal request submitted successfully",
+            withdrawalRequest,
+            availableAmount: user.referralAmount // Return the updated referral amount
+        });
+
+    } catch (error) {
+        console.error("Error processing withdrawal request:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const updateUserStatus = async (req, res) => {
+    const { status } = req.body;
+    const { userId } = req.params;
+    console.log(status, userId, "New Status and User ID for update");
+    try {
+        const user = await User.findById(userId);
+        console.log(user, "User found for status update");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.status = status;
+        await user.save();
+        res.status(200).json({
+            message: "User status updated successfully",
+        });
+    } catch (error) {
+        console.error("Error updating user status:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}

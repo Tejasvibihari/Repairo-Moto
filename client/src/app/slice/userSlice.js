@@ -12,16 +12,17 @@ export const userAuthSlice = createSlice({
     initialState,
     reducers: {
         setUserSignIn: (state, action) => {
-            const user = action.payload.user;
-            // Transform _id to id
+            const user = action.payload; // ✅ directly use payload
             const formattedUser = {
                 ...user,
                 id: user._id,
             };
-
             state.user = formattedUser;
             state.isAuthenticated = true;
-            state.token = action.payload.token;
+            // Only set token if included in payload
+            if (action.payload.token) {
+                state.token = action.payload.token;
+            }
         },
         setUserLogout: (state) => {
             state.user = null;

@@ -106,7 +106,9 @@ export default function UserSignUpForm() {
                 state: '',
                 pincode: '',
             });
-            navigate('/user-signin');
+            setTimeout(() => {
+                navigate('/user-signin');
+            }, 2000)
         } catch (err) {
             console.error(err);
             setSnackBarMessage(err.response?.data?.message || 'Registration failed.');
