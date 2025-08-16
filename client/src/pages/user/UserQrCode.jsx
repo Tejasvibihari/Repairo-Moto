@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import BreadCrumbs from '../../components/ui/BreadCrumbs';
 export default function UserQrCode() {
     const [copied, setCopied] = useState(false);
-    const user = useSelector((state) => state.user.user);
+    const user = useSelector((state) => state.user.user.user);
     const copyToClipboard = () => {
         navigator.clipboard.writeText(user.referralCode);
         setCopied(true);
