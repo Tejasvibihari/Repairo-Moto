@@ -26,7 +26,7 @@ import { useSelector } from 'react-redux';
 
 export default function UserBookingForm() {
     const user = useSelector((state) => state.user.user.user);
-    const [userId, setUserId] = useState(user._id);
+    const [userId, setUserId] = useState(user?._id);
     const [locationError, setLocationError] = useState('');
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
@@ -62,7 +62,7 @@ export default function UserBookingForm() {
     useEffect(() => {
         const getBikeProfile = async () => {
             try {
-                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile/${user._id}`)
+                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile/${user?._id}`)
                 setBikeProfile(response.data)
             } catch (error) {
                 console.log(error)
@@ -119,7 +119,7 @@ export default function UserBookingForm() {
         setBike(selectedBikeId);
 
         // Find the selected bike profile by _id
-        const selectedBike = bikeProfile.find(bike => bike._id === selectedBikeId);
+        const selectedBike = bikeProfile.find(bike => bike?._id === selectedBikeId);
 
         if (selectedBike) {
             setFormData(prev => ({
@@ -148,7 +148,7 @@ export default function UserBookingForm() {
                 : prev.services.filter((service) => service !== value),
         }));
     };
-    console.log(user._id)
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -161,7 +161,7 @@ export default function UserBookingForm() {
             setSnackBarOpen(true); // Open the Snackbar
             setLoading(false); // Stop loading state
             setFormData({
-                userId: user._id,
+                userId,
                 name: '',
                 contactNo: '',
                 email: user.email,
