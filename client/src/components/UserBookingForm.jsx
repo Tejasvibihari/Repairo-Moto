@@ -61,6 +61,7 @@ export default function UserBookingForm() {
     // Get Bike Profile 
     useEffect(() => {
         const getBikeProfile = async () => {
+            console.log(userId)
             try {
                 const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile/${userId}`)
                 setBikeProfile(response.data)
@@ -69,7 +70,7 @@ export default function UserBookingForm() {
             }
         }
         getBikeProfile()
-    }, [])
+    }, [userId]);
 
     useEffect(() => {
         if (navigator.geolocation) {
