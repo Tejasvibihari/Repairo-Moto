@@ -9,7 +9,7 @@ const statusOptions = ['pending', 'approved', 'suspended'];
 
 const ReferralTable = ({ users }) => {
     const navigate = useNavigate();
-
+    console.log(users);
     const [userStatuses, setUserStatuses] = useState(
         users.reduce((acc, user) => ({ ...acc, [user._id]: user.status }), {})
     );
@@ -163,6 +163,9 @@ const ReferralTable = ({ users }) => {
                                     <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Withdraw Amount
                                     </th>
+                                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Withdraw Request
+                                    </th>
 
                                     <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Actions
@@ -244,6 +247,22 @@ const ReferralTable = ({ users }) => {
                                             <span className="text-sm font-medium text-green-600">
                                                 ${user.totalWithdrawn.toFixed(2)}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {user.withdrawalRequests && user.withdrawalRequests.length > 0 ? (
+                                                user.withdrawalRequests.some(req => req.status === "pending") ? (
+                                                    <span className="text-sm font-medium text-orange-600">
+                                                        ${user.withdrawalRequests
+                                                            .filter(req => req.status === "pending")
+                                                            .reduce((sum, req) => sum + req.amount, 0)
+                                                            .toFixed(2)}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-400">-</span>
+                                                )
+                                            ) : (
+                                                <span className="text-gray-400">-</span>
+                                            )}
                                         </td>
 
 

@@ -491,7 +491,7 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                         }
                     } else if (referee.accountType === "business") {
                         const orderTotal = updatedOrder.total.total || 0;
-
+                        console.log(orderTotal)
                         if (orderTotal >= 5000) {
                             referee.referralAmount = (referee.referralAmount || 0) + 249;
                         } else if (orderTotal >= 3500) {

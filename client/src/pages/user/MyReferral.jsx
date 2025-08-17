@@ -13,6 +13,7 @@ export default function MyReferral() {
     const [withdrawalHistory, setWithdrawalHistory] = useState([]);
     const [loading, setLoading] = useState(false);
     const [withdrawalAmount, setWithdrawalAmount] = useState('');
+    const [upiid, setUpiid] = useState('');
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
@@ -77,15 +78,21 @@ export default function MyReferral() {
         try {
             const response = await axiosClient.post(`/api/user/withdrawal-request/${user?._id}`, {
                 amount: parseFloat(withdrawalAmount)
+                , upiid: upiid
             });
 
-            if (response.data.success) {
-                alert('Withdrawal request submitted successfully!');
+            setError('withdrawal request submitted successfully');
+            setSnackBarSeverity('success');
+            setSnackBarOpen(true);
+            setTimeout(() => {
+
                 setShowWithdrawModal(false);
                 setWithdrawalAmount('');
+                setUpiid('');
                 // Refresh data
                 window.location.reload();
-            }
+            }, 2000);
+
         } catch (error) {
             setError('Error submitting withdrawal request');
             setSnackBarSeverity('error');
@@ -645,6 +652,19 @@ export default function MyReferral() {
                                 placeholder="Enter amount"
                                 min="100"
                                 max={userStats.availableAmount}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                        </div>
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                UPI ID (₹)
+                            </label>
+                            <input
+                                type="text"
+                                value={upiid}
+                                onChange={(e) => setUpiid(e.target.value)}
+                                placeholder="Enter UPI ID"
+                                required
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                         </div>

@@ -1,32 +1,15 @@
 import mongoose from 'mongoose';
 
 const withdrawalSchema = new mongoose.Schema({
-    amount: {
-        type: Number,
-        required: true
-    },
-    requestDate: {
-        type: Date,
-        default: Date.now
-    },
-    status: {
-        type: String,
-        enum: ['pending', 'approved', 'rejected', 'paid'],
-        default: 'pending'
-    },
-    adminNote: {
-        type: String,
-        default: null
-    },
-    processedDate: {
-        type: Date,
-        default: null
-    },
-    transactionId: {
-        type: String,
-        default: null // payment reference
-    }
-}, { _id: false });
+    amount: Number,
+    requestDate: { type: Date, default: Date.now },
+    upiId: String,
+    status: { type: String, enum: ['pending', 'approved', 'rejected', 'paid'], default: 'pending' },
+    adminNote: { type: String, default: null },
+    processedDate: { type: Date, default: null },
+    transactionId: { type: String, default: null }
+});
+
 
 const userSchema = new mongoose.Schema({
     firstName: {

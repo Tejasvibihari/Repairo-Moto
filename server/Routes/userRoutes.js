@@ -1,5 +1,5 @@
 import express from "express";
-import { createUser, editUser, getAllUser, getAllUserByReferralCode, getUserById, getWithdraHistory, updateUserStatus, userSignIn, withdrawRequest } from "../Controllers/userController.js";
+import { createUser, editUser, getAllUser, getAllUserByReferralCode, getUserById, getWithdraHistory, updateUserStatus, updateWithdrawalStatus, userSignIn, withdrawRequest } from "../Controllers/userController.js";
 import { userUpload } from "../Middleware/userMulter.js";
 import authUser from "../Middleware/authUser.js";
 
@@ -17,6 +17,7 @@ router.get('/get-user-by-id/:userId', getUserById)
 
 router.get('/withdrawal-history/:userId', getWithdraHistory);
 router.post('/withdrawal-request/:userId', withdrawRequest);
+router.put('/update/withdrawal-request/status/:userId', updateWithdrawalStatus);
 router.put('/update-status/:userId', updateUserStatus);
 
 export default router;

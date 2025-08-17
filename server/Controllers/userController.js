@@ -400,7 +400,7 @@ export const getWithdraHistory = async (req, res) => {
 
 }
 export const withdrawRequest = async (req, res) => {
-    const { amount } = req.body;
+    const { amount, upiid } = req.body;
     const { userId } = req.params;
     console.log(amount, userId, "Amount and User ID for withdrawal request");
     try {
@@ -414,6 +414,7 @@ export const withdrawRequest = async (req, res) => {
         // Create a withdrawal request
         const withdrawalRequest = {
             amount,
+            upiId: upiid,
             status: 'pending',
             requestedAt: new Date(),
         };
@@ -432,6 +433,48 @@ export const withdrawRequest = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
+
+export const updateWithdrawalStatus = async (req, res) => {
+    try {
+        const { userId } = req.params; // userId
+        const { requestId, status, transactionId, adminNote } = req.body;
+      
+        // Find user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        console.log(user)
+        // Find withdrawal request
+        const withdrawal = user.withdrawalRequests.id(requestId);
+        if (!withdrawal) {
+            return res.status(404).json({ message: "Withdrawal request not found" });
+        }
+
+        // Update fields
+        withdrawal.status = status || withdrawal.status;
+        withdrawal.transactionId = transactionId || withdrawal.transactionId;
+        withdrawal.adminNote = adminNote || withdrawal.adminNote;
+        withdrawal.processedDate = new Date();
+
+        // If paid, update user's totalWithdrawn & decrease referralAmount
+        if (status === "paid") {
+            user.totalWithdrawn += withdrawal.amount;
+        }
+
+        await user.save();
+
+        res.status(200).json({
+            message: "Withdrawal request updated successfully",
+            withdrawal,
+        });
+    } catch (error) {
+        console.error("Error updating withdrawal request:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 
 export const updateUserStatus = async (req, res) => {
     const { status } = req.body;
