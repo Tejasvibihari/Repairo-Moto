@@ -163,9 +163,7 @@ const ReferralTable = ({ users }) => {
                                     <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Withdraw Amount
                                     </th>
-                                    <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status
-                                    </th>
+
                                     <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Actions
                                     </th>
@@ -248,20 +246,6 @@ const ReferralTable = ({ users }) => {
                                             </span>
                                         </td>
 
-                                        {/* Status */}
-                                        <td className="px-6 py-4 text-center">
-                                            <select
-                                                value={userStatuses[user._id]}
-                                                onChange={(e) => handleStatusChange(user._id, e.target.value)}
-                                                className={`inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${getStatusBadge(userStatuses[user._id])}`}
-                                            >
-                                                {statusOptions.map(status => (
-                                                    <option key={status} value={status}>
-                                                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </td>
 
                                         {/* Actions */}
                                         <td className="px-6 py-4 text-center">

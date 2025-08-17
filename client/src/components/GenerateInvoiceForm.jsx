@@ -28,13 +28,12 @@ const GenerateInvoiceForm = () => {
     const [totalDiscount, setTotaldiscount] = useState(0)
     const [totalDiscountType, setTotaldiscountType] = useState("percentage")
 
-    // State for form submission status
-    // const [formStatus, setFormStatus] = useState({
-    //     saved: false,
-    //     message: ''
-    // });
-    const { id } = useParams();
+    // New states for referral discount
+    const [applyReferralDiscount, setApplyReferralDiscount] = useState(true);
+    const [referralAmount, setReferralAmount] = useState(0);
+    const [customerAccountType, setCustomerAccountType] = useState('');
 
+    const { id } = useParams();
 
     useEffect(() => {
         const getOrderDetail = async () => {
@@ -42,7 +41,7 @@ const GenerateInvoiceForm = () => {
                 setLoading(true);
                 const response = await axiosClient.get(`/api/admin/order/employee/getorderbyid/${id}`)
                 const data = response.data;
-                console.log(response)
+                // console.log(response)
                 setOrderData(response.data)
 
                 setCustomerDetails({
@@ -51,6 +50,16 @@ const GenerateInvoiceForm = () => {
                     city: data.city || '',
                     vehicleDetails: `${data.selectedBrand || ''} ${data.selectedModel || ''} (${data.cc || ''})`
                 });
+                // console.log(data.userId.accountType)
+                // Set customer account type and referral amount
+                setCustomerAccountType(data.userId.accountType || '');
+                setReferralAmount(data.userId.referralAmount || 0);
+
+                // Auto-apply referral discount for personal accounts
+                if (data.accountType === 'personal' && data.referralAmount > 0) {
+                    setApplyReferralDiscount(true);
+                }
+
                 const servicesProvided = data.serviceProvided?.map(service => ({
                     type: 'service',
                     name: service.serviceName,
@@ -81,6 +90,7 @@ const GenerateInvoiceForm = () => {
                 setLoading(false)
             } catch (error) {
                 console.log(error)
+                setLoading(false)
             }
         }
         getOrderDetail()
@@ -98,11 +108,6 @@ const GenerateInvoiceForm = () => {
         }, 0);
     };
 
-
-    // const calculateGST = () => {
-    //     return calculateSubtotal() * 0.18; // Assuming 18% GST
-    // };
-
     const calculateTotal = () => {
         const subtotal = calculateSubtotal();
         let discountAmount = 0;
@@ -113,24 +118,34 @@ const GenerateInvoiceForm = () => {
             discountAmount = totalDiscount;
         }
 
-        return Math.max(subtotal - discountAmount, 0); // Prevent negative totals
+        let totalAfterDiscount = subtotal - discountAmount;
+
+        // Apply referral discount if enabled
+        if (applyReferralDiscount) {
+            const referralDiscountAmount = Math.min(referralAmount, totalAfterDiscount);
+            totalAfterDiscount = Math.max(totalAfterDiscount - referralDiscountAmount, 0);
+        }
+
+        return Math.max(totalAfterDiscount, 0); // Prevent negative totals
     };
+
+    const calculateReferralDiscount = () => {
+        if (!applyReferralDiscount) return 0;
+
+        const subtotal = calculateSubtotal();
+        let discountAmount = 0;
+
+        if (totalDiscountType === 'percentage') {
+            discountAmount = (subtotal * totalDiscount) / 100;
+        } else if (totalDiscountType === 'amount') {
+            discountAmount = totalDiscount;
+        }
+
+        const totalAfterRegularDiscount = subtotal - discountAmount;
+        return Math.min(referralAmount, totalAfterRegularDiscount);
+    };
+
     console.log(totalDiscount)
-
-    // Format date for display
-    // const formatDate = (dateString) => {
-    //     const date = new Date(dateString);
-    //     return date.toLocaleDateString('en-IN');
-    // };
-
-    // // Handle form changes
-    // const handleFromDetailsChange = (e) => {
-    //     const { name, value } = e.target;
-    //     setFromDetails(prev => ({
-    //         ...prev,
-    //         [name]: value
-    //     }));
-    // };
 
     const handleInvoiceDetailsChange = (e) => {
         const { name, value } = e.target;
@@ -176,6 +191,7 @@ const GenerateInvoiceForm = () => {
         updatedItems.splice(index, 1);
         setPartsAndServices(updatedItems);
     };
+
     const handleSaveInvoice = async () => {
         try {
             setLoading(true);
@@ -186,6 +202,7 @@ const GenerateInvoiceForm = () => {
                     subtotal: calculateSubtotal(),
                     discountType: totalDiscountType,
                     discount: totalDiscount,
+                    referralDiscount: applyReferralDiscount ? calculateReferralDiscount() : 0,
                     total: calculateTotal()
                 }
             });
@@ -203,6 +220,7 @@ const GenerateInvoiceForm = () => {
             console.log(error)
         }
     }
+
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -210,6 +228,7 @@ const GenerateInvoiceForm = () => {
 
         setSnackBarOpen(false);
     }
+
     return (
         <>
             <AlertSnackBar
@@ -244,9 +263,9 @@ const GenerateInvoiceForm = () => {
                                             <input
                                                 type="text"
                                                 name="invoiceNumber"
-                                                value={orderData.orderId}
-                                                // onChange={handleInvoiceDetailsChange}
-                                                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                                value={orderData.orderId || ''}
+                                                readOnly
+                                                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-100"
                                             />
                                         </div>
                                         <div>
@@ -261,15 +280,19 @@ const GenerateInvoiceForm = () => {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* To Section (Editable Customer Details) */}
                             </div>
+
                             <div className="bg-green-50 p-5 rounded-xl border-l-4 border-green-500">
                                 <h2 className="text-xl font-semibold mb-4 text-green-600 flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                                         <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                                     </svg>
                                     To (Customer Details)
+                                    {customerAccountType === 'personal' && (
+                                        <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                            Personal
+                                        </span>
+                                    )}
                                 </h2>
                                 <div className="grid grid-cols-1 gap-4">
                                     <div>
@@ -315,6 +338,28 @@ const GenerateInvoiceForm = () => {
                                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                                         />
                                     </div>
+
+                                    {/* Referral Amount Display for Personal Accounts */}
+                                    {customerAccountType === 'personal' && referralAmount > 0 && (
+                                        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-medium text-yellow-800">
+                                                        Available Referral Amount
+                                                    </p>
+                                                    <p className="text-lg font-bold text-yellow-900">
+                                                        ₹{referralAmount.toFixed(2)}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -401,31 +446,26 @@ const GenerateInvoiceForm = () => {
                                                             step="0.01"
                                                         />
                                                     </td>
-                                                    <td className="p-3 border-b border-gray-200 flex gap-2 items-center">
-                                                        <input
-                                                            type="number"
-                                                            value={item.discountPrice || 0}
-                                                            onChange={(e) => handleItemChange(index, 'discountPrice', e.target.value)}
-                                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                                            min="0"
-                                                            step="0.01"
-                                                        />
-                                                        <select
-                                                            value={item.discountType || 'amount'}
-                                                            onChange={(e) => handleItemChange(index, 'discountType', e.target.value)}
-                                                            className="p-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                                        >
-                                                            <option value="amount">₹</option>
-                                                            <option value="percentage">%</option>
-                                                        </select>
+                                                    <td className="p-3 border-b border-gray-200">
+                                                        <div className="flex gap-2 items-center">
+                                                            <input
+                                                                type="number"
+                                                                value={item.discountPrice || 0}
+                                                                onChange={(e) => handleItemChange(index, 'discountPrice', e.target.value)}
+                                                                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                                                min="0"
+                                                                step="0.01"
+                                                            />
+                                                            <select
+                                                                value={item.discountType || 'amount'}
+                                                                onChange={(e) => handleItemChange(index, 'discountType', e.target.value)}
+                                                                className="p-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                                            >
+                                                                <option value="amount">₹</option>
+                                                                <option value="percentage">%</option>
+                                                            </select>
+                                                        </div>
                                                     </td>
-                                                    {/* <td className="p-3 border-b border-gray-200 font-medium">
-                                                    ₹{(
-                                                        item.discountType === 'percentage'
-                                                            ? item.price * item.quantity * (1 - (item.discountPrice / 100))
-                                                            : (item.price * item.quantity) - (item.quantity * item.discountPrice)
-                                                    ).toFixed(2)}
-                                                </td> */}
                                                     <td className="p-3 border-b border-gray-200 font-medium">
                                                         ₹{(
                                                             item.discountType === 'percentage'
@@ -459,11 +499,8 @@ const GenerateInvoiceForm = () => {
                                     <span className="font-medium text-gray-600">Subtotal:</span>
                                     <span className="font-medium">₹{calculateSubtotal().toFixed(2)}</span>
                                 </div>
-                                {/* <div className="flex justify-between py-3 border-b border-gray-200">
-                                <span className="font-medium text-gray-600">GST (18%):</span>
-                                <span className="font-medium">₹{calculateGST().toFixed(2)}</span>
-                            </div> */}
-                                {/* Discount */}
+
+                                {/* Regular Discount */}
                                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                                     <span className="font-medium text-gray-600">Discount:</span>
                                     <div className="flex gap-2 items-center">
@@ -472,7 +509,7 @@ const GenerateInvoiceForm = () => {
                                             value={totalDiscount}
                                             onChange={(e) => setTotaldiscount(parseFloat(e.target.value) || 0)}
                                             className="w-24 text-right p-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                            placeholder="00"
+                                            placeholder="0"
                                         />
                                         <select
                                             value={totalDiscountType}
@@ -485,6 +522,38 @@ const GenerateInvoiceForm = () => {
                                     </div>
                                 </div>
 
+                                {/* Referral Discount Section for Personal Accounts */}
+                                {customerAccountType === 'personal' && referralAmount > 0 && (
+                                    <div className="py-3 border-b border-gray-200">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={applyReferralDiscount}
+                                                    onChange={(e) => setApplyReferralDiscount(e.target.checked)}
+                                                    className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                                                />
+                                                <span className="ml-2 text-sm font-medium text-gray-600">
+                                                    Apply Referral Discount
+                                                </span>
+                                            </label>
+                                            <div className="flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                                                </svg>
+                                                <span className="text-sm font-medium text-green-600">
+                                                    -₹{calculateReferralDiscount().toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {applyReferralDiscount && (
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                Using ₹{calculateReferralDiscount().toFixed(2)} from available referral amount of ₹{referralAmount.toFixed(2)}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div className="flex justify-between py-3 text-lg font-bold">
                                     <span className="text-gray-700">Total:</span>
@@ -492,12 +561,13 @@ const GenerateInvoiceForm = () => {
                                 </div>
                             </div>
                         </div>
+
                         <div className="flex justify-center">
                             <button
                                 onClick={handleSaveInvoice}
                                 className={`bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition duration-300 flex items-center ${loading ? 'opacity-50 cursor-not-allowed' : ''
                                     }`}
-                                disabled={loading} // Disable the button when loading is true
+                                disabled={loading}
                             >
                                 {loading ? (
                                     <>
@@ -531,18 +601,6 @@ const GenerateInvoiceForm = () => {
                                 )}
                             </button>
                         </div>
-
-                        {/* Status Message */}
-                        {/* {formStatus.saved && (
-                            <div className="mt-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg">
-                                <p className="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
-                                    {formStatus.message}
-                                </p>
-                            </div>
-                        )} */}
                     </div>
                 </div>
             </div>

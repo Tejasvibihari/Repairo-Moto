@@ -151,6 +151,7 @@ const orderSchema = new mongoose.Schema({
         subTotal: { type: Number },
         total: { type: Number },
         discount: { type: Number },
+        referralDiscount: { type: Number, default: 0 },
         discountType: { type: String }
     }
 }, {

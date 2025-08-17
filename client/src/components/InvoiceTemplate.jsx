@@ -509,6 +509,10 @@ const InvoiceTemplate = () => {
                 <span>₹{invoiceData?.total?.subTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between px-4 py-3 border-b border-gray-200">
+                <span className="font-medium">Referral Discount :</span>
+                <span>₹{(invoiceData?.total?.referralDiscount)}   </span>
+              </div>
+              <div className="flex justify-between px-4 py-3 border-b border-gray-200">
                 <span className="font-medium">Discount ({invoiceData?.total?.discount}%):</span>
                 <span>₹{(invoiceData?.total?.subTotal * (invoiceData?.total?.discount / 100)).toFixed(2)}</span>
               </div>

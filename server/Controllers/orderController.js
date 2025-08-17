@@ -104,9 +104,10 @@ export const getAllBookings = async (req, res) => {
 export const getOrderById = async (req, res) => {
     console.log(req.params.id)
     try {
-        const order = await Order.findById(req.params.id);
+        const order = await Order.findById(req.params.id)
+            .populate("userId", "firstName lastName email phone referralAmount accountType");
         if (!order) return res.status(404).json({ message: 'Order not found' });
-
+        console.log(order)
         return res.status(200).json(order);
     } catch (error) {
         console.error("Error fetching booking:", error);
@@ -397,28 +398,34 @@ export const updatePartsPrice = async (req, res) => {
     }
 };
 
+
 export const updateOrderandGenerateInvoice = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
+    console.log("Update Order and Generate Invoice Data:", data);
 
     try {
-        // Separate parts and services from partsAndServices
-        const partsUsed = data.partsAndServices.filter(item => item.type === 'part').map(item => ({
-            partName: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            discountPrice: item.discountPrice,
-            discountType: item.discountType
-        }));
+        // Separate parts and services
+        const partsUsed = data.partsAndServices
+            .filter((item) => item.type === "part")
+            .map((item) => ({
+                partName: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                discountPrice: item.discountPrice,
+                discountType: item.discountType,
+            }));
 
-        const serviceProvided = data.partsAndServices.filter(item => item.type === 'service').map(item => ({
-            serviceName: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            discountPrice: item.discountPrice
-        }));
+        const serviceProvided = data.partsAndServices
+            .filter((item) => item.type === "service")
+            .map((item) => ({
+                serviceName: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                discountPrice: item.discountPrice,
+            }));
 
-        // Construct the update object
+        // Build updated fields
         const updatedFields = {
             invoiceDate: data.invoiceDetails.invoiceDate,
             partsUsed,
@@ -428,11 +435,12 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                 subTotal: data.total.subtotal,
                 discount: data.total.discount,
                 discountType: data.total.discountType,
-                total: data.total.total
-            }
+                referralDiscount: data.total.referralDiscount || 0,
+                total: data.total.total,
+            },
         };
 
-        // Update the order
+        // Update order
         const updatedOrder = await Order.findByIdAndUpdate(
             id,
             { $set: updatedFields },
@@ -443,24 +451,45 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             return res.status(404).json({ message: "Order not found" });
         }
 
-        // ---- Referral Logic ----
-        // ✅ Only apply referral if NOT already processed
+        // ---- Referral Discount Subtraction (for personal account) ----
+        if (data.total.referralDiscount && data.total.referralDiscount > 0) {
+            const user = await User.findById(updatedOrder.userId);
+
+            if (user && user.accountType === "personal") {
+                if (user.referralAmount >= data.total.referralDiscount) {
+                    user.referralAmount -= data.total.referralDiscount; // subtract discount
+                } else {
+                    // If discount > available balance, set to 0 (avoid negative)
+                    user.referralAmount = 0;
+                }
+
+                await user.save();
+                console.log(
+                    `Referral discount of ${data.total.referralDiscount} applied for user ${user.firstName}`
+                );
+            }
+        }
+
+        // ---- Referral Earning Logic (referredBy flow) ----
         if (!updatedOrder.referralProcessed) {
             const user = await User.findById(updatedOrder.userId);
             if (user?.referredBy) {
                 const referee = await User.findOne({ referralCode: user.referredBy });
 
                 if (referee) {
-                    const userOrderCount = await Order.countDocuments({ userId: user._id });
+                    const userOrderCount = await Order.countDocuments({
+                        userId: user._id,
+                    });
 
                     if (referee.accountType === "personal") {
-                        // ✅ Personal: Only if it's the user's FIRST order
                         if (userOrderCount === 1) {
-                            referee.pendingReferralAmount = Math.max(0, referee.pendingReferralAmount - 50);
+                            referee.pendingReferralAmount = Math.max(
+                                0,
+                                referee.pendingReferralAmount - 50
+                            );
                             referee.referralAmount = (referee.referralAmount || 0) + 50;
                         }
                     } else if (referee.accountType === "business") {
-                        // ✅ Business: Rewards based on order total
                         const orderTotal = updatedOrder.total.total || 0;
 
                         if (orderTotal >= 5000) {
@@ -472,9 +501,8 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                         }
                     }
 
-                    await referee.save(); // ✅ Save updated referee after applying logic
+                    await referee.save();
 
-                    // ✅ Mark this order as referral processed
                     updatedOrder.referralProcessed = true;
                     await updatedOrder.save();
                 }
@@ -482,15 +510,16 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
         }
 
         res.status(200).json({
-            message: "Order updated, invoice generated, and referral logic applied (only once)",
-            order: updatedOrder
+            message:
+                "Order updated, invoice generated, referral discount applied (if any), and referral logic executed",
+            order: updatedOrder,
         });
-
     } catch (error) {
         console.error("Error updating order:", error);
         res.status(500).json({ message: "Internal server error", error });
     }
 };
+
 
 
 export const userOrder = async (req, res) => {
