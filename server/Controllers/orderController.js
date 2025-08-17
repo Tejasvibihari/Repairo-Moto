@@ -458,6 +458,7 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             if (user && user.accountType === "personal") {
                 if (user.referralAmount >= data.total.referralDiscount) {
                     user.referralAmount -= data.total.referralDiscount; // subtract discount
+                    user.totalWithdrawn += data.total.referralDiscount; // add to total withdrawn
                 } else {
                     // If discount > available balance, set to 0 (avoid negative)
                     user.referralAmount = 0;

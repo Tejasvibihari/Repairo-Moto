@@ -163,6 +163,7 @@ export const userSignIn = async (req, res) => {
                 businessType: user.businessType,
                 referredBy: user.referredBy,
                 referralType: user.referralType,
+                status: user.status,
             },
         });
     } catch (error) {
@@ -420,7 +421,7 @@ export const withdrawRequest = async (req, res) => {
         };
         user.withdrawalRequests.push(withdrawalRequest);
         user.referralAmount -= amount; // Deduct the amount from the user's referral balance
-        user.totalWithdrawn += amount; // Update total withdrawn amount
+
         await user.save();
         res.status(200).json({
             message: "Withdrawal request submitted successfully",
@@ -434,33 +435,53 @@ export const withdrawRequest = async (req, res) => {
     }
 }
 
-
 export const updateWithdrawalStatus = async (req, res) => {
     try {
-        const { userId } = req.params; // userId
+        const { userId } = req.params;
         const { requestId, status, transactionId, adminNote } = req.body;
-      
-        // Find user
+
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        console.log(user)
-        // Find withdrawal request
+
         const withdrawal = user.withdrawalRequests.id(requestId);
         if (!withdrawal) {
             return res.status(404).json({ message: "Withdrawal request not found" });
         }
 
-        // Update fields
-        withdrawal.status = status || withdrawal.status;
-        withdrawal.transactionId = transactionId || withdrawal.transactionId;
-        withdrawal.adminNote = adminNote || withdrawal.adminNote;
-        withdrawal.processedDate = new Date();
+        // 🚫 Prevent multiple updates if already finalized
+        if (["rejected", "paid"].includes(withdrawal.status)) {
+            return res.status(400).json({
+                message: `This withdrawal has already been ${withdrawal.status} and cannot be updated again.`,
+                withdrawal,
+            });
+        }
 
-        // If paid, update user's totalWithdrawn & decrease referralAmount
-        if (status === "paid") {
+        if (status === "approved") {
+            withdrawal.status = "approved"; // just approve, money already deducted
+            withdrawal.adminNote = adminNote || withdrawal.adminNote;
+            withdrawal.processedDate = new Date();
+        }
+        else if (status === "paid") {
+            withdrawal.status = "paid";
+            withdrawal.transactionId = transactionId || withdrawal.transactionId;
+            withdrawal.adminNote = adminNote || withdrawal.adminNote;
+            withdrawal.processedDate = new Date();
+
+            // finalize withdrawal (add to totalWithdrawn)
             user.totalWithdrawn += withdrawal.amount;
+        }
+        else if (status === "rejected") {
+            withdrawal.status = "rejected";
+            withdrawal.adminNote = adminNote || withdrawal.adminNote;
+            withdrawal.processedDate = new Date();
+
+            // rollback: return money to referralAmount only once
+            user.referralAmount += withdrawal.amount;
+
+            // keep transaction details but set effective amount to 0 (voided)
+
         }
 
         await user.save();
@@ -468,12 +489,15 @@ export const updateWithdrawalStatus = async (req, res) => {
         res.status(200).json({
             message: "Withdrawal request updated successfully",
             withdrawal,
+            availableAmount: user.referralAmount,
+            totalWithdrawn: user.totalWithdrawn,
         });
     } catch (error) {
         console.error("Error updating withdrawal request:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
+
 
 
 export const updateUserStatus = async (req, res) => {

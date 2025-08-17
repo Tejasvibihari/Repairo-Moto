@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Copy, CheckCircle, TrendingUp, Users, DollarSign, Download, Calendar, Filter, Eye, Clock, ShoppingCart, AlertCircle } from 'lucide-react'
+import { Search, Copy, CheckCircle, TrendingUp, Users, DollarSign, Download, Calendar, Filter, Eye, Clock, ShoppingCart, AlertCircle, IndianRupee } from 'lucide-react'
 import Footer from '../../components/landing/Footer';
 import NavBar from '../../components/ui/NavBar';
 import { motion } from "framer-motion";
@@ -7,6 +7,7 @@ import BreadCrumbs from '../../components/ui/BreadCrumbs';
 import axiosClient from '../../service/axiosClient';
 import { useSelector } from 'react-redux';
 import AlertSnackBar from '../../components/ui/AlertSnackBar';
+import { useNavigate } from 'react-router-dom';
 
 export default function MyReferral() {
     const [allReferral, setAllReferral] = useState([]);
@@ -27,7 +28,7 @@ export default function MyReferral() {
 
     // Check if user account type allows withdrawals
     const canWithdraw = user?.accountType === 'business';
-
+    const navigate = useNavigate();
     // Mock additional data - replace with API calls
     const userStats = {
         totalReferrals: allReferral.length,
@@ -35,7 +36,7 @@ export default function MyReferral() {
         pendingAmount: fullUser.pendingReferralAmount || 0,
         availableAmount: fullUser?.referralAmount || 0,
         totalWithdrawn: fullUser?.totalWithdrawn || 0,
-        totalEarnings: (fullUser?.referralAmount || 0) + (fullUser?.totalWithdrawn || 0) + (fullUser?.pendingReferralAmount || 0)
+        totalEarnings: (fullUser?.referralAmount || 0) + (fullUser?.totalWithdrawn || 0)
     };
 
     useEffect(() => {
@@ -212,7 +213,7 @@ export default function MyReferral() {
                         transition={{ delay: 0.2 }}
                     >
                         <div className="flex items-center justify-between mb-4">
-                            {canWithdraw ? <DollarSign className="h-8 w-8" /> : <ShoppingCart className="h-8 w-8" />}
+                            {canWithdraw ? <IndianRupee className="h-8 w-8" /> : <ShoppingCart className="h-8 w-8" />}
                             <span className="text-green-200 text-sm font-medium">
                                 {canWithdraw ? 'Available' : 'Purchase Credit'}
                             </span>
@@ -278,10 +279,10 @@ export default function MyReferral() {
                                 {canWithdraw ? <Download size={18} /> : <ShoppingCart size={18} />}
                                 {canWithdraw ? 'Withdraw Funds' : 'Use for Purchase'}
                             </button>
-                            <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                            {user?.accountType === 'personal' && <div className="bg-gray-50 px-4 py-2 rounded-lg">
                                 <span className="text-sm text-gray-600">Pending: </span>
                                 <span className="font-semibold text-yellow-600">₹{userStats.pendingAmount.toLocaleString()}</span>
-                            </div>
+                            </div>}
                         </div>
                     </div>
                 </div>
@@ -618,8 +619,7 @@ export default function MyReferral() {
                             <button
                                 onClick={() => {
                                     setShowInfoModal(false);
-                                    // Add navigation to upgrade account or services page
-                                    // window.location.href = '/services';
+                                    navigate('/user-order-booking');
                                 }}
                                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
                             >

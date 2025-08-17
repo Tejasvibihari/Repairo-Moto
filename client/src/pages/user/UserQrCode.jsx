@@ -49,21 +49,29 @@ export default function UserQrCode() {
 
                     {/* Referral Link */}
                     <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Your Referral Link</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Your Referral Code</label>
                         <div className="flex items-center">
                             <input
                                 type="text"
+                                disabled
+                                placeholder="Your referral code will appear here"
                                 value={user.referralCode}
-                                className="flex-1 p-3 border border-gray-300 rounded-l-md bg-gray-50 text-gray-800"
+                                className={`flex-1 p-3 border border-gray-300 rounded-l-md bg-gray-50 text-gray-800 ${user?.status != "approved" && "blur-xs"}`}
                                 readOnly
                             />
-                            <button
-                                onClick={copyToClipboard}
-                                className="bg-primary cursor-pointer hover:bg-blue-700 text-white p-3 rounded-r-md"
-                            >
-                                {copied ? <Check size={20} /> : <Copy size={20} />}
-                            </button>
+                            {
+                                user?.status == "approved" && <button
+                                    onClick={copyToClipboard}
+                                    className="bg-primary cursor-pointer hover:bg-blue-700 text-white p-3 rounded-r-md"
+                                >
+                                    {copied ? <Check size={20} /> : <Copy size={20} />}
+                                </button>
+                            }
+
                         </div>
+                        {
+                            user?.status != "approved" && <span className="text-red-500 text-xs ml-2">Your account is not approved yet.</span>
+                        }
                     </div>
 
                     {/* Instructions */}

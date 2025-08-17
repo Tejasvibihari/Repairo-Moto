@@ -1,15 +1,34 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import { Copy, QrCode, Download } from "lucide-react";
+import { Copy, QrCode, Download, Lock } from "lucide-react";
 import AlertSnackBar from "./ui/AlertSnackBar";
+import { useSelector } from "react-redux";
+import axiosClient from "../service/axiosClient";
 
 const QRGenerator = ({ text }) => {
     const qrRef = useRef();
     const [snackBarOpen, setSnackBarOpen] = useState(false);
     const [snackBarMessage, setSnackBarMessage] = useState('');
     const [snackBarSeverity, setSnackBarSeverity] = useState('success');
+    const profile = useSelector((state) => state.user.user.user);
+    const [user, setUser] = useState({});
+    useEffect(() => {
+        // fetch user from backend 
+        const getUser = async () => {
+            try {
+                const response = await axiosClient.get(`/api/user/get-user-by-id/${profile?._id}`)
+                console.log(response.data.user);
+                setUser(response.data.user);
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+            }
+        };
+        getUser();
+    }, [])  
 
     const handleDownload = () => {
+        if (user?.status !== "approved") return;
+
         const canvas = qrRef.current.querySelector("canvas");
         const pngUrl = canvas
             .toDataURL("image/png")
@@ -27,6 +46,15 @@ const QRGenerator = ({ text }) => {
         setSnackBarOpen(true);
     };
 
+    const handleCopy = () => {
+        if (user?.status !== "approved") return;
+
+        navigator.clipboard.writeText(text);
+        setSnackBarMessage("Link Copied to Clipboard!");
+        setSnackBarSeverity('success');
+        setSnackBarOpen(true);
+    };
+
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -34,12 +62,7 @@ const QRGenerator = ({ text }) => {
         setSnackBarOpen(false);
     };
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(text);
-        setSnackBarMessage("Link Copied to Clipboard!");
-        setSnackBarSeverity('success');
-        setSnackBarOpen(true);
-    };
+    const isApproved = user?.status === "approved";
 
     return (
         <>
@@ -63,18 +86,29 @@ const QRGenerator = ({ text }) => {
                         className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl"
                     >
                         {text ? (
-                            <QRCodeCanvas
-                                value={text}
-                                size={200}
-                                bgColor={"#ffffff"}
-                                fgColor={"#000"}
-                                level={"H"}
-                                includeMargin={true}
-                            />
+                            isApproved ? (
+                                <QRCodeCanvas
+                                    value={text}
+                                    size={200}
+                                    bgColor={"#ffffff"}
+                                    fgColor={"#000"}
+                                    level={"H"}
+                                    includeMargin={true}
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-48 w-48 border-2 border-dashed border-red-400 rounded-lg">
+                                    <Lock size={48} className="text-red-400 mb-2" />
+                                    <p className="text-sm text-gray-500 text-center">
+                                        Your account is not approved yet
+                                    </p>
+                                </div>
+                            )
                         ) : (
                             <div className="flex flex-col items-center justify-center h-48 w-48 border-2 border-dashed border-primary rounded-lg">
                                 <QrCode size={64} className="text-blue-300 mb-2" />
-                                <p className="text-sm text-gray-400 text-center">Enter text to generate QR code</p>
+                                <p className="text-sm text-gray-400 text-center">
+                                    Enter text to generate QR code
+                                </p>
                             </div>
                         )}
                     </div>
@@ -88,7 +122,11 @@ const QRGenerator = ({ text }) => {
                             </div>
                             <button
                                 onClick={handleCopy}
-                                className="absolute right-2 p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                                disabled={!isApproved}
+                                className={`absolute right-2 p-1 transition-colors ${isApproved
+                                    ? "text-gray-400 hover:text-blue-500"
+                                    : "text-gray-300 cursor-not-allowed"
+                                    }`}
                                 aria-label="Copy to clipboard"
                             >
                                 <Copy size={18} />
@@ -97,14 +135,14 @@ const QRGenerator = ({ text }) => {
 
                         <button
                             onClick={handleDownload}
-                            disabled={!text}
-                            className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-colors ${text
+                            disabled={!isApproved || !text}
+                            className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-colors ${isApproved
                                 ? "bg-primary hover:bg-yellow-600 text-white cursor-pointer"
                                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                 }`}
                         >
                             <Download size={18} />
-                            Download QR Code
+                            {isApproved ? "Download QR Code" : "Approval Required"}
                         </button>
                     </div>
                 )}
