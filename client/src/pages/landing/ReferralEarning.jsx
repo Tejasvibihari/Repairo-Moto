@@ -131,10 +131,10 @@ export default function ReferralEarning() {
                                         </div>
                                     </div>
                                     <div className="flex flex-col sm:flex-row gap-4">
-                                        <button className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold px-8 py-4 rounded-xl flex items-center justify-center transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                        {/* <button className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold px-8 py-4 rounded-xl flex items-center justify-center transition-all duration-300 transform hover:scale-105 shadow-lg">
                                             <Share2 className="mr-2 h-5 w-5" />
                                             Share Now
-                                        </button>
+                                        </button> */}
                                         <button
                                             onClick={() => document.getElementById('customer-how-it-works').scrollIntoView({ behavior: 'smooth' })}
                                             className="bg-white border-2 border-purple-500 text-purple-600 font-semibold px-8 py-4 rounded-xl hover:bg-purple-50 transition-all duration-300"
@@ -380,9 +380,9 @@ export default function ReferralEarning() {
                                             <Smartphone className="inline mr-2 h-5 w-5" />
                                             Call: +91 9229207021
                                         </a>
-                                        <button className="border-2 border-white text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/10 transition-all duration-300">
+                                        {/* <button className="border-2 border-white text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/10 transition-all duration-300">
                                             WhatsApp Us
-                                        </button>
+                                        </button> */}
                                     </div>
                                 </div>
                             </div>
@@ -446,7 +446,7 @@ export default function ReferralEarning() {
                     </div>
                 </div>
             </div>
-            <Footer />  
+            <Footer />
         </>
     );
 }
