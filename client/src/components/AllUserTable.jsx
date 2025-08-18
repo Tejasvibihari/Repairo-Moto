@@ -117,7 +117,7 @@ const AllUsersTable = ({ users, onStatusUpdate }) => {
                 <div className="flex justify-end mb-2">
                     <button
                         onClick={exportToExcel}
-                        className="bg-primary text-white px-4 py-2 rounded hover:bg-yellow-600 cursor-pointer transition"
+                        className="bg-primary text-white px-4 py-2 rounded hover:bg-secondary  cursor-pointer transition"
                     >
                         Export to Excel
                     </button>

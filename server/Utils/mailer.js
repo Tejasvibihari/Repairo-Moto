@@ -135,3 +135,26 @@ export const sendBookingConfirmationEmail = async (newOrder, email) => {
 };
 
 // Export additional email sending functions as needed
+
+export const sendRefereeEmail = async (referee) => {
+    try {
+
+        // Create email content using the template
+        const emailSubject = "🎉 Congratulations! You’ve Earned Reward Points - Repairo Moto";
+        const emailBody = emailTemplates.referralPointsTemplate(referee);
+
+        // Send email
+        await sendMail({
+            to: referee.email,
+            subject: emailSubject,
+            body: emailBody
+        });
+
+        console.log(`Email Sent to ${referee.email}`);
+        return true;
+
+    } catch (error) {
+        console.error('Error sending booking confirmation email:', error);
+        return false;
+    }
+};

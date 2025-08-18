@@ -2,7 +2,7 @@ import Order from "../Models/orderModel.js";
 import Employee from "../Models/employeeModel.js";
 import Vendor from '../Models/vendorModel.js'
 import VendorOrder from "../Models/vendorOrderModel.js";
-import { sendBookingConfirmationEmail } from "../Utils/mailer.js";
+import { sendBookingConfirmationEmail, sendRefereeEmail } from "../Utils/mailer.js";
 import User from "../Models/userModel.js";
 // @desc Create a new service booking
 // @route POST /api/bookings
@@ -507,8 +507,11 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                     updatedOrder.referralProcessed = true;
                     await updatedOrder.save();
                 }
+                // ---- Send Booking Confirmation Email ----
+                await sendRefereeEmail(referee);
             }
         }
+
 
         res.status(200).json({
             message:
