@@ -1,8 +1,8 @@
-import { Share2, Gift, Users, Store, Bell, Smartphone, QrCode, IndianRupee, Wrench, Award, CheckCircle } from "lucide-react";
+import { Share2, Gift, Users, Store, Bell, Smartphone, QrCode, IndianRupee, Wrench, Award, CheckCircle, CreditCard } from "lucide-react";
 import { useState } from "react";
-import Footer from "../../components/landing/Footer"
 import NavBar from "../../components/ui/NavBar";
-import { Link } from "react-router-dom";
+import Footer from "../../components/landing/Footer";
+
 export default function ReferralEarning() {
     const [activeTab, setActiveTab] = useState('customer');
     const [openFaq, setOpenFaq] = useState(null);
@@ -14,15 +14,19 @@ export default function ReferralEarning() {
     const customerFaqs = [
         {
             question: "Is there a limit to how many friends I can refer?",
-            answer: "No, there's no limit! Refer as many friends as you like and earn rewards for each successful referral."
+            answer: "No, there's no limit! Refer as many friends as you like and earn ₹50 for each successful referral."
         },
         {
             question: "How long does it take to receive my credits?",
-            answer: "You'll receive your ₹200 credit within 24 hours after your friend completes their first service with us."
+            answer: "You'll receive your ₹50 credit within 24 hours after your friend completes their first service with us."
         },
         {
             question: "How can I track my referrals?",
             answer: "You can track all your referrals and pending/completed rewards in the 'My Referrals' section of your account."
+        },
+        {
+            question: "How can I use my referral credits?",
+            answer: "Your ₹50 referral credits can be used during your next purchase/service booking to reduce the total amount."
         },
         {
             question: "Do referral credits expire?",
@@ -36,16 +40,20 @@ export default function ReferralEarning() {
             answer: "Contact us at +91 9229207021 to get your shop's QR code installed. Our team will visit your shop and set it up for free."
         },
         {
-            question: "When will I receive the cashback?",
-            answer: "All cashback amounts will be settled within 1 week after the service is completed."
+            question: "How does the commission structure work?",
+            answer: "You earn commission based on order value: ₹49 for orders ≥₹2000, ₹149 for orders ≥₹3000, and ₹249 for orders ≥₹5000."
+        },
+        {
+            question: "How can I withdraw my earnings?",
+            answer: "You can withdraw your earnings directly to your bank account via UPI. Minimum withdrawal amount is ₹100."
+        },
+        {
+            question: "When will I receive the commission?",
+            answer: "All commission amounts will be credited to your account within 1 week after the service is completed."
         },
         {
             question: "How will I know about new bookings?",
             answer: "You'll receive SMS alerts for every booking - one when the booking is made and another when the service is completed."
-        },
-        {
-            question: "What determines the cashback amount?",
-            answer: "Cashback ranges from ₹50 to ₹500 per bike, depending on the type of service required and the complexity of the repair work."
         },
         {
             question: "Are there any charges for joining the program?",
@@ -110,18 +118,15 @@ export default function ReferralEarning() {
                                     </h2>
                                     <p className="text-lg text-gray-600 mb-8">
                                         Share the joy of hassle-free bike servicing with friends and family.
-                                        Earn ₹200 in credits when they complete their first service, and
-                                        they'll get ₹150 off their first booking!
+                                        Earn ₹50 in credits when they complete their first service. Use your
+                                        earned credits in your next purchase!
                                     </p>
                                     <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-6 mb-8">
-                                        <div className="flex items-center justify-between text-white">
-                                            <div>
-                                                <div className="text-2xl font-bold">You Earn: ₹200</div>
-                                                <div className="text-sm opacity-90">Credits for each referral</div>
-                                            </div>
-                                            <div>
-                                                <div className="text-2xl font-bold">Friend Gets: ₹150</div>
-                                                <div className="text-sm opacity-90">Discount on first service</div>
+                                        <div className="flex items-center justify-center text-white">
+                                            <div className="text-center">
+                                                <div className="text-3xl font-bold">You Earn: ₹50</div>
+                                                <div className="text-sm opacity-90">Credits for each successful referral</div>
+                                                <div className="text-sm opacity-90 mt-2">💡 Use in your next purchase!</div>
                                             </div>
                                         </div>
                                     </div>
@@ -155,7 +160,7 @@ export default function ReferralEarning() {
                                                     <Users className="text-white h-6 w-6" />
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-2xl font-bold text-purple-600">₹200</div>
+                                                    <div className="text-2xl font-bold text-purple-600">₹50</div>
                                                     <div className="text-sm text-gray-500">Per Referral</div>
                                                 </div>
                                             </div>
@@ -186,9 +191,9 @@ export default function ReferralEarning() {
                                             description: "Your friend uses your referral code when booking their first service with Repairo Moto."
                                         },
                                         {
-                                            icon: <Gift className="h-8 w-8 text-purple-500" />,
-                                            title: "Both Get Rewarded",
-                                            description: "You earn ₹200 in credits, and your friend gets ₹150 off their first service!"
+                                            icon: <CreditCard className="h-8 w-8 text-purple-500" />,
+                                            title: "You Get Credits",
+                                            description: "You earn ₹50 in credits that can be used in your next purchase or service booking!"
                                         }
                                     ].map((step, index) => (
                                         <div key={index} className="relative">
@@ -244,56 +249,64 @@ export default function ReferralEarning() {
                             </div>
                         </div>
 
-                        {/* Shop Benefits */}
+                        {/* Shop Commission Structure */}
                         <div id="shop-benefits" className="bg-white py-16">
                             <div className="max-w-6xl mx-auto px-4 md:px-8">
-                                <h2 className="text-3xl font-bold text-center mb-4">🎁 Special Offer - दुकान मालिकों के लिए</h2>
-                                <p className="text-center text-gray-600 mb-12 text-lg">Complete milestone rewards for shop owners</p>
+                                <h2 className="text-3xl font-bold text-center mb-4">💰 Commission Structure - दुकान मालिकों के लिए</h2>
+                                <p className="text-center text-gray-600 mb-12 text-lg">Earn commission on every order processed through your shop</p>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                                     {[
                                         {
-                                            milestone: "10 Services",
-                                            reward: "₹250 Cashback",
-                                            subtitle: "(First Time Only)",
+                                            orderValue: "₹2000+",
+                                            commission: "₹49",
+                                            subtitle: "Orders ≥ ₹2000",
                                             icon: <Award className="h-8 w-8" />,
                                             color: "from-green-400 to-emerald-500"
                                         },
                                         {
-                                            milestone: "20 Services",
-                                            reward: "Free Engine Oil",
-                                            subtitle: "Premium Quality",
+                                            orderValue: "₹3000+",
+                                            commission: "₹149",
+                                            subtitle: "Orders ≥ ₹3000",
                                             icon: <Wrench className="h-8 w-8" />,
                                             color: "from-blue-400 to-cyan-500"
                                         },
                                         {
-                                            milestone: "30 Services",
-                                            reward: "1 Free Bike Service",
-                                            subtitle: "Complete Service",
+                                            orderValue: "₹5000+",
+                                            commission: "₹249",
+                                            subtitle: "Orders ≥ ₹5000",
                                             icon: <Gift className="h-8 w-8" />,
                                             color: "from-purple-400 to-pink-500"
                                         }
-                                    ].map((benefit, index) => (
+                                    ].map((tier, index) => (
                                         <div key={index} className="relative group">
                                             <div className="bg-white border-2 border-gray-100 rounded-2xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-                                                <div className={`w-16 h-16 bg-gradient-to-r ${benefit.color} rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                                                    {benefit.icon}
+                                                <div className={`w-16 h-16 bg-gradient-to-r ${tier.color} rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                                                    {tier.icon}
                                                 </div>
                                                 <div className="text-center">
-                                                    <div className="text-2xl font-bold text-gray-800 mb-2">{benefit.milestone}</div>
-                                                    <div className="text-xl font-semibold text-gray-700 mb-1">{benefit.reward}</div>
-                                                    <div className="text-sm text-gray-500">{benefit.subtitle}</div>
+                                                    <div className="text-lg font-semibold text-gray-600 mb-2">{tier.orderValue}</div>
+                                                    <div className="text-3xl font-bold text-gray-800 mb-1">{tier.commission}</div>
+                                                    <div className="text-sm text-gray-500">{tier.subtitle}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* Per Service Cashback */}
-                                <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-8 text-center text-white">
-                                    <h3 className="text-2xl font-bold mb-4">💰 Per Service Cashback</h3>
-                                    <div className="text-3xl font-bold mb-2">₹50 से ₹500 तक</div>
-                                    <p className="text-lg opacity-90">हर बाइक पर (कैशबैक बाइक की समस्या और सर्विस के हिसाब से मिलेगा)</p>
+                                {/* Withdrawal Information */}
+                                <div className="bg-gradient-to-r from-green-400 to-blue-400 rounded-2xl p-8 text-center text-white">
+                                    <h3 className="text-2xl font-bold mb-4">💳 Easy Withdrawal Process</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <div className="text-xl font-bold mb-2">Direct Bank Transfer</div>
+                                            <p className="text-sm opacity-90">Withdraw directly to your bank account via UPI</p>
+                                        </div>
+                                        <div>
+                                            <div className="text-xl font-bold mb-2">Minimum ₹100</div>
+                                            <p className="text-sm opacity-90">Minimum withdrawal amount is ₹100</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -314,8 +327,8 @@ export default function ReferralEarning() {
                                         {
                                             icon: <IndianRupee className="h-8 w-8 text-green-500" />,
                                             title: "💰 Quick Settlement",
-                                            description: "कैशबैक 1 हफ्ते के अंदर सेटल होगा।",
-                                            features: ["Weekly cashback settlement", "Transparent payment tracking", "Digital payment options"]
+                                            description: "कमीशन 1 हफ्ते के अंदर आपके अकाउंट में क्रेडिट होगा।",
+                                            features: ["Weekly commission settlement", "Direct UPI withdrawal", "Transparent payment tracking"]
                                         },
                                         {
                                             icon: <QrCode className="h-8 w-8 text-purple-500" />,
@@ -415,14 +428,14 @@ export default function ReferralEarning() {
                         </h2>
                         <p className="text-gray-300 mb-8">
                             {activeTab === 'customer'
-                                ? 'Refer friends and earn ₹200 for every successful referral'
-                                : 'Partner with us and turn your shop into a profitable service center'
+                                ? 'Refer friends and earn ₹50 credits for every successful referral'
+                                : 'Partner with us and earn commission on every order from your shop'
                             }
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link to="/user-signin" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 font-bold px-8 py-4 rounded-xl hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-105">
+                            <button className="bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 font-bold px-8 py-4 rounded-xl hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-105">
                                 {activeTab === 'customer' ? 'Start Referring' : 'Become a Partner'}
-                            </Link>
+                            </button>
                             <button
                                 onClick={() => setActiveTab(activeTab === 'customer' ? 'shop' : 'customer')}
                                 className="border-2 border-white text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/10 transition-all duration-300"
@@ -433,7 +446,7 @@ export default function ReferralEarning() {
                     </div>
                 </div>
             </div>
-            <Footer />
+            <Footer />  
         </>
     );
 }
