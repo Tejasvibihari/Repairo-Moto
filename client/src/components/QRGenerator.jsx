@@ -10,7 +10,7 @@ const QRGenerator = ({ text }) => {
     const [snackBarOpen, setSnackBarOpen] = useState(false);
     const [snackBarMessage, setSnackBarMessage] = useState('');
     const [snackBarSeverity, setSnackBarSeverity] = useState('success');
-    const profile = useSelector((state) => state.user.user.user);
+    const profile = useSelector((state) => state.user?.user?.user);
     const [user, setUser] = useState({});
     useEffect(() => {
         // fetch user from backend 
@@ -24,7 +24,7 @@ const QRGenerator = ({ text }) => {
             }
         };
         getUser();
-    }, [])  
+    }, [])
 
     const handleDownload = () => {
         if (user?.status !== "approved") return;
