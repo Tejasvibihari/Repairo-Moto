@@ -1,32 +1,54 @@
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import Vendor from "../Models/vendorModel.js";   // import Vendor model
+import { generateReferralCode } from "../Utils/generateReferralCode.js";
 
-// Ensure the uploads/employee directory exists
-const uploadDir = path.resolve('uploads/vendor'); // Use an absolute path
+const uploadDir = path.resolve("uploads/vendor");
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true }); // Create the directory if it doesn't exist
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure storage for uploaded files
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, uploadDir); // Directory to store uploaded files
+        cb(null, uploadDir);
     },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
+    filename: async (req, file, cb) => {
+        try {
+            let referralCode;
+
+            if (req.params.id) {
+                // ✅ UPDATE vendor → fetch referralCode from DB
+                const vendor = await Vendor.findById(req.params.id);
+                if (!vendor) return cb(new Error("Vendor not found while updating"));
+                referralCode = vendor.referralCode;
+            } else {
+                // ✅ ADD vendor → generate referralCode
+                const { firstName, phone } = req.body;
+                if (!firstName || !phone) {
+                    return cb(new Error("First name and phone are required to generate referral code"));
+                }
+                referralCode = generateReferralCode(firstName, phone);
+            }
+
+            // ✅ Attach referralCode to req (controller will use it)
+            req.referralCode = referralCode;
+
+            // Save image with referralCode + extension
+            const filename = `${referralCode}${path.extname(file.originalname)}`;
+            cb(null, filename);
+        } catch (err) {
+            cb(err);
+        }
     },
 });
 
-// File filter to allow only images
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype.startsWith("image/")) {
         cb(null, true);
     } else {
-        cb(new Error('Only image files are allowed!'), false);
+        cb(new Error("Only image files are allowed!"), false);
     }
 };
 
-// Initialize multer
 export const vendorUpload = multer({ storage, fileFilter });

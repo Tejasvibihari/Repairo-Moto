@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Heading from './ui/Heading';
-import { UserPen } from 'lucide-react';
+import { UserPen, User, Mail, Phone, MapPin, CreditCard, FileText, Briefcase, Camera } from 'lucide-react';
 import axiosClient from '../service/axiosClient';
 import AlertSnackBar from './ui/AlertSnackBar';
 import CircularLoading from './ui/CircularLoading';
@@ -23,7 +23,6 @@ export default function EditEmployeeForm({ initialData, onSuccess }) {
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
     const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
-
 
     const [loading, setLoading] = useState(false);
 
@@ -74,6 +73,7 @@ export default function EditEmployeeForm({ initialData, onSuccess }) {
             setLoading(false);
         }
     };
+
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -81,175 +81,276 @@ export default function EditEmployeeForm({ initialData, onSuccess }) {
 
         setSnackBarOpen(false);
     }
+
     return (
-        <div>
+        <div className="max-w-6xl mx-auto p-6">
             <AlertSnackBar
                 open={snackBarOpen}
                 message={snackBarMessage}
                 severity={snackBarSeverity}
                 onClose={handleCloseSnackBar} // Close function for the Snackbar
             />
-            <Heading heading="Edit Employee" />
-            <form className="shadow-sm border border-gray-300 rounded p-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">First Name</label>
-                        <input
-                            type="text"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
-                            placeholder="First Name"
-                        />
+
+            <div className="mb-8">
+                <Heading heading="Edit Employee" />
+                <p className="text-gray-600 mt-2">Update employee information and profile details</p>
+            </div>
+
+            <form className="bg-white shadow-xl rounded-2xl border border-gray-100 overflow-hidden">
+                {/* Personal Information Section */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center">
+                        <User className="h-5 w-5 text-blue-600 mr-2" />
+                        <h3 className="text-lg font-semibold text-gray-800">Personal Information</h3>
                     </div>
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Last Name</label>
-                        <input
-                            type="text"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
-                            placeholder="Last Name"
-                        />
+                </div>
+
+                <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <User className="h-4 w-4 mr-2 text-gray-500" />
+                                First Name
+                            </label>
+                            <input
+                                type="text"
+                                name="firstName"
+                                value={formData.firstName}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 outline-none"
+                                required
+                                placeholder="Enter first name"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <User className="h-4 w-4 mr-2 text-gray-500" />
+                                Last Name
+                            </label>
+                            <input
+                                type="text"
+                                name="lastName"
+                                value={formData.lastName}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 outline-none"
+                                required
+                                placeholder="Enter last name"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                                Phone Number
+                            </label>
+                            <input
+                                type="text"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 outline-none"
+                                required
+                                placeholder="Enter phone number"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                                Email Address
+                            </label>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 outline-none"
+                                required
+                                placeholder="Enter email address"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <Briefcase className="h-4 w-4 mr-2 text-gray-500" />
+                                Role
+                            </label>
+                            <select
+                                name="position"
+                                value={formData.position}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 outline-none bg-white"
+                                required
+                            >
+                                <option value="" disabled>Select role</option>
+                                <option value="admin">Operation Manager</option>
+                                <option value="mechanic">Mechanic</option>
+                                <option value="delivery">Delivery</option>
+                                <option value="manager">Manager</option>
+                                <option value="hr">HR</option>
+                                <option value="accountant">Accountant</option>
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <Camera className="h-4 w-4 mr-2 text-gray-500" />
+                                Profile Image
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="file"
+                                    name="profileImage"
+                                    onChange={handleFileChange}
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    accept="image/*"
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Phone Number</label>
-                        <input
-                            type="text"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
-                            placeholder="0000000000"
-                        />
+                </div>
+
+                {/* Documents Section */}
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center">
+                        <FileText className="h-5 w-5 text-green-600 mr-2" />
+                        <h3 className="text-lg font-semibold text-gray-800">Documents</h3>
                     </div>
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Email</label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
-                            placeholder="Email"
-                        />
+                </div>
+
+                <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <CreditCard className="h-4 w-4 mr-2 text-gray-500" />
+                                Aadhar Number
+                            </label>
+                            <input
+                                type="number"
+                                name="aadhar"
+                                value={formData.aadhar}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 outline-none"
+                                required
+                                placeholder="Enter Aadhar number"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <FileText className="h-4 w-4 mr-2 text-gray-500" />
+                                Driving License
+                            </label>
+                            <input
+                                type="text"
+                                name="dl"
+                                value={formData.dl}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 outline-none"
+                                required
+                                placeholder="Enter driving license number"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Aadhar No.</label>
-                        <input
-                            type="number"
-                            name="aadhar"
-                            value={formData.aadhar}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
-                            placeholder="Aadhar Number"
-                        />
+                </div>
+
+                {/* Address Section */}
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center">
+                        <MapPin className="h-5 w-5 text-purple-600 mr-2" />
+                        <h3 className="text-lg font-semibold text-gray-800">Address Information</h3>
                     </div>
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Driving Licence</label>
-                        <input
-                            type="text"
-                            name="dl"
-                            value={formData.dl}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
-                            placeholder="Driving Licence"
-                        />
+                </div>
+
+                <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="md:col-span-2 space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                                Street Address
+                            </label>
+                            <input
+                                type="text"
+                                name="address"
+                                value={formData.address}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200 outline-none"
+                                required
+                                placeholder="Enter street address"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                                City
+                            </label>
+                            <input
+                                type="text"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200 outline-none"
+                                required
+                                placeholder="Enter city"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                                State
+                            </label>
+                            <input
+                                type="text"
+                                name="state"
+                                value={formData.state}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200 outline-none"
+                                required
+                                placeholder="Enter state"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center text-gray-700 font-medium text-sm">
+                                <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                                PIN Code
+                            </label>
+                            <input
+                                type="number"
+                                name="pinCode"
+                                value={formData.pinCode}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200 outline-none"
+                                required
+                                placeholder="Enter PIN code"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Role</label>
-                        <select
-                            name="position"
-                            value={formData.position}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
+                </div>
+
+                {/* Submit Button */}
+                <div className="bg-gray-50 px-6 py-6 border-t border-gray-200">
+                    <div className="flex justify-end">
+                        <button
+                            type="submit"
+                            className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-lg"
+                            disabled={loading}
+                            onClick={handleSubmit}
                         >
-                            <option value="" disabled>Select One</option>
-                            <option value="admin">Operation Manager</option>
-                            <option value="mechanic">Mechanic</option>
-                            <option value="delivery">Delivery</option>
-                            <option value="manager">Manager</option>
-                            <option value="hr">HR</option>
-                            <option value="accountant">Accountant</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Profile Image</label>
-                        <input
-                            type="file"
-                            name="profileImage"
-                            onChange={handleFileChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                        />
+                            {loading ? (
+                                <CircularLoading />
+                            ) : (
+                                <>
+                                    <UserPen className="h-5 w-5 mr-2" />
+                                    Update Employee
+                                </>
+                            )}
+                        </button>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Address</label>
-                        <input
-                            type="text"
-                            name="address"
-                            value={formData.address}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
-                            placeholder="Address"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">City</label>
-                        <input
-                            type="text"
-                            name="city"
-                            value={formData.city}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
-                            placeholder="City"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">State</label>
-                        <input
-                            type="text"
-                            name="state"
-                            value={formData.state}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
-                            placeholder="State"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-gray-700 font-semibold mb-2 block text-sm">Pincode</label>
-                        <input
-                            type="number"
-                            name="pinCode"
-                            value={formData.pinCode}
-                            onChange={handleChange}
-                            className="border-2 border-gray-300 rounded-md p-2 w-full"
-                            required
-                            placeholder="000000"
-                        />
-                    </div>
-                </div>
-                <button
-                    type="submit"
-                    className="bg-primary text-white hover:bg-transparent hover:text-primary border border-primary font-semibold py-2 px-4 rounded-md mt-4 col-span-1 md:col-span-3 cursor-pointer"
-                    disabled={loading}
-                    onClick={handleSubmit}
-                >
-                    {loading ? <CircularLoading /> : <span className='flex flex-row'><UserPen className='mr-2' /> Make Changes</span>}
-                </button>
             </form>
         </div>
     );

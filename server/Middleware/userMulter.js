@@ -1,32 +1,46 @@
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+// multer config (userUpload.js)
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import User from "../Models/userModel.js"; // make sure this path is correct
 
-// Ensure the uploads/employee directory exists
-const uploadDir = path.resolve('uploads/user'); // Use an absolute path
+// Ensure uploads/user directory exists
+const uploadDir = path.resolve("uploads/user");
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true }); // Create the directory if it doesn't exist
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure storage for uploaded files
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, uploadDir); // Directory to store uploaded files
+        cb(null, uploadDir);
     },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
+    filename: async (req, file, cb) => {
+        try {
+            let referralCode = "USER"; // fallback if not found
+
+            // If updating profile, get referral code from DB
+            if (req.params.userId) {
+                const user = await User.findById(req.params.userId).select("referralCode");
+                if (user && user.referralCode) {
+                    referralCode = user.referralCode;
+                }
+            }
+
+            const ext = path.extname(file.originalname);
+            cb(null, `${referralCode}-${file.fieldname}${ext}`);
+        } catch (err) {
+            cb(err, null);
+        }
     },
 });
 
-// File filter to allow only images
+// Only allow images
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype.startsWith("image/")) {
         cb(null, true);
     } else {
-        cb(new Error('Only image files are allowed!'), false);
+        cb(new Error("Only image files are allowed!"), false);
     }
 };
 
-// Initialize multer
 export const userUpload = multer({ storage, fileFilter });

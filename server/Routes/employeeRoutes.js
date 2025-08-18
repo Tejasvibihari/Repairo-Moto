@@ -2,6 +2,7 @@ import express from "express";
 import { createEmployee, deleteEmployeeById, getAllEmployee, getEmployeeById, updateEmployeeById } from "../Controllers/employeeController.js";
 import { employeeUpload } from "../Middleware/employeeMulter.js";
 import authAdmin from "../Middleware/authAdmin.js";
+import { attachReferralCode } from "../Middleware/referralMiddleware.js";
 
 
 const router = express.Router();

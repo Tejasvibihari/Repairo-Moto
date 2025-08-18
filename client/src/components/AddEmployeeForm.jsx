@@ -93,7 +93,9 @@ export default function AddEmployeeForm() {
                 aadharBack: null,
                 dlImage: null
             });
-
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000) // Reload the page to reflect changes 
         } catch (err) {
             console.log('Error:', err);
             // Check if the error has a response and status code

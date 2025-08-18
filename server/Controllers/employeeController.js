@@ -32,8 +32,7 @@ export const createEmployee = async (req, res) => {
         const password = `${firstNameDigits}${lastPhoneDigits}`;
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const referralCode = generateReferralCode(firstName, phone);
-
+        const referralCode = req.referralCodeForUpload;
         // Extract file paths from multer fields
         const getRelativePath = (file) => file ? path.join('/uploads', path.relative('uploads', file.path)).replace(/\\/g, '/') : null;
 
@@ -190,30 +189,41 @@ export const updateEmployeeById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Find the employee by ID
+        // Find employee
         const employee = await Employee.findById(id);
         if (!employee) {
             return res.status(404).json({ message: "Employee not found" });
         }
 
-        // Handle uploaded file
-        let profileImage = employee.profileImage; // Keep the existing image by default
+        let profileImage = employee.profileImage; // keep existing by default
+
         if (req.file) {
-            // Delete the old image if it exists
+            // --- build new filename like creation ---
+            const empCode = employee.referralCode || `EMP${employee._id}`;
+            const ext = path.extname(req.file.originalname); // keep same extension (.jpg/.png)
+            const fileName = `${empCode}-profileImage${ext}`;
+            const uploadDir = path.join("uploads", "employees", "profile");
+            const filePath = path.join(uploadDir, fileName);
+
+            // --- ensure folder exists ---
+            fs.mkdirSync(uploadDir, { recursive: true });
+
+            // --- delete old image if exists ---
             if (employee.profileImage) {
-                fs.unlink(employee.profileImage, (err) => {
-                    if (err) {
-                        console.error("Error deleting old image:", err);
-                    } else {
-                        console.log("Old image deleted successfully:", employee.profileImage);
-                    }
-                });
+                const oldPath = path.join(process.cwd(), employee.profileImage.replace(/^\//, ""));
+                if (fs.existsSync(oldPath)) {
+                    fs.unlinkSync(oldPath);
+                }
             }
-            // Set the new image path
-            profileImage = `uploads/employee/${req.file.filename}`;
+
+            // --- move uploaded file to correct location ---
+            fs.renameSync(req.file.path, filePath);
+
+            // --- save DB path with leading "/" ---
+            profileImage = `/uploads/employees/profile/${fileName}`;
         }
 
-        // Update employee details
+        // --- update employee ---
         const updatedEmployee = await Employee.findByIdAndUpdate(
             id,
             {
@@ -228,17 +238,21 @@ export const updateEmployeeById = async (req, res) => {
                 pinCode: req.body.pinCode,
                 aadhar: req.body.aadhar,
                 dl: req.body.dl,
-                profileImage, // Update the profile image
+                profileImage,
             },
-            { new: true } // Return the updated document
+            { new: true }
         );
 
-        res.status(200).json({ message: "Employee updated successfully", employee: updatedEmployee });
+        res.status(200).json({
+            message: "Employee updated successfully",
+            employee: updatedEmployee,
+        });
     } catch (error) {
         console.error("Error updating employee:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
 
 export const getEmployeeById = async (req, res) => {
     try {

@@ -1,6 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { generateReferralCode } from '../Utils/generateReferralCode.js';
 
 // Define base directories
 const baseUploadDir = path.resolve('uploads/employees');
@@ -36,10 +37,19 @@ const storage = multer.diskStorage({
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
+        // ✅ Use existing referralCode if available (update case)
+        let referralCode = req.body.referralCode || req.referralCodeForUpload || "TEMP";
+
+        // For new employees → generate once only
+        if (!req.referralCodeForUpload && req.body.firstName && req.body.phone) {
+            referralCode = generateReferralCode(req.body.firstName, req.body.phone);
+            req.referralCodeForUpload = referralCode;
+        }
+
+        cb(null, `${referralCode}-${file.fieldname}${path.extname(file.originalname)}`);
     }
 });
+
 
 // File filter for images
 const fileFilter = (req, file, cb) => {

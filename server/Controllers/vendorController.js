@@ -26,7 +26,7 @@ export const addVendor = async (req, res) => {
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-        const referralCode = generateReferralCode(firstName, phone);
+        const referralCode = req.referralCode;
         // Create a new vendor
         const newVendor = new Vendor({
             firstName,
@@ -115,34 +115,34 @@ export const getAllVendor = async (req, res) => {
     }
 };
 
-
 export const deleteVendor = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Find the vendor by ID
         const vendor = await Vendor.findById(id);
         if (!vendor) {
             return res.status(404).json({ message: "Vendor not found" });
         }
+
         if (vendor.profileImage) {
-            fs.unlink(vendor.profileImage, (err) => {
+            // vendor.profileImage = "/uploads/vendor/TEJA115051.jpg"
+            const imagePath = path.resolve(`.${vendor.profileImage}`);
+
+            fs.unlink(imagePath, (err) => {
                 if (err) {
                     console.error("Error deleting image:", err);
                 } else {
-                    console.log("Image deleted successfully:", vendor.profileImage);
+                    console.log("Image deleted successfully:", imagePath);
                 }
             });
         }
-        // Delete the vendor from the database
+
         await Vendor.findByIdAndDelete(id);
 
-        // Get the updated vendor list
         const updatedVendors = await Vendor.find();
-
         res.status(200).json({
             message: "Vendor deleted successfully",
-            vendors: updatedVendors
+            vendors: updatedVendors,
         });
     } catch (error) {
         console.error("Error deleting vendor:", error);
@@ -152,34 +152,35 @@ export const deleteVendor = async (req, res) => {
 
 export const updateVendorById = async (req, res) => {
     const { id } = req.params;
-    console.log(id)
 
     try {
-
-        // Find the employee by ID
         const vendor = await Vendor.findById(id);
         if (!vendor) {
-            return res.status(404).json({ message: "Employee not found" });
+            return res.status(404).json({ message: "Vendor not found" });
         }
 
-        // Handle uploaded file
-        let profileImage = vendor.profileImage; // Keep the existing image by default
+        let profileImage = vendor.profileImage;
+
         if (req.file) {
-            // Delete the old image if it exists
+            // ✅ Delete old image if exists
             if (vendor.profileImage) {
-                fs.unlink(vendor.profileImage, (err) => {
+                // vendor.profileImage = "/uploads/employee/TEJA115020.jpg"
+                const oldImagePath = path.resolve(`.${vendor.profileImage}`);
+
+                fs.unlink(oldImagePath, (err) => {
                     if (err) {
                         console.error("Error deleting old image:", err);
                     } else {
-                        console.log("Old image deleted successfully:", vendor.profileImage);
+                        console.log("Old image deleted successfully:", oldImagePath);
                     }
                 });
             }
-            // Set the new image path
-            profileImage = `uploads/employee/${req.file.filename}`;
+
+            // ✅ Save new image path (URL format)
+            profileImage = `/uploads/vendor/${req.file.filename}`;
         }
 
-        // Update employee details
+        // Update vendor
         const updatedVendor = await Vendor.findByIdAndUpdate(
             id,
             {
@@ -193,14 +194,16 @@ export const updateVendorById = async (req, res) => {
                 pincode: req.body.pincode,
                 gstNo: req.body.gstNo,
                 businessName: req.body.businessName,
-                profileImage, // Update the profile image
+                profileImage,
             },
-            { new: true } // Return the updated document
+            { new: true }
         );
 
-        res.status(200).json({ message: "Vendor updated successfully", vendor: updatedVendor });
+        res
+            .status(200)
+            .json({ message: "Vendor updated successfully", vendor: updatedVendor });
     } catch (error) {
-        console.error("Error updating employee:", error);
+        console.error("Error updating vendor:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
