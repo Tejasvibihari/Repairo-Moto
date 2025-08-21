@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { LogOut, User, Mail, Calendar, ShieldCheck } from 'lucide-react';
 import { setAdminLogout } from '../../app/slice/adminAuthSlice';
 import { setLogOut } from '../../app/slice/authSlice';
+import { setEmployeeSignOut } from '../../app/slice/employeeSlice';
 
 export default function Profile() {
     const user = useSelector((state) => state.admin.admin.user);
@@ -22,6 +23,7 @@ export default function Profile() {
         // ✅ Clear Redux state (if using Redux Toolkit)
         dispatch(setAdminLogout());
         dispatch(setLogOut())
+        dispatch(setEmployeeSignOut());
 
         // ✅ Clear all localStorage values (including tokens)
         localStorage.clear();

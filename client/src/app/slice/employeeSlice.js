@@ -22,8 +22,13 @@ export const employeeSlice = createSlice({
         setError: (state, action) => {
             state.error = action.payload;
         },
+        setEmployeeSignOut: (state, action) => {
+            state.loading = action.payload;
+            state.error = null; // Reset error when loading state changes
+
+        }
     },
 });
 
-export const { setEmployee, setLoading, addEmployee, setError } = employeeSlice.actions;
+export const { setEmployee, setLoading, addEmployee, setError, setEmployeeSignOut } = employeeSlice.actions;
 export default employeeSlice.reducer; // Corrected export

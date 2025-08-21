@@ -31,6 +31,10 @@ const authSlice = createSlice({
             state.userToken = null
             state.employeeToken = null
             state.vendorToken = null
+            localStorage.removeItem("employee");
+            localStorage.removeItem("userData");
+            localStorage.removeItem("vendorData");
+            localStorage.removeItem("adminData");
         }
     },
 });
