@@ -22,10 +22,10 @@ export const employeeSlice = createSlice({
         setError: (state, action) => {
             state.error = action.payload;
         },
-        setEmployeeSignOut: (state, action) => {
-            state.loading = action.payload;
-            state.error = null; // Reset error when loading state changes
+        setEmployeeSignOut: (state) => {
+
             state.employee = []; // Clear employee data on sign out
+            state.error = null; // Reset error when loading state changes
             localStorage.removeItem("employee"); // Clear employee data from localStorage
 
         }
