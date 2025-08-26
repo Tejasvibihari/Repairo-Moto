@@ -117,7 +117,7 @@ export default function Dashboard() {
                     {/* Order Status Cards */}
                     <OrderStatusCard status="Pending" count={order.filter((o) => o.status === "Pending").length} />
                     <OrderStatusCard status="In Progress" count={order.filter((o) => o.status === "In Progress").length} />
-                    <OrderStatusCard status="Completed" count={order.filter((o) => o.status === "Completed").length} />
+                    <OrderStatusCard status="Completed" count={order.filter((o) => o.status === "Completed" || o.status === "Invoice Generated").length} />
 
                     {/* Total Revenue */}
                     <TotalRevenueCard revenue={calculateRevenue()} />
