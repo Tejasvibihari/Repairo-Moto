@@ -24,7 +24,7 @@ export const createManualOrder = async (req, res) => {
             otherService,
             preferredDate,
             preferredTime,
-            estimatedBudget,
+              estimatedBudget,
             issues
         } = req.body;
 
@@ -71,7 +71,7 @@ export const createManualOrder = async (req, res) => {
             otherService,
             preferredDate,
             preferredTime,
-            estimatedBudget,
+              estimatedBudget,
             issues
         });
 
@@ -543,7 +543,7 @@ export const userOrder = async (req, res) => {
             otherService,
             preferredDate,
             preferredTime,
-            estimatedBudget,
+
             issues
         } = req.body;
         const { latitude, longitude } = req.body.location;
@@ -603,7 +603,7 @@ export const userOrder = async (req, res) => {
             otherService,
             preferredDate,
             preferredTime,
-            estimatedBudget,
+            
             issues
         });
 
