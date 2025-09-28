@@ -525,7 +525,7 @@ export default function UserBookingForm() {
                         </div>
                     </div>
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
-                        <div>
+{/*                         <div>
                             <TextField
                                 fullWidth
                                 name="estimatedBudget"
@@ -542,7 +542,7 @@ export default function UserBookingForm() {
                                     },
                                 }}
                             />
-                        </div>
+                        </div> */}
                         <div>
                             <TextField
                                 fullWidth

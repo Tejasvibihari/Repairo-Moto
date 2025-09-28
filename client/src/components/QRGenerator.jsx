@@ -62,7 +62,8 @@ const QRGenerator = ({ text }) => {
         setSnackBarOpen(false);
     };
 
-    const isApproved = user?.status === "approved";
+    // const isApproved = user?.status === "approved";
+const isApproved = !user || user.status === "approved";
 
     return (
         <>

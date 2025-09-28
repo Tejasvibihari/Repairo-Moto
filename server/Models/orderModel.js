@@ -83,7 +83,6 @@ const orderSchema = new mongoose.Schema({
     },
     estimatedBudget: {
         type: String,
-        required: true,
         trim: true,
     },
     issues: {
