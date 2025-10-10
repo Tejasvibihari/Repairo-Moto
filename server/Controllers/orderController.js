@@ -24,11 +24,12 @@ export const createManualOrder = async (req, res) => {
             otherService,
             preferredDate,
             preferredTime,
-              estimatedBudget,
-            issues
+            // estimatedBudget,
+            issues,
+            coupon
         } = req.body;
 
-        if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime || !estimatedBudget) {
+        if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
         // Format today's date as DDMMYY
@@ -71,8 +72,9 @@ export const createManualOrder = async (req, res) => {
             otherService,
             preferredDate,
             preferredTime,
-              estimatedBudget,
-            issues
+            // estimatedBudget,
+            issues,
+            coupon
         });
 
         const savedOrder = await newOrder.save();
@@ -603,7 +605,7 @@ export const userOrder = async (req, res) => {
             otherService,
             preferredDate,
             preferredTime,
-            
+
             issues
         });
 

@@ -35,9 +35,9 @@ export default function OrderTable({ orders: initialOrders }) {
     const fetchUpdatedOrders = async () => {
         try {
             const response = await axiosClient.get('/orders'); // Replace with your actual API endpoint
-            setOrders(response.data);   
+            setOrders(response.data);
         } catch (error) {
-            console.error('Error fetching updated orders:', error); 
+            console.error('Error fetching updated orders:', error);
         }
     };
 
@@ -122,6 +122,7 @@ export default function OrderTable({ orders: initialOrders }) {
                                 <th className="px-4 py-2 text-left">Budget</th>
                                 <th className="px-4 py-2 text-left">Mechanic</th>
                                 <th className="px-4 py-2 text-left">Parts Used</th>
+                                <th className="px-4 py-2 text-left">Coupon</th>
                                 <th className="px-4 py-2 text-left">Status</th>
                                 <th className="px-4 py-2 text-end">Actions</th>
                             </tr>
@@ -151,10 +152,11 @@ export default function OrderTable({ orders: initialOrders }) {
                                     </td>
                                     <td className="px-3 py-2">{order.estimatedBudget}</td>
                                     <td className="px-3 py-2">{order.assignedMechanic || "Unassigned"}</td>
+
                                     <td className="px-3 py-2">
                                         {order.partsUsed.length > 0 ? order.partsUsed.map(part => part.partName).join(", ") : "N/A"}
                                     </td>
-
+                                    <td className="px-3 py-2">{order.coupon || "Unassigned"}</td>
                                     <td className="px-3 py-2" style={{ minWidth: "120px" }}>
                                         <span
                                             className={`px-2 py-1 rounded text-xs font-medium ${order.status === "Pending"

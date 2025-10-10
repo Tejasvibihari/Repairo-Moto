@@ -21,8 +21,11 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import axiosClient from '../service/axiosClient';
 import { Divider } from '@mui/material';
 import CircularLoading from './ui/CircularLoading';
+import { useParams } from 'react-router-dom';
 
-export default function ManualBookingForm() {
+
+export default function ManualBookingForm({ coupon }) {
+
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
     const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
@@ -30,6 +33,7 @@ export default function ManualBookingForm() {
     const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
     const [loading, setLoading] = useState(false); // State to control loading spinner
     const [formData, setFormData] = useState({
+        coupon,
         name: '',
         contactNo: '',
         city: 'Patna',
@@ -42,7 +46,6 @@ export default function ManualBookingForm() {
         otherService: '',
         preferredDate: null,
         preferredTime: null,
-        estimatedBudget: '',
         issues: '',
     });
 
@@ -105,7 +108,6 @@ export default function ManualBookingForm() {
                 otherService: '',
                 preferredDate: null,
                 preferredTime: null,
-                estimatedBudget: '',
                 issues: '',
             }); // Reset form data
         } catch (error) {
@@ -422,7 +424,7 @@ export default function ManualBookingForm() {
                         </div>
                     </div>
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
-                        <div>
+                        {/* <div>
                             <TextField
                                 fullWidth
                                 name="estimatedBudget"
@@ -439,7 +441,7 @@ export default function ManualBookingForm() {
                                     },
                                 }}
                             />
-                        </div>
+                        </div> */}
                         <div>
                             <TextField
                                 fullWidth
@@ -447,7 +449,6 @@ export default function ManualBookingForm() {
                                 label="Elaborate your Two wheeler's Issues"
                                 variant="outlined"
                                 placeholder="Elaborate your Two wheeler Issues"
-                                required
                                 value={formData.issues}
                                 onChange={handleInputChange}
                                 slotProps={{

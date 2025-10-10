@@ -73,7 +73,7 @@ export default function ManageOrder() {
                         orders={allOrders}
                         setFilteredOrders={setFilteredOrders}
                     />
-                  
+
                     {/* Pass the filtered orders to the OrderTable */}
                     <OrderTable orders={filteredOrders} />
                 </div>

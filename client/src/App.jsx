@@ -71,6 +71,7 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import Referral from './pages/dashboard/Referral';
 import DetailReferral from './pages/dashboard/DetailReferral';
+import OrderBooking from './pages/landing/OrderBooking';
 
 
 
@@ -83,6 +84,7 @@ export default function App() {
         <Routes>
           {/* Landing Route without Sidebar */}
 
+          <Route path='/booking/:cpn' element={<OrderBooking />} />
           <Route path='/' element={<Home />} />
           <Route path='/contact' element={<ContactUs />} />
           <Route path='/about' element={<AboutUs />} />
