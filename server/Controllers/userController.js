@@ -7,6 +7,7 @@ import BikeProfile from '../Models/bikeProfile.js';
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import mongoose from "mongoose";
 import { sendWelcomeEmail } from '../Utils/mailer.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
