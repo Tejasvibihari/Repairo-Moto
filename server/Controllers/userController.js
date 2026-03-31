@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import User from "../Models/userModel.js";
 import { generateReferralCode } from "../Utils/generateReferralCode.js";
 import jwt from "jsonwebtoken";
+import Order from '../Models/orderModel.js';
+import BikeProfile from '../Models/bikeProfile.js';
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -269,6 +271,7 @@ export const getAllUserByReferralCode = async (req, res) => {
 //     }
 // };
 
+
 export const getUserById = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -286,15 +289,24 @@ export const getUserById = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Count total orders and bikes for this user (concurrent queries)
+        const [totalOrders, totalBikes] = await Promise.all([
+            Order.countDocuments({ userId: userId }),
+            BikeProfile.countDocuments({ user: userId })
+        ]);
+
         res.status(200).json({
             message: 'User fetched successfully',
             user,
+            totalOrders,   // number of orders placed by the user
+            totalBikes,    // number of bikes registered by the user
         });
     } catch (error) {
         console.error('Error fetching user:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 export const editUser = async (req, res) => {
     try {
