@@ -102,7 +102,7 @@ export default function BikeProfileForm() {
 
             // Here you would typically send the data to your backend
             console.log('Bike Profile Data:', formData);
-            const response = await axiosClient.post(`/api/bike-profiles/create/${user.id}`, formData);
+            const response = await axiosClient.post(`/api/bike-profiles/create`, formData);
             setIsSubmitted(true);
             setSnackBarMessage(response.data.message); // Set the message to display in the Snackbar
             setSnackBarSeverity('success'); // Set severity to success

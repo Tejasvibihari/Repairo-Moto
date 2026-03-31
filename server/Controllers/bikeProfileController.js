@@ -4,7 +4,8 @@ import BikeProfile from '../Models/bikeProfile.js';
 export const createBikeProfile = async (req, res) => {
     try {
         const { brand, model, cc, bs } = req.body;
-        const userId = req.params; // Make sure you're using auth middleware to get req.user
+        const userId = req.user;
+        console.log(userId)
         const newProfile = new BikeProfile({
             user: userId,
             brand,
@@ -25,7 +26,7 @@ export const createBikeProfile = async (req, res) => {
 // Get all bike profiles by user ID
 export const getBikeProfilesByUser = async (req, res) => {
     try {
-        const userId = req.params.userId;
+        const userId = req.user._id;
         const profiles = await BikeProfile.find({ user: userId });
         res.status(200).json(profiles);
     } catch (error) {

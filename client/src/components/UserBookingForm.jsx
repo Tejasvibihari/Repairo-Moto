@@ -62,7 +62,8 @@ export default function UserBookingForm() {
     useEffect(() => {
         const getBikeProfile = async () => {
             try {
-                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile/${userId}`)
+                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile`)
+                console.log(response.data)
                 setBikeProfile(response.data)
             } catch (error) {
                 console.log(error)
@@ -525,7 +526,7 @@ export default function UserBookingForm() {
                         </div>
                     </div>
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
-{/*                         <div>
+                        {/*                         <div>
                             <TextField
                                 fullWidth
                                 name="estimatedBudget"

@@ -38,7 +38,7 @@ export default function UserProfile() {
     useEffect(() => {
         const getBikeProfile = async () => {
             try {
-                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile/${user._id}`)
+                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile`)
                 setBikeProfile(response.data)
             } catch (error) {
                 console.log(error)
