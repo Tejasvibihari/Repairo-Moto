@@ -102,14 +102,15 @@ export const getAllBookings = async (req, res) => {
     }
 };
 
-// (Optional) @desc Get single booking by ID
 export const getOrderById = async (req, res) => {
-    console.log(req.params.id)
     try {
         const order = await Order.findById(req.params.id)
-            .populate("userId", "firstName lastName email phone referralAmount accountType");
+            .populate("userId", "firstName lastName email phone referralAmount accountType")
+            .populate("mechanicId", "firstName lastName phone profileImage"); // <-- added mechanic population
+
         if (!order) return res.status(404).json({ message: 'Order not found' });
-        console.log(order)
+
+        console.log(order);
         return res.status(200).json(order);
     } catch (error) {
         console.error("Error fetching booking:", error);
