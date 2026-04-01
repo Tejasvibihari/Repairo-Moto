@@ -650,9 +650,9 @@ export const getOrderByUserId = async (req, res) => {
         return res.status(500).json({ message: 'Server error while fetching orders' });
     }
 };
-
 export const cancelOrder = async (req, res) => {
     const { id } = req.params;
+    const { reason } = req.body;  // cancellation reason from request body
 
     try {
         const order = await Order.findById(id);
@@ -665,15 +665,27 @@ export const cancelOrder = async (req, res) => {
             return res.status(400).json({ message: 'Order is already cancelled' });
         }
 
+        // Optionally, prevent cancellation if order is already completed or invoiced
+        if (order.status === 'Completed' || order.status === 'Invoice Generated' || order.status === 'Mechanic Assigned') {
+            return res.status(400).json({ message: `Cannot cancel order with status ${order.status}` });
+        }
+
         order.status = 'Cancelled';
+        order.cancellationReason = reason || null;      // store the reason
+        order.cancelledAt = new Date();                  // store current timestamp
+
         await order.save();
 
-        res.status(200).json({ message: 'Order cancelled successfully', order });
+        res.status(200).json({
+            message: 'Order cancelled successfully',
+            order
+        });
     } catch (error) {
         console.error('Cancel order error:', error);
         res.status(500).json({ message: 'Server error while cancelling order' });
     }
 };
+
 
 export const getOrdersByPosition = async (req, res) => {
     const { position, employeeId } = req.query; // or from req.params if using route params

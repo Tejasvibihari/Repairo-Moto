@@ -4,7 +4,7 @@ const orderSchema = new mongoose.Schema({
     orderId: {
         type: String,
         required: true,
-        unique: true, // Ensure uniqueness
+        unique: true,
         trim: true,
     },
     userId: {
@@ -154,6 +154,16 @@ const orderSchema = new mongoose.Schema({
         discountType: { type: String }
     },
     coupon: { type: String },
+    // NEW FIELDS FOR CANCELLATION
+    cancellationReason: {
+        type: String,
+        default: null,
+        trim: true,
+    },
+    cancelledAt: {
+        type: Date,
+        default: null,
+    },
 }, {
     timestamps: true,
 });
