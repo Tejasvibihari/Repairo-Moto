@@ -102,7 +102,7 @@ const orderSchema = new mongoose.Schema({
     },
     mechanicId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Mechanic',
+        ref: 'Employee',
         default: null,
     },
     referralProcessed: { type: Boolean, default: false },

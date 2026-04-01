@@ -11,7 +11,7 @@ import SelectVendorDialog from './ui/SelectVendorDialog';
 import { Link } from 'react-router-dom';
 
 export default function JobAsssignForm({ id }) {
-    console.log(id)
+    // console.log(id)
     const [snackBarOpen, setSnackBarOpen] = useState(false);
     const [snackBarMessage, setSnackBarMessage] = useState('');
     const [snackBarSeverity, setSnackBarSeverity] = useState('success');
