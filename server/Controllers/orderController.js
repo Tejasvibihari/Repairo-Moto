@@ -624,16 +624,17 @@ export const userOrder = async (req, res) => {
 };
 
 
-
-export const getOrderByEmail = async (req, res) => {
+export const getOrderByUserId = async (req, res) => {
     try {
-        const { email } = req.query;
+        const userId = req.user?._id;
 
-        if (!email) {
-            return res.status(400).json({ message: 'Email is required' });
+        console.log(userId);
+
+        if (!userId) {
+            return res.status(401).json({ message: 'User not authenticated' });
         }
 
-        const orders = await Order.find({ email });
+        const orders = await Order.find({ userId });
 
         if (!orders.length) {
             return res.status(404).json({ message: 'No orders found' });
@@ -641,7 +642,7 @@ export const getOrderByEmail = async (req, res) => {
 
         return res.status(200).json({
             message: 'Orders fetched successfully',
-            orders: orders
+            orders
         });
 
     } catch (error) {

@@ -5,7 +5,7 @@ export const createBikeProfile = async (req, res) => {
     try {
         const { brand, model, cc, bs } = req.body;
         const userId = req.user;
-        console.log(userId)
+
         const newProfile = new BikeProfile({
             user: userId,
             brand,
