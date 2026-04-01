@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Clock, CheckCircle, AlertCircle, XCircle, FileText, CreditCard, XOctagon, User } from 'lucide-react';
+import {
+    Clock, CheckCircle, AlertCircle, XCircle, FileText,
+    CreditCard, XOctagon, User
+} from 'lucide-react';
 import Footer from '../../components/landing/Footer';
 import NavBar from '../../components/ui/NavBar';
 import { motion } from "framer-motion";
@@ -10,58 +13,108 @@ import CircularLoading from '../../components/ui/CircularLoading';
 import AlertSnackBar from '../../components/ui/AlertSnackBar';
 import { Link } from 'react-router-dom';
 
+// Material-UI Dialog imports (assuming MUI v5)
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import { CircularProgress } from '@mui/material';
 
 export default function UserAllBooking() {
-    // Sample data
     const user = useSelector((state) => state.user.user.user);
-    const [allOrder, setAllOrder] = useState([])
+    const [allOrder, setAllOrder] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
-    const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
-    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
+    const [snackBarOpen, setSnackBarOpen] = useState(false);
+    const [snackBarMessage, setSnackBarMessage] = useState('');
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success');
 
+    // Cancel dialog states
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [cancellationReason, setCancellationReason] = useState('');
+    const [cancelling, setCancelling] = useState(false);
 
+    // Fetch orders function (reusable)
+    const fetchOrders = async () => {
+        try {
+            setLoading(true);
+            const response = await axiosClient.get(`/api/admin/order/all`);
+            const sortedOrders = response.data.orders.sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            setAllOrder(sortedOrders);
+        } catch (error) {
+            console.log(error);
+            setSnackBarMessage(
+                error?.response?.data?.message ||
+                error?.message ||
+                "An unexpected error occurred"
+            );
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchOrder = async () => {
-            try {
-                setLoading(true)
-                const response = await axiosClient.get(`/api/admin/order/all`)
-                // Sort orders by createdAt descending so newest is on top
-                const sortedOrders = response.data.orders.sort(
-                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-                );
-                setAllOrder(sortedOrders)
-                setLoading(false)
-            } catch (error) {
-                console.log(error);
-                setLoading(false)
-                setSnackBarMessage(
-                    error?.response?.data?.message ||
-                    error?.message ||
-                    "An unexpected error occurred"
-                );
-                setSnackBarSeverity('error'); // Set severity to error
-                setSnackBarOpen(true);
-            }
-        }
-        fetchOrder();
-    }, [])
+        fetchOrders();
+    }, []);
 
-    const handleOrderCancel = async (id) => {
-        try {
-            const response = await axiosClient.put(`/api/admin/order/cancel/${id}`);
-            console.log(response, "Cancel Order");
-            setSnackBarMessage(response.data.message); // Set the message to display in the Snackbar
-            setSnackBarSeverity('success'); // Set severity to success
-            setSnackBarOpen(true); // Open the Snackbar
-        } catch (error) {
-            setSnackBarMessage(error.message); // Set the message to display in the Snackbar
-            setSnackBarSeverity("error"); // Set the message to display in the Snackbar
+    // Open cancel dialog for a specific order
+    const openCancelDialog = (orderId) => {
+        setSelectedOrderId(orderId);
+        setCancellationReason('');
+        setCancelDialogOpen(true);
+    };
+
+    // Close dialog without cancelling
+    const closeCancelDialog = () => {
+        setCancelDialogOpen(false);
+        setSelectedOrderId(null);
+        setCancellationReason('');
+    };
+
+    // Confirm cancellation with reason
+    const confirmCancel = async () => {
+        // Validate reason
+        if (!cancellationReason.trim()) {
+            setSnackBarMessage('Please provide a reason for cancellation.');
+            setSnackBarSeverity('warning');
             setSnackBarOpen(true);
-            console.log(error);
+            return;
         }
-    }
+
+        setCancelling(true);
+        try {
+            const response = await axiosClient.put(`/api/admin/order/cancel/${selectedOrderId}`, {
+                reason: cancellationReason.trim()
+            });
+            setSnackBarMessage(response.data.message);
+            setSnackBarSeverity('success');
+            setSnackBarOpen(true);
+            // Close dialog and refresh orders list
+            closeCancelDialog();
+            await fetchOrders(); // Refresh the list to reflect cancelled status
+        } catch (error) {
+            setSnackBarMessage(
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to cancel order"
+            );
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+        } finally {
+            setCancelling(false);
+        }
+    };
+
+    const handleCloseSnackBar = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setSnackBarOpen(false);
+    };
 
     const getStatusIcon = (status) => {
         switch (status) {
@@ -92,21 +145,6 @@ export default function UserAllBooking() {
                 return "bg-gray-100 text-gray-800";
         }
     };
-    const handleCloseSnackBar = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-
-        setSnackBarOpen(false);
-    }
-    // Mock functions
-    const viewDetails = (id) => {
-        alert(`Viewing details for service ID: ${id}`);
-    };
-
-    const getInvoice = (id) => {
-        alert(`Generating invoice for service ID: ${id}`);
-    };
 
     return (
         <>
@@ -114,7 +152,7 @@ export default function UserAllBooking() {
                 open={snackBarOpen}
                 message={snackBarMessage}
                 severity={snackBarSeverity}
-                onClose={handleCloseSnackBar} // Close function for the Snackbar
+                onClose={handleCloseSnackBar}
             />
             <NavBar />
             <motion.div
@@ -136,7 +174,6 @@ export default function UserAllBooking() {
                 </div>
             </motion.div>
             <div className="w-full p-4 bg-gray-50 my-4">
-
                 <div className="grid gap-4 md:grid-cols-2">
                     {loading ? (
                         <div className='flex items-center justify-center my-10'><CircularLoading /></div>
@@ -183,7 +220,7 @@ export default function UserAllBooking() {
                                         </Link>
                                         {bike.status === "Pending" ? (
                                             <button
-                                                onClick={() => handleOrderCancel(bike._id)}
+                                                onClick={() => openCancelDialog(bike._id)}
                                                 className="flex items-center justify-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium w-1/2"
                                             >
                                                 <XCircle size={16} className="mr-1" />
@@ -204,7 +241,43 @@ export default function UserAllBooking() {
                         ))
                     )}
                 </div>
-            </div >
+            </div>
+
+            {/* Cancel Reason Dialog */}
+            <Dialog open={cancelDialogOpen} onClose={closeCancelDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>Cancel Service</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Reason for Cancellation"
+                        type="text"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        value={cancellationReason}
+                        onChange={(e) => setCancellationReason(e.target.value)}
+                        placeholder="Please provide a reason why you're cancelling this service..."
+                        required
+                        error={cancellationReason.trim() === '' && cancelling === false} // Show error if empty when trying to submit? We'll handle via snackbar instead.
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeCancelDialog} disabled={cancelling}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={confirmCancel}
+                        variant="contained"
+                        color="error"
+                        disabled={cancelling}
+                        startIcon={cancelling ? <CircularProgress size={20} /> : null}
+                    >
+                        {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             <Footer />
         </>
     );
