@@ -651,6 +651,7 @@ export const getOrderByUserId = async (req, res) => {
         return res.status(500).json({ message: 'Server error while fetching orders' });
     }
 };
+
 export const cancelOrder = async (req, res) => {
     const { id } = req.params;
     const { reason } = req.body;  // cancellation reason from request body

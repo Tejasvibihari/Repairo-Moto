@@ -311,7 +311,7 @@ export const getUserById = async (req, res) => {
 
 export const editUser = async (req, res) => {
     try {
-        const { userId } = req.params;
+
         const {
             firstName,
             lastName,
@@ -327,8 +327,7 @@ export const editUser = async (req, res) => {
             newPassword,
             confirmPassword,
         } = req.body;
-        console.log(req.params, "Paramas")
-        console.log("Request file:", req.file);
+        let userId = req.user._id;
 
         // Find the user by ID
         const user = await User.findById(userId);

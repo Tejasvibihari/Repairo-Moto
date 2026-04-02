@@ -12,7 +12,7 @@ router.get("/getalluser", getAllUser);
 
 
 router.get("/getalluser/:referalcode", getAllUserByReferralCode);
-router.put('/update-profile/:userId', userUpload.single('profileImage'), editUser)
+router.put('/update-profile', authUser, userUpload.single('profileImage'), editUser)
 router.get('/get-user-by-id/:userId', getUserById)
 
 router.get('/withdrawal-history/:userId', getWithdraHistory);
