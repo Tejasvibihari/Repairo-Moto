@@ -144,7 +144,7 @@ export const userSignIn = async (req, res) => {
         const token = jwt.sign(
             { id: user._id, email: user.email }, // Payload
             process.env.USER_JWT_SECRET, // Secret key
-            { expiresIn: "1h" } // Token expiration time
+            { expiresIn: "7d" } // Token expiration time
         );
         res.status(200).json({
             message: "Sign-in successful",
@@ -310,6 +310,9 @@ export const getUserById = async (req, res) => {
 
 
 export const editUser = async (req, res) => {
+    console.log(req.body, "Request body for user edit");
+    console.log(req.user._id, "Request body for user edit");
+
     try {
 
         const {
@@ -328,7 +331,7 @@ export const editUser = async (req, res) => {
             confirmPassword,
         } = req.body;
         let userId = req.user._id;
-
+        console.log(req.body, "Request body for user edit");
         // Find the user by ID
         const user = await User.findById(userId);
         if (!user) {

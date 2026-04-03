@@ -27,6 +27,7 @@ const Sidebar = ({ children }) => {
         { id: 'manage-order', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={18} /> },
         { id: 'manage-employee', path: '/manage-employee', label: 'Manage Employee', icon: <User2 size={18} /> },
         { id: 'manage-vendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={18} /> },
+        { id: 'manage-service-area', path: '/manage-service-area', label: 'Manage Service Area', icon: <Briefcase size={18} /> },
         { id: 'manage-qr', path: '/manage-qr', label: 'Manage QR', icon: <QrCode size={18} /> },
         { id: 'all-user', path: '/all-user', label: 'All Users', icon: <User size={18} /> },
         { id: 'manage-referral', path: '/manage-referral', label: 'Manage Referral', icon: <DollarSign size={18} /> },

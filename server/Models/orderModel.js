@@ -31,6 +31,39 @@ const orderSchema = new mongoose.Schema({
         trim: true,
         uppercase: true,
     },
+    userLocation: {
+        type: {
+            type: String,
+            enum: ["Point"],
+            required: true,
+        },
+        coordinates: {
+            type: [Number], // [lng, lat]
+            required: true,
+        },
+    },
+
+    // 📍 Mechanic Live Location (for tracking)
+    mechanicLocation: {
+        type: {
+            type: String,
+            enum: ["Point"],
+        },
+        coordinates: {
+            type: [Number],
+        },
+        lastUpdated: Date,
+    },
+
+    // 🔵 Service availability info
+    isWithinServiceArea: {
+        type: Boolean,
+        default: false,
+    },
+
+    distanceFromCenter: {
+        type: Number, // in meters
+    },
     selectedBrand: {
         type: String,
         required: true,
@@ -167,6 +200,7 @@ const orderSchema = new mongoose.Schema({
 }, {
     timestamps: true,
 });
+orderSchema.index({ userLocation: "2dsphere" });
 
 const Order = mongoose.model('Order', orderSchema);
 export default Order;

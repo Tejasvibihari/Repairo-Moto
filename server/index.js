@@ -18,7 +18,7 @@ import vendorAuthRouter from "./Routes/vendorAuth.js"
 import blogRouter from "./Routes/blogRoutes.js"
 import vendorOrderRouter from "./Routes/vendorOrderRoutes.js"
 import bikeProfileRoutes from './Routes/bikeProfileRoutes.js';
-
+import serviceAreaRoutes from './Routes/serviceAreRoutes.js';
 
 const app = express();
 dotenv.config();
@@ -43,6 +43,7 @@ app.use("/api/vendor/auth", vendorAuthRouter)
 app.use("/api/admin/blog", blogRouter);
 app.use("/api/vendor/vendororder", vendorOrderRouter);
 app.use('/api/bike-profiles', bikeProfileRoutes);
+app.use('/api/service-areas', serviceAreaRoutes);
 
 app.get("/", (req, res) => {
     res.send("Welcome to the Admin API");

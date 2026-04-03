@@ -72,6 +72,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import Referral from './pages/dashboard/Referral';
 import DetailReferral from './pages/dashboard/DetailReferral';
 import OrderBooking from './pages/landing/OrderBooking';
+import ManageServiceArea from './pages/dashboard/ManageServiceArea';
 
 
 
@@ -363,6 +364,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><ManageVendor /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manage-service-area'
+            element={
+              <PrivateRoute>
+                <Sidebar><ManageServiceArea /></Sidebar>
               </PrivateRoute>
             }
           />
