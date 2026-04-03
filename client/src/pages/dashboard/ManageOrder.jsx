@@ -20,6 +20,7 @@ export default function ManageOrder() {
                 const response = await axiosClient.get('/api/admin/order/getallorder');
                 setAllOrders(response.data); // Update state with the fetched orders
                 setFilteredOrders(response.data); // Initialize filtered orders with all orders
+                console.log(response.data); // Log the response data for debugging
                 setLoading(false)
             } catch (error) {
                 if (error.response) {

@@ -87,11 +87,17 @@ const orderSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
-   
+
     services: {
         type: [String],
         required: true,
         default: [],
+    },
+    serviceType: {
+        type: String,
+        enum: ['Schedule Repair', "Emergency Repair"],
+        default: 'Schedule Repair',
+
     },
     otherService: {
         type: String,
