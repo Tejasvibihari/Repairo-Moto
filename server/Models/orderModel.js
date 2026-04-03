@@ -39,7 +39,6 @@ const orderSchema = new mongoose.Schema({
         },
         coordinates: {
             type: [Number], // [lng, lat]
-            required: true,
         },
     },
 
@@ -88,14 +87,7 @@ const orderSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
-    location: {
-        latitude: {
-            type: Number,
-        },
-        longitude: {
-            type: Number,
-        }
-    },
+   
     services: {
         type: [String],
         required: true,

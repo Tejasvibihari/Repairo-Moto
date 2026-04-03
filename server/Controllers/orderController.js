@@ -528,75 +528,13 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
 };
 
 
-
 export const userOrder = async (req, res) => {
     try {
         const {
-            userId,
             name,
             contactNo,
             email,
             city,
-            selectedBrand,
-            selectedModel,
-            modelName,
-            cc,
-            bs, // corrected spelling
-            services,
-            otherService,
-            preferredDate,
-            preferredTime,
-
-            issues
-        } = req.body;
-        const { latitude, longitude } = req.body.location;
-        console.log(req.body);
-        console.log(latitude, longitude);
-
-        if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime) {
-            return res.status(400).json({ message: 'Please fill all required fields.' });
-        }
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Format today's date as DDMMYY
-        const now = new Date();
-        const dd = String(now.getDate()).padStart(2, '0');
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const yy = String(now.getFullYear()).slice(-2);
-        const todayFormatted = `${dd}${mm}${yy}`;
-
-        // Get the latest order globally
-        const latestOrder = await Order.findOne({})
-            .sort({ createdAt: -1 })
-            .lean();
-
-        let serial = 1;
-        if (latestOrder && latestOrder.orderId) {
-            const parts = latestOrder.orderId.split('-');
-            if (parts.length === 3) {
-                const lastSerial = parseInt(parts[2], 10);
-                if (!isNaN(lastSerial)) {
-                    serial = lastSerial + 1;
-                }
-            }
-        }
-
-        const orderId = `ORD-${todayFormatted}-${String(serial).padStart(3, '0')}`;
-
-        const newOrder = new Order({
-            orderId,
-            userId,
-            name,
-            contactNo,
-            email,
-            city,
-            location: {
-                latitude,
-                longitude
-            },
             selectedBrand,
             selectedModel,
             modelName,
@@ -606,12 +544,82 @@ export const userOrder = async (req, res) => {
             otherService,
             preferredDate,
             preferredTime,
+            issues,
+            // Frontend fields – note: 'location' is ignored (not in schema)
+            userLocation,        // { type: "Point", coordinates: [lng, lat] }
+            isWithinServiceArea,
+            distanceFromCenter,
+            status,
+            referralProcessed
+        } = req.body;
 
-            issues
+        const userId = req.user._id;
+
+        // Validate required fields
+        if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services?.length || !preferredDate || !preferredTime) {
+            return res.status(400).json({ message: 'Please fill all required fields.' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Generate orderId
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yy = String(now.getFullYear()).slice(-2);
+        const todayFormatted = `${dd}${mm}${yy}`;
+
+        const latestOrder = await Order.findOne({}).sort({ createdAt: -1 }).lean();
+        let serial = 1;
+        if (latestOrder?.orderId) {
+            const parts = latestOrder.orderId.split('-');
+            if (parts.length === 3) {
+                const lastSerial = parseInt(parts[2], 10);
+                if (!isNaN(lastSerial)) serial = lastSerial + 1;
+            }
+        }
+        const orderId = `ORD-${todayFormatted}-${String(serial).padStart(3, '0')}`;
+
+        // Prepare userLocation GeoJSON
+        // If frontend sent userLocation, use it. Otherwise, we could construct from old 'location' but that's removed.
+        // For safety, we expect frontend to send userLocation.
+        let finalUserLocation = userLocation;
+        if (!finalUserLocation || !finalUserLocation.coordinates || finalUserLocation.coordinates.length !== 2) {
+            // Fallback: you might want to throw an error or set null. Schema doesn't require coordinates but index might break.
+            // We'll set a default or null – adjust based on your business logic.
+            console.warn('Missing or invalid userLocation from frontend');
+            // Optionally: return res.status(400).json({ message: 'Location data is required' });
+        }
+
+        const newOrder = new Order({
+            orderId,
+            userId,
+            name,
+            contactNo,
+            email: email || user.email,
+            city: city.toUpperCase(),
+            userLocation: finalUserLocation, // GeoJSON
+            isWithinServiceArea: isWithinServiceArea ?? false,
+            distanceFromCenter: distanceFromCenter || 0,
+            selectedBrand,
+            selectedModel,
+            modelName: modelName || "",
+            cc,
+            bs: bs || "",
+            services: services || [],
+            otherService: otherService || "",
+            preferredDate: new Date(preferredDate),
+            preferredTime,
+            issues: issues || "",
+            status: status || "Pending",
+            referralProcessed: referralProcessed ?? false
         });
 
         const savedOrder = await newOrder.save();
-        await sendBookingConfirmationEmail(newOrder, user.email);
+        await sendBookingConfirmationEmail(savedOrder, user.email);
 
         return res.status(201).json({
             message: 'Order Confirmed!',
@@ -623,7 +631,6 @@ export const userOrder = async (req, res) => {
         return res.status(500).json({ message: 'Server error while creating Order' });
     }
 };
-
 
 export const getOrderByUserId = async (req, res) => {
     try {

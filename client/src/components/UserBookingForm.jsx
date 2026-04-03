@@ -8,11 +8,8 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
 import FormHelperText from '@mui/material/FormHelperText';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import FormLabel from '@mui/material/FormLabel';
 import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -22,83 +19,97 @@ import axiosClient from '../service/axiosClient';
 import { Divider } from '@mui/material';
 import CircularLoading from './ui/CircularLoading';
 import { useSelector } from 'react-redux';
+import dayjs from 'dayjs';
 
+// Service center coordinates (Patna example - replace with your actual center)
+const SERVICE_CENTER = {
+    lat: 25.4739264,
+    lng: 84.9552607
+};
+const SERVICE_RADIUS_METERS = 30000; // 30 km radius
+
+// Haversine formula to calculate distance in meters
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // Earth radius in meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) *
+        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // distance in meters
+};
 
 export default function UserBookingForm() {
     const user = useSelector((state) => state.user.user.user);
-    const [userId, setUserId] = useState(user?._id);
     const [locationError, setLocationError] = useState('');
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
     const [bikeProfile, setBikeProfile] = useState([]);
-    const [bike, setBike] = useState("")
-    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
-    const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
-    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
-    const [loading, setLoading] = useState(false); // State to control loading spinner
-    const [location, setLocation] = useState({ lat: '', lng: '' });
+    const [bike, setBike] = useState("");
+    const [snackBarOpen, setSnackBarOpen] = useState(false);
+    const [snackBarMessage, setSnackBarMessage] = useState('');
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success');
+    const [loading, setLoading] = useState(false);
+    const [location, setLocation] = useState({ lat: null, lng: null });
+    const [isLocationFetched, setIsLocationFetched] = useState(false);
     const [formData, setFormData] = useState({
-        userId,
         name: '',
         contactNo: '',
-        email: user?.email,
+        email: user?.email || '',
         city: 'Patna',
         selectedBrand: '',
         selectedModel: '',
+        modelName: '',
         cc: '',
         bs: '',
-        location: {
-            latitude: '',
-            longitude: ''
-        },
         services: [],
         otherService: '',
         preferredDate: null,
         preferredTime: null,
-        estimatedBudget: '',
         issues: '',
     });
-    // Get Bike Profile 
+
+    // Get Bike Profile
     useEffect(() => {
         const getBikeProfile = async () => {
             try {
-                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile`)
-                console.log(response.data)
-                setBikeProfile(response.data)
+                const response = await axiosClient.get(`/api/bike-profiles/get-bike-profile`);
+                setBikeProfile(response.data);
             } catch (error) {
-                console.log(error)
+                console.log(error);
             }
-        }
-        getBikeProfile()
-    }, [userId]);
+        };
+        getBikeProfile();
+    }, []);
 
+    // Get user's location
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 position => {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
-
                     setLocation({ lat, lng });
-
-                    // Set to formData as well
-                    setFormData(prev => ({
-                        ...prev,
-                        location: {
-                            latitude: lat,
-                            longitude: lng
-                        }
-                    }));
+                    setIsLocationFetched(true);
+                    setLocationError('');
                 },
                 error => {
-                    setLocationError('Unable to retrieve location.');
+                    setLocationError('Unable to retrieve location. Please enable location services.');
                     console.error(error);
+                    setIsLocationFetched(false);
                 }
             );
         } else {
             setLocationError('Geolocation is not supported by this browser.');
+            setIsLocationFetched(false);
         }
     }, []);
+
+    // Get brands
     useEffect(() => {
         const getBrands = async () => {
             try {
@@ -115,30 +126,37 @@ export default function UserBookingForm() {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
+
     const handleBikeProfileChange = (e) => {
         const selectedBikeId = e.target.value;
         setBike(selectedBikeId);
-
-        // Find the selected bike profile by _id
         const selectedBike = bikeProfile.find(bike => bike?._id === selectedBikeId);
-
         if (selectedBike) {
             setFormData(prev => ({
                 ...prev,
                 selectedBrand: selectedBike.brand || '',
                 selectedModel: selectedBike.model || '',
+                modelName: selectedBike.model || '',
                 bs: selectedBike.bs || ''
             }));
         }
     };
+
     const handleBrandChange = (e) => {
         const brandId = e.target.value;
-        setFormData((prev) => ({ ...prev, selectedBrand: brandId, selectedModel: '' }));
-
+        setFormData((prev) => ({ ...prev, selectedBrand: brandId, selectedModel: '', modelName: '' }));
         const selectedBrandData = brands.find((brand) => brand.brandName === brandId);
         setModels(selectedBrandData ? selectedBrandData.models : []);
     };
 
+    const handleModelChange = (e) => {
+        const modelValue = e.target.value;
+        setFormData(prev => ({
+            ...prev,
+            selectedModel: modelValue,
+            modelName: modelValue === 'other' ? '' : modelValue
+        }));
+    };
 
     const handleServiceChange = (e) => {
         const { value, checked } = e.target;
@@ -152,74 +170,114 @@ export default function UserBookingForm() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Validate location
+        if (!isLocationFetched || !location.lat || !location.lng) {
+            setSnackBarMessage('Location is required. Please enable location services and reload the page.');
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+            return;
+        }
+
         try {
             setLoading(true);
-            const response = await axiosClient.post('/api/admin/order/userorder', formData);
-            console.log('Form submitted successfully:', response.data);
-            console.log('Form submitted successfully:', response.data.message);
+
+            // Calculate distance and service area status
+            const distance = calculateDistance(location.lat, location.lng, SERVICE_CENTER.lat, SERVICE_CENTER.lng);
+            const isWithinServiceArea = distance <= SERVICE_RADIUS_METERS;
+
+            // Prepare userLocation GeoJSON (longitude, latitude order)
+            const userLocation = {
+                type: "Point",
+                coordinates: [location.lng, location.lat]
+            };
+
+            // Format preferred date and time
+            let formattedDate = null;
+            if (formData.preferredDate) {
+                formattedDate = dayjs(formData.preferredDate).toISOString();
+            }
+
+            let formattedTime = '';
+            if (formData.preferredTime) {
+                formattedTime = dayjs(formData.preferredTime).format('hh:mm A');
+            }
+
+            // Build payload according to backend expectations
+            const payload = {
+                name: formData.name,
+                contactNo: formData.contactNo,
+                email: formData.email,
+                city: formData.city.toUpperCase(),
+                userLocation,
+                isWithinServiceArea,
+                distanceFromCenter: distance,
+                selectedBrand: formData.selectedBrand,
+                selectedModel: formData.selectedModel,
+                modelName: formData.modelName,
+                cc: formData.cc,
+                bs: formData.bs,
+                services: formData.services,
+                otherService: formData.services.includes('Other') ? formData.otherService : '',
+                preferredDate: formattedDate,
+                preferredTime: formattedTime,
+                issues: formData.issues,
+                status: "Pending",
+                referralProcessed: false
+            };
+
+            const response = await axiosClient.post('/api/admin/order/userorder', payload);
             setSnackBarMessage(response.data.message);
             setSnackBarSeverity('success');
-            setSnackBarOpen(true); // Open the Snackbar
-            setLoading(false); // Stop loading state
+            setSnackBarOpen(true);
+
+            // Reset form
             setFormData({
-                userId,
                 name: '',
                 contactNo: '',
-                email: user?.email,
+                email: user?.email || '',
                 city: 'Patna',
                 selectedBrand: '',
                 selectedModel: '',
-                // modelName: '',
+                modelName: '',
                 cc: '',
                 bs: '',
-                location: {
-                    latitude: '',
-                    longitude: ''
-                },
                 services: [],
                 otherService: '',
                 preferredDate: null,
                 preferredTime: null,
-                estimatedBudget: '',
                 issues: '',
-            }); // Reset form data
-        } catch (error) {
-            console.log('Error submitting form:', error);
+            });
+            setBike('');
 
-            // Check if the error is an AxiosError and has a response
+        } catch (error) {
+            console.error('Error submitting form:', error);
             if (error.response) {
-                // Extract the error message from the response
-                const errorMessage = error.response.data.message || `Error: ${error.response.status}`;
-                setSnackBarMessage(errorMessage); // Set the message to display in the Snackbar
+                setSnackBarMessage(error.response.data.message || `Error: ${error.response.status}`);
             } else if (error.request) {
-                // Handle errors where the request was made but no response was received
                 setSnackBarMessage('No response from the server. Please try again later.');
             } else {
-                // Handle other errors (e.g., network issues)
                 setSnackBarMessage(error.message || 'An unexpected error occurred.');
             }
-
-            setSnackBarSeverity('error'); // Set severity to error
-            setSnackBarOpen(true); // Open the Snackbar
-            setLoading(false); // Stop loading state
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+        } finally {
+            setLoading(false);
         }
-        // Submit the form data to the server
     };
-    const handleCloseSnackBar = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
 
+    const handleCloseSnackBar = (event, reason) => {
+        if (reason === 'clickaway') return;
         setSnackBarOpen(false);
-    }
+    };
+
     return (
         <>
-
             <AlertSnackBar
                 open={snackBarOpen}
                 message={snackBarMessage}
                 severity={snackBarSeverity}
-                onClose={handleCloseSnackBar} // Close function for the Snackbar
+                onClose={handleCloseSnackBar}
             />
             <div className='my-4'>
                 <Heading heading={'User Booking Form'} />
@@ -259,8 +317,8 @@ export default function UserBookingForm() {
                                 },
                             }}
                         />
-
                     </div>
+
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4 my-6'>
                         <div>
                             <TextField
@@ -283,27 +341,24 @@ export default function UserBookingForm() {
                         </div>
                         <div>
                             <Select
-                                name="selectedBrand"
+                                name="bikeProfile"
                                 value={bike}
                                 onChange={handleBikeProfileChange}
                                 fullWidth
                                 displayEmpty
-                                inputProps={{ 'aria-label': 'Select Bike Profile' }}
                             >
                                 <MenuItem value="">
-                                    <em>Select a Bike</em>
+                                    <em>Select a Bike Profile</em>
                                 </MenuItem>
-                                {bikeProfile ? bikeProfile?.map((bike) => (
+                                {bikeProfile.length > 0 ? bikeProfile.map((bike) => (
                                     <MenuItem key={bike._id} value={bike._id}>
                                         {bike.brand} {bike.model} {bike.cc} BS {bike.bs}
                                     </MenuItem>
-                                )) : <>
-                                    <MenuItem>
-                                        First Create Bike Profile
-                                    </MenuItem>
-                                </>}
+                                )) : (
+                                    <MenuItem disabled>First Create Bike Profile</MenuItem>
+                                )}
                             </Select>
-                            <FormHelperText>Select Bike Profile from the dropdown</FormHelperText>
+                            <FormHelperText>Select Bike Profile from the dropdown (optional)</FormHelperText>
                         </div>
                         <div>
                             <Select
@@ -313,7 +368,6 @@ export default function UserBookingForm() {
                                 fullWidth
                                 required
                                 displayEmpty
-                                inputProps={{ 'aria-label': 'Select Brand' }}
                             >
                                 <MenuItem value="">
                                     <em>Select a Brand</em>
@@ -324,27 +378,23 @@ export default function UserBookingForm() {
                                     </MenuItem>
                                 ))}
                             </Select>
-                            <FormHelperText>Select Brand Name from the dropdown</FormHelperText>
+                            <FormHelperText>Select Brand Name</FormHelperText>
                         </div>
                     </div>
+
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4 my-6'>
                         <div>
                             <Select
                                 name="selectedModel"
                                 value={formData.selectedModel}
-                                onChange={handleInputChange}
+                                onChange={handleModelChange}
                                 fullWidth
                                 displayEmpty
                                 required
-                                inputProps={{ 'aria-label': 'Select Model' }}
                             >
                                 <MenuItem value="">
                                     <em>Select a Model</em>
                                 </MenuItem>
-                                {!models.some(m => m.name === formData.selectedModel) && formData.selectedModel && (
-                                    <MenuItem value={formData.selectedModel}>{formData.selectedModel}</MenuItem>
-                                )}
-
                                 {models.map((model) => (
                                     <MenuItem key={model._id} value={model.name}>
                                         {model.name}
@@ -363,8 +413,8 @@ export default function UserBookingForm() {
                                 variant="outlined"
                                 placeholder="Enter Model Name"
                                 required
-                                disabled={formData.selectedModel !== 'other'}
-                                value={formData.selectedModel === 'other' ? formData.modelName : ''}
+                                disabled={formData.selectedModel !== 'other' && formData.selectedModel !== ''}
+                                value={formData.modelName}
                                 onChange={handleInputChange}
                                 slotProps={{
                                     input: {
@@ -375,7 +425,6 @@ export default function UserBookingForm() {
                                 }}
                             />
                         </div>
-                        {/* Make select feild to select bs  */}
                         <div>
                             <Select
                                 name="bs"
@@ -384,39 +433,41 @@ export default function UserBookingForm() {
                                 fullWidth
                                 displayEmpty
                                 required
-                                inputProps={{ 'aria-label': 'Select Model' }}
                             >
                                 <MenuItem value="">
                                     <em>Select BS</em>
                                 </MenuItem>
-                                <MenuItem value="I">Bs 1</MenuItem>
-                                <MenuItem value="II">Bs II</MenuItem>
-                                <MenuItem value="III">Bs III</MenuItem>
-                                <MenuItem value="IV">Bs IV</MenuItem>
-                                <MenuItem value="V">Bs V</MenuItem>
-                                <MenuItem value="VI">Bs VI</MenuItem>
+                                <MenuItem value="I">BS I</MenuItem>
+                                <MenuItem value="II">BS II</MenuItem>
+                                <MenuItem value="III">BS III</MenuItem>
+                                <MenuItem value="IV">BS IV</MenuItem>
+                                <MenuItem value="V">BS V</MenuItem>
+                                <MenuItem value="VI">BS VI</MenuItem>
                             </Select>
                             <FormHelperText>Select BS from the dropdown</FormHelperText>
                         </div>
                     </div>
+
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
                         <div>
-                            <FormLabel id="cc-label">CC</FormLabel>
-                            <RadioGroup
+                            <TextField
+                                fullWidth
                                 name="cc"
+                                label="CC (e.g., 125, 150, 200)"
+                                variant="outlined"
+                                placeholder="Enter Engine CC"
+                                required
                                 value={formData.cc}
                                 onChange={handleInputChange}
-                                required
-                                row
-                                aria-labelledby="cc-label"
-                            >
-                                <FormControlLabel value="100CC to 150CC" control={<Radio />} label="100CC to 150CC" />
-                                <FormControlLabel value="151CC to 180CC" control={<Radio />} label="151CC to 180CC" />
-                                <FormControlLabel value="181CC to 220CC" control={<Radio />} label="181CC to 220CC" />
-                                <FormControlLabel value="221CC to 350CC" control={<Radio />} label="221CC to 350CC" />
-                                <FormControlLabel value="350CC to 500CC" control={<Radio />} label="350CC to 500CC" />
-                                <FormControlLabel value="500CC & Above" control={<Radio />} label="500CC & Above" />
-                            </RadioGroup>
+                                type="number"
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <CircleHelp className='mr-1 text-gray-600' />
+                                        ),
+                                    },
+                                }}
+                            />
                         </div>
                         <div className='flex flex-col gap-2'>
                             <div>
@@ -474,12 +525,11 @@ export default function UserBookingForm() {
                             <div>
                                 <TextField
                                     fullWidth
-                                    id="outlined-basic"
-                                    name="otherService" // Corrected name to match the key in formData
+                                    name="otherService"
                                     label="Other Service"
                                     variant="outlined"
                                     placeholder="Enter Other Service"
-                                    disabled={!formData.services.includes('Other')} // Enable only if "Other" is selected
+                                    disabled={!formData.services.includes('Other')}
                                     value={formData.otherService}
                                     onChange={handleInputChange}
                                     slotProps={{
@@ -493,6 +543,7 @@ export default function UserBookingForm() {
                             </div>
                         </div>
                     </div>
+
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
                         <div>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -525,47 +576,36 @@ export default function UserBookingForm() {
                             </LocalizationProvider>
                         </div>
                     </div>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
-                        {/*                         <div>
-                            <TextField
-                                fullWidth
-                                name="estimatedBudget"
-                                label="Estimated Budget"
-                                variant="outlined"
-                                placeholder="Estimated Budget"
-                                value={formData.estimatedBudget}
-                                onChange={handleInputChange}
-                                slotProps={{
-                                    input: {
-                                        startAdornment: (
-                                            <IndianRupee className='mr-1 text-gray-600' />
-                                        ),
-                                    },
-                                }}
-                            />
-                        </div> */}
-                        <div>
-                            <TextField
-                                fullWidth
-                                name="issues"
-                                label="Elaborate your Two wheeler's Issues"
-                                variant="outlined"
-                                placeholder="Elaborate your Two wheeler Issues"
-                                value={formData.issues}
-                                onChange={handleInputChange}
-                                slotProps={{
-                                    input: {
-                                        startAdornment: (
-                                            <Bug className='mr-1 text-gray-600' />
-                                        ),
-                                    },
-                                }}
-                            />
-                        </div>
+
+                    <div className='grid grid-cols-1 gap-4 mb-6'>
+                        <TextField
+                            fullWidth
+                            name="issues"
+                            label="Elaborate your Two wheeler's Issues"
+                            variant="outlined"
+                            placeholder="Elaborate your Two wheeler Issues"
+                            value={formData.issues}
+                            onChange={handleInputChange}
+                            multiline
+                            rows={3}
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <Bug className='mr-1 text-gray-600' />
+                                    ),
+                                },
+                            }}
+                        />
                     </div>
+
+                    {locationError && (
+                        <div className="text-red-500 text-sm mb-4">{locationError}</div>
+                    )}
+
                     <button
                         type="submit"
-                        className="bg-primary mt-4  font-semibold hover:bg-transparent hover:text-primary  border-primary border text-white px-4 py-2 rounded cursor-pointer hover:bg-primary-dark"
+                        className="bg-primary mt-4 font-semibold hover:bg-transparent hover:text-primary border-primary border text-white px-4 py-2 rounded cursor-pointer"
+                        disabled={loading || !isLocationFetched}
                     >
                         {loading ? (
                             <div className='flex items-center justify-center'>
@@ -575,8 +615,8 @@ export default function UserBookingForm() {
                             <span className='flex flex-row items-center justify-center'><Plus className='mr-2' /> Create Order</span>
                         )}
                     </button>
-                </form >
-            </div >
+                </form>
+            </div>
         </>
     );
 }
