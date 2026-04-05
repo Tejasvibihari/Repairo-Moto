@@ -1,110 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Filter, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 
-const OrderFilter = ({ orders, setFilteredOrders }) => {
-    // Filter states
-    const [orderId, setOrderId] = useState('');
-    const [name, setName] = useState('');
-    const [mobileNumber, setMobileNumber] = useState('');
-    const [status, setStatus] = useState('');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+const OrderFilter = ({ initialFilters, onApply, onClear }) => {
+    const [filters, setFilters] = useState(initialFilters);
     const [isExpanded, setIsExpanded] = useState(false);
     const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 
-    // Get unique statuses for dropdown
-    const uniqueStatuses = [...new Set(orders.map(order => order.status))];
-
-    // Apply filters whenever any filter value changes
+    // Update local state when initialFilters change (e.g., after clear)
     useEffect(() => {
-        applyFilters();
+        setFilters(initialFilters);
+    }, [initialFilters]);
 
-        // Count active filters
+    // Count active filters
+    useEffect(() => {
         let count = 0;
-        if (orderId) count++;
-        if (name) count++;
-        if (mobileNumber) count++;
-        if (status) count++;
-        if (startDate || endDate) count++;
-
+        if (filters.q) count++;
+        if (filters.status) count++;
+        if (filters.serviceType) count++;
+        if (filters.assignedMechanic) count++;
+        if (filters.city) count++;
+        if (filters.fromDate) count++;
+        if (filters.toDate) count++;
+        if (filters.sort !== 'createdAt:desc') count++;
         setActiveFiltersCount(count);
-    }, [orderId, name, mobileNumber, status, startDate, endDate]);
+    }, [filters]);
 
-    const applyFilters = () => {
-        let filteredData = [...orders];
-
-        // Filter by orderId
-        if (orderId) {
-            filteredData = filteredData.filter(order =>
-                order.orderId.toLowerCase().includes(orderId.toLowerCase())
-            );
-        }
-
-        // Filter by name
-        if (name) {
-            filteredData = filteredData.filter(order =>
-                order.name.toLowerCase().includes(name.toLowerCase())
-            );
-        }
-
-        // Filter by mobile number
-        if (mobileNumber) {
-            filteredData = filteredData.filter(order =>
-                order.contactNo.includes(mobileNumber)
-            );
-        }
-
-        // Filter by status
-        if (status) {
-            filteredData = filteredData.filter(order => order.status === status);
-        }
-
-        // Filter by date range
-        if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59); // Set to end of day
-
-            filteredData = filteredData.filter(order => {
-                const orderDate = new Date(order.createdAt.$date || order.createdAt);
-                return orderDate >= start && orderDate <= end;
-            });
-        } else if (startDate) {
-            const start = new Date(startDate);
-            filteredData = filteredData.filter(order => {
-                const orderDate = new Date(order.createdAt.$date || order.createdAt);
-                return orderDate >= start;
-            });
-        } else if (endDate) {
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59); // Set to end of day
-            filteredData = filteredData.filter(order => {
-                const orderDate = new Date(order.createdAt.$date || order.createdAt);
-                return orderDate <= end;
-            });
-        }
-
-        // Update filtered orders
-        setFilteredOrders(filteredData);
+    const handleInputChange = (field, value) => {
+        setFilters(prev => ({ ...prev, [field]: value }));
     };
 
-    const clearFilters = () => {
-        setOrderId('');
-        setName('');
-        setMobileNumber('');
-        setStatus('');
-        setStartDate('');
-        setEndDate('');
-        setFilteredOrders(orders);
+    const handleApply = () => {
+        onApply(filters);
     };
 
-    const toggleExpand = () => {
-        setIsExpanded(!isExpanded);
+    const handleClear = () => {
+        onClear();
     };
+
+    const toggleExpand = () => setIsExpanded(!isExpanded);
 
     return (
         <div className="bg-white p-4 rounded-lg shadow mb-6">
-            {/* Header with expand/collapse toggle */}
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                     <Filter className="text-blue-600 mr-2" size={20} />
@@ -115,11 +52,11 @@ const OrderFilter = ({ orders, setFilteredOrders }) => {
                         </span>
                     )}
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center gap-3">
                     {activeFiltersCount > 0 && (
                         <button
-                            onClick={clearFilters}
-                            className="mr-4 flex items-center text-sm text-gray-600 hover:text-red-600 transition-colors"
+                            onClick={handleClear}
+                            className="text-sm text-gray-600 hover:text-red-600 transition-colors flex items-center"
                         >
                             <X size={16} className="mr-1" /> Clear all
                         </button>
@@ -130,12 +67,12 @@ const OrderFilter = ({ orders, setFilteredOrders }) => {
                     >
                         {isExpanded ? (
                             <>
-                                <ChevronUp size={20} className="ml-1" />
+                                <ChevronUp size={20} />
                                 <span className="text-sm ml-1">Collapse</span>
                             </>
                         ) : (
                             <>
-                                <ChevronDown size={20} className="ml-1" />
+                                <ChevronDown size={20} />
                                 <span className="text-sm ml-1">Expand</span>
                             </>
                         )}
@@ -143,22 +80,22 @@ const OrderFilter = ({ orders, setFilteredOrders }) => {
                 </div>
             </div>
 
-            {/* Compact search always visible */}
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-                <div className="relative flex-grow">
+            {/* Quick search (always visible) */}
+            <div className="mb-4">
+                <div className="relative">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <Search className="text-gray-400" size={18} />
                     </div>
                     <input
                         type="text"
-                        value={orderId}
-                        onChange={(e) => setOrderId(e.target.value)}
-                        placeholder="Search by Order ID..."
+                        value={filters.q}
+                        onChange={(e) => handleInputChange('q', e.target.value)}
+                        placeholder="Search by Order ID, Name, Email, or Mobile..."
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500"
                     />
-                    {orderId && (
+                    {filters.q && (
                         <button
-                            onClick={() => setOrderId('')}
+                            onClick={() => handleInputChange('q', '')}
                             className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
                         >
                             <X size={16} />
@@ -167,116 +104,127 @@ const OrderFilter = ({ orders, setFilteredOrders }) => {
                 </div>
             </div>
 
-            {/* Expandable filters */}
+            {/* Expandable advanced filters */}
             {isExpanded && (
-                <div className="flex flex-wrap -mx-2">
-                    {/* Name Filter */}
-                    <div className="px-2 w-full sm:w-1/2 md:w-1/4 lg:w-1/5 mb-3">
-                        <div className="relative">
-                            <input
-                                type="text"
-                                id="name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="Customer Name"
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                            {name && (
-                                <button
-                                    onClick={() => setName('')}
-                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-                                >
-                                    <X size={16} />
-                                </button>
-                            )}
-                        </div>
+                <div className="flex flex-wrap -mx-2 mb-4">
+                    {/* Status */}
+                    <div className="px-2 w-full sm:w-1/2 md:w-1/4 mb-3">
+                        <input
+                            type="text"
+                            value={filters.status}
+                            onChange={(e) => handleInputChange('status', e.target.value)}
+                            placeholder="Status (Pending, Completed, etc.)"
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
+                            list="statusOptions"
+                        />
+                        <datalist id="statusOptions">
+                            <option>Pending</option>
+                            <option>In Progress</option>
+                            <option>Mechanic Assigned</option>
+                            <option>Completed</option>
+                            <option>Invoice Generated</option>
+                            <option>Cancelled</option>
+                        </datalist>
                     </div>
 
-                    {/* Mobile Number Filter */}
-                    <div className="px-2 w-full sm:w-1/2 md:w-1/4 lg:w-1/5 mb-3">
-                        <div className="relative">
-                            <input
-                                type="text"
-                                id="mobile"
-                                value={mobileNumber}
-                                onChange={(e) => setMobileNumber(e.target.value)}
-                                placeholder="Mobile Number"
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                            {mobileNumber && (
-                                <button
-                                    onClick={() => setMobileNumber('')}
-                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-                                >
-                                    <X size={16} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Status Filter */}
-                    <div className="px-2 w-full sm:w-1/2 md:w-1/4 lg:w-1/5 mb-3">
+                    {/* Service Type */}
+                    <div className="px-2 w-full sm:w-1/2 md:w-1/4 mb-3">
                         <select
-                            id="status"
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value)}
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-blue-500 focus:border-blue-500"
+                            value={filters.serviceType}
+                            onChange={(e) => handleInputChange('serviceType', e.target.value)}
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
                         >
-                            <option value="">All Statuses</option>
-                            {uniqueStatuses.map((statusOption, index) => (
-                                <option key={index} value={statusOption}>
-                                    {statusOption}
-                                </option>
-                            ))}
+                            <option value="">All Service Types</option>
+                            <option value="Schedule Repair">Schedule Repair</option>
+                            <option value="Emergency Repair">Emergency Repair</option>
                         </select>
                     </div>
 
-                    {/* Date Range Filter */}
-                    <div className="px-2 w-full sm:w-1/2 md:w-1/4 lg:w-2/5 mb-3 flex gap-2 items-center">
-                        <div className="relative flex-grow">
+                    {/* Assigned Mechanic (name) */}
+                    <div className="px-2 w-full sm:w-1/2 md:w-1/4 mb-3">
+                        <input
+                            type="text"
+                            value={filters.assignedMechanic}
+                            onChange={(e) => handleInputChange('assignedMechanic', e.target.value)}
+                            placeholder="Assigned Mechanic Name"
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
+                        />
+                    </div>
+
+                    {/* City */}
+                    <div className="px-2 w-full sm:w-1/2 md:w-1/4 mb-3">
+                        <input
+                            type="text"
+                            value={filters.city}
+                            onChange={(e) => handleInputChange('city', e.target.value)}
+                            placeholder="City (e.g., DELHI)"
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 uppercase"
+                        />
+                    </div>
+
+                    {/* Date Range */}
+                    <div className="px-2 w-full sm:w-1/2 md:w-1/2 mb-3 flex gap-2 items-center">
+                        <div className="relative flex-1">
                             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                 <Calendar className="text-gray-400" size={16} />
                             </div>
                             <input
                                 type="date"
-                                id="startDate"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                placeholder="Start Date"
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500"
+                                value={filters.fromDate}
+                                onChange={(e) => handleInputChange('fromDate', e.target.value)}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full pl-10 p-2.5"
                             />
                         </div>
                         <span className="text-gray-500">to</span>
-                        <div className="relative flex-grow">
+                        <div className="relative flex-1">
                             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                 <Calendar className="text-gray-400" size={16} />
                             </div>
                             <input
                                 type="date"
-                                id="endDate"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                placeholder="End Date"
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500"
+                                value={filters.toDate}
+                                onChange={(e) => handleInputChange('toDate', e.target.value)}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full pl-10 p-2.5"
                             />
                         </div>
+                    </div>
+
+                    {/* Sorting */}
+                    <div className="px-2 w-full sm:w-1/2 md:w-1/4 mb-3">
+                        <select
+                            value={filters.sort}
+                            onChange={(e) => handleInputChange('sort', e.target.value)}
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
+                        >
+                            <option value="createdAt:desc">Newest First</option>
+                            <option value="createdAt:asc">Oldest First</option>
+                            <option value="preferredDate:asc">Preferred Date (Earliest)</option>
+                            <option value="preferredDate:desc">Preferred Date (Latest)</option>
+                            <option value="total.total:desc">Highest Total</option>
+                            <option value="total.total:asc">Lowest Total</option>
+                        </select>
                     </div>
                 </div>
             )}
 
-            {/* Filter summary and results count */}
-            <div className="flex items-center justify-between text-sm text-gray-600 mt-2">
-                <div>
-                    {activeFiltersCount > 0 ? (
-                        <span>
-                            Showing {setFilteredOrders.length} filtered results
-                        </span>
-                    ) : (
-                        <span>
-                            Showing all {orders.length} results
-                        </span>
-                    )}
-                </div>
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 mt-2">
+                <button
+                    onClick={handleApply}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                    <Search size={16} />
+                    Apply Filters
+                </button>
+            </div>
+
+            {/* Results count hint (optional) - actual count is shown in parent */}
+            <div className="text-sm text-gray-500 mt-3">
+                {activeFiltersCount > 0 ? (
+                    <span>{activeFiltersCount} filter(s) active – click Apply to refresh results</span>
+                ) : (
+                    <span>No active filters</span>
+                )}
             </div>
         </div>
     );

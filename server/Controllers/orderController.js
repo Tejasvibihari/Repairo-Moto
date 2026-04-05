@@ -92,10 +92,109 @@ export const createManualOrder = async (req, res) => {
 
 
 // (Optional) @desc Get all bookings
+// @desc    Get all bookings with filtering, searching, sorting & pagination
+// @route   GET /api/orders/getallorder
+// @access  Public / Private (adjust as needed)
 export const getAllBookings = async (req, res) => {
     try {
-        const orders = await Order.find().sort({ createdAt: -1 });
-        return res.status(200).json(orders);
+        const {
+            // Pagination
+            page = 1,
+            limit = 10,
+            // Exact match filters
+            status,
+            serviceType,
+            assignedMechanic,
+            mechanicId,
+            assignedVendor,
+            vendorId,
+            assignedDelivery,
+            deliveryId,
+            isWithinServiceArea,
+            referralProcessed,
+            selectedBrand,
+            selectedModel,
+            city,
+            // Date range filters
+            fromDate,
+            toDate,
+            dateField = 'createdAt', // can be 'preferredDate', 'createdAt', 'updatedAt'
+            // Search term
+            q,
+            // Sorting
+            sort = 'createdAt:desc',
+        } = req.query;
+
+        // 1. Build filter object
+        const filter = {};
+
+        // Exact matches
+        if (status) filter.status = status;
+        if (serviceType) filter.serviceType = serviceType;
+        if (assignedMechanic) filter.assignedMechanic = assignedMechanic;
+        if (mechanicId) filter.mechanicId = mechanicId;
+        if (assignedVendor) filter.assignedVendor = assignedVendor;
+        if (vendorId) filter.vendorId = vendorId;
+        if (assignedDelivery) filter.assignedDelivery = assignedDelivery;
+        if (deliveryId) filter.deliveryId = deliveryId;
+        if (isWithinServiceArea !== undefined) filter.isWithinServiceArea = isWithinServiceArea === 'true';
+        if (referralProcessed !== undefined) filter.referralProcessed = referralProcessed === 'true';
+        if (selectedBrand) filter.selectedBrand = selectedBrand;
+        if (selectedModel) filter.selectedModel = selectedModel;
+        if (city) filter.city = city.toUpperCase();
+
+        // Date range filter
+        if (fromDate || toDate) {
+            filter[dateField] = {};
+            if (fromDate) filter[dateField].$gte = new Date(fromDate);
+            if (toDate) filter[dateField].$lte = new Date(toDate);
+        }
+
+        // 2. Search across text fields (orderId, name, email, contactNo)
+        if (q) {
+            filter.$or = [
+                { orderId: { $regex: q, $options: 'i' } },
+                { name: { $regex: q, $options: 'i' } },
+                { email: { $regex: q, $options: 'i' } },
+                { contactNo: { $regex: q, $options: 'i' } },
+            ];
+        }
+
+        // 3. Pagination values
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+        const skip = (pageNum - 1) * limitNum;
+
+        // 4. Sorting
+        let sortCriteria = {};
+        if (sort) {
+            const [sortField, sortOrder] = sort.split(':');
+            sortCriteria[sortField] = sortOrder === 'desc' ? -1 : 1;
+        } else {
+            sortCriteria = { createdAt: -1 }; // default
+        }
+
+        // 5. Execute queries concurrently
+        const [orders, totalCount] = await Promise.all([
+            Order.find(filter)
+                .sort(sortCriteria)
+                .skip(skip)
+                .limit(limitNum)
+                .lean(), // lean for performance (optional)
+            Order.countDocuments(filter),
+        ]);
+
+        // 6. Response with metadata
+        return res.status(200).json({
+            success: true,
+            data: orders,
+            pagination: {
+                currentPage: pageNum,
+                totalPages: Math.ceil(totalCount / limitNum),
+                totalItems: totalCount,
+                itemsPerPage: limitNum,
+            },
+        });
     } catch (error) {
         console.error("Error fetching bookings:", error);
         return res.status(500).json({ message: 'Server error while fetching bookings' });
