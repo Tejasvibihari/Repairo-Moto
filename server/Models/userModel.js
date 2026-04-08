@@ -82,6 +82,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    expoPushToken: {
+        type: String,
+        default: null,
+        trim: true,
+    },
     status: {
         type: String,
         enum: ['pending', 'approved', 'suspended'],

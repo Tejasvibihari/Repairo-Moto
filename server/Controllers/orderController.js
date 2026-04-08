@@ -4,6 +4,7 @@ import Vendor from '../Models/vendorModel.js'
 import VendorOrder from "../Models/vendorOrderModel.js";
 import { sendBookingConfirmationEmail, sendRefereeEmail } from "../Utils/mailer.js";
 import User from "../Models/userModel.js";
+import { createNotification, getAdminRecipients, getMechanicRecipients } from "../services/notificationService.js";
 // @desc Create a new service booking
 // @route POST /api/bookings
 // @access Public
@@ -734,7 +735,20 @@ export const userOrder = async (req, res) => {
 
         const savedOrder = await newOrder.save();
         await sendBookingConfirmationEmail(savedOrder, user.email);
+        const [adminRecipients, mechanicRecipients] = await Promise.all([
+            getAdminRecipients(),
+            getMechanicRecipients(),
+        ]);
 
+        await createNotification({
+            type: 'new_order',
+            title: '🛵 New Order Received',
+            body: `#${savedOrder.orderId} · ${savedOrder.selectedBrand} ${savedOrder.selectedModel} · ${savedOrder.serviceType}`,
+            recipients: [...adminRecipients, ...mechanicRecipients],
+            orderId: savedOrder._id,
+            data: { orderId: savedOrder._id.toString(), screenOrderId: savedOrder.orderId },
+            triggeredBy: { userId: userId, userModel: 'User' },
+        });
         return res.status(201).json({
             message: 'Order Confirmed!',
             data: savedOrder

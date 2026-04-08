@@ -69,6 +69,11 @@ const empleyeeSchema = new mongoose.Schema({
     },
     dlImage: { type: String },
     profileImage: { type: String },
+    expoPushToken: {
+        type: String,
+        default: null,
+        trim: true,
+    },
     role: {
         type: String,
         default: 'employee'

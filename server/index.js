@@ -19,6 +19,7 @@ import blogRouter from "./Routes/blogRoutes.js"
 import vendorOrderRouter from "./Routes/vendorOrderRoutes.js"
 import bikeProfileRoutes from './Routes/bikeProfileRoutes.js';
 import serviceAreaRoutes from './Routes/serviceAreRoutes.js';
+import notificationRouter from './Routes/notificationsRoutes.js';
 
 const app = express();
 dotenv.config();
@@ -44,6 +45,8 @@ app.use("/api/admin/blog", blogRouter);
 app.use("/api/vendor/vendororder", vendorOrderRouter);
 app.use('/api/bike-profiles', bikeProfileRoutes);
 app.use('/api/service-areas', serviceAreaRoutes);
+app.use('/api/notifications', notificationRouter);
+
 
 app.get("/", (req, res) => {
     res.send("Welcome to the Admin API");
