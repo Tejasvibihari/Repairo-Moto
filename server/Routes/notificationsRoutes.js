@@ -2,13 +2,13 @@ import express from 'express';
 import Notification from '../Models/notificationModel.js';
 import User from '../Models/userModel.js';
 import Employee from '../Models/employeeModel.js';
-// import { protect } from '../middleware/authMiddleware.js'; // your existing middleware
+import authAdminOrEmployee from '../Middleware/authAdmin.js'; // your existing middleware
 
 const router = express.Router();
 
 // ── Register / update expo push token ─────────────────────────────────────────
 // Works for any role — just updates the token on whichever model the user is in
-router.post('/register-token', async (req, res) => {
+router.post('/register-token', authAdminOrEmployee, async (req, res) => {
     const { expoPushToken } = req.body;
     if (!expoPushToken) return res.status(400).json({ message: 'Token required' });
 
@@ -20,7 +20,7 @@ router.post('/register-token', async (req, res) => {
 });
 
 // ── Get notifications for current user ────────────────────────────────────────
-router.get('/', async (req, res) => {
+router.get('/', authAdminOrEmployee, async (req, res) => {
     const userId = req.user._id;
 
     const notifications = await Notification.find(
@@ -51,15 +51,24 @@ router.get('/', async (req, res) => {
 });
 
 // ── Unread count only (for badge on app launch) ───────────────────────────────
-router.get('/unread-count', async (req, res) => {
+router.get('/unread-count', authAdminOrEmployee, async (req, res) => {
     const count = await Notification.countDocuments({
         recipients: { $elemMatch: { userId: req.user._id, isRead: false } },
     });
     res.json({ count });
 });
 
+
+router.patch('/read-all', authAdminOrEmployee, async (req, res) => {
+    await Notification.updateMany(
+        { recipients: { $elemMatch: { userId: req.user._id, isRead: false } } },
+        { $set: { 'recipients.$.isRead': true, 'recipients.$.readAt': new Date() } }
+    );
+    res.json({ success: true });
+});
+
 // ── Mark one as read ──────────────────────────────────────────────────────────
-router.patch('/:id/read', async (req, res) => {
+router.patch('/:id/read', authAdminOrEmployee, async (req, res) => {
     await Notification.updateOne(
         { _id: req.params.id, 'recipients.userId': req.user._id },
         { $set: { 'recipients.$.isRead': true, 'recipients.$.readAt': new Date() } }
@@ -68,12 +77,5 @@ router.patch('/:id/read', async (req, res) => {
 });
 
 // ── Mark all as read ──────────────────────────────────────────────────────────
-router.patch('/read-all', async (req, res) => {
-    await Notification.updateMany(
-        { recipients: { $elemMatch: { userId: req.user._id, isRead: false } } },
-        { $set: { 'recipients.$.isRead': true, 'recipients.$.readAt': new Date() } }
-    );
-    res.json({ success: true });
-});
 
 export default router;
