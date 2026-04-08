@@ -8,12 +8,12 @@ import User from "../Models/userModel.js";
 // @route POST /api/bookings
 // @access Public
 
-
 export const createManualOrder = async (req, res) => {
     try {
         const {
             name,
             contactNo,
+            email,
             city,
             selectedBrand,
             selectedModel,
@@ -21,75 +21,88 @@ export const createManualOrder = async (req, res) => {
             cc,
             bs,
             services,
+            serviceType,
             otherService,
             preferredDate,
             preferredTime,
-            // estimatedBudget,
             issues,
-            coupon
+            coupon,
+            // optional location fields (not mandatory)
+            userLocation,
+            isWithinServiceArea,
+            distanceFromCenter,
+            referralProcessed,
+            status
         } = req.body;
 
-        if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services.length || !preferredDate || !preferredTime) {
+        // Required fields validation
+        if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services?.length || !preferredDate || !preferredTime) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
-        // Format today's date as DDMMYY
+
+        // Generate orderId (same logic)
         const now = new Date();
         const dd = String(now.getDate()).padStart(2, '0');
-        const mm = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
         const yy = String(now.getFullYear()).slice(-2);
         const todayFormatted = `${dd}${mm}${yy}`;
 
-        // Get the latest order globally (not filtered by date)
-        const latestOrder = await Order.findOne({})
-            .sort({ createdAt: -1 })
-            .lean();
-
+        const latestOrder = await Order.findOne({}).sort({ createdAt: -1 }).lean();
         let serial = 1;
-        if (latestOrder && latestOrder.orderId) {
+        if (latestOrder?.orderId) {
             const parts = latestOrder.orderId.split('-');
             if (parts.length === 3) {
                 const lastSerial = parseInt(parts[2], 10);
-                if (!isNaN(lastSerial)) {
-                    serial = lastSerial + 1;
-                }
+                if (!isNaN(lastSerial)) serial = lastSerial + 1;
             }
         }
-
         const orderId = `ORD-${todayFormatted}-${String(serial).padStart(3, '0')}`;
 
-
-        const newOrder = new Order({
+        // Prepare the order object
+        const orderData = {
             orderId,
             name,
             contactNo,
-            city,
+            email: email || '',
+            city: city.toUpperCase(),
             selectedBrand,
             selectedModel,
-            modelName,
+            modelName: modelName || '',
             cc,
-            bs,
-            services,
-            otherService,
-            preferredDate,
+            bs: bs || '',
+            services: services || [],
+            serviceType: serviceType || 'Schedule Repair',
+            otherService: otherService || '',
+            preferredDate: new Date(preferredDate),
             preferredTime,
-            // estimatedBudget,
-            issues,
-            coupon
-        });
+            issues: issues || '',
+            coupon: coupon || '',
+            referralProcessed: referralProcessed || false,
+            status: status || 'Pending'
+        };
 
+        // Add optional location fields only if provided
+        if (userLocation && userLocation.coordinates && userLocation.coordinates.length === 2) {
+            orderData.userLocation = userLocation;
+            orderData.isWithinServiceArea = isWithinServiceArea ?? false;
+            orderData.distanceFromCenter = distanceFromCenter || 0;
+        }
+
+        const newOrder = new Order(orderData);
         const savedOrder = await newOrder.save();
+
+        // Optional: send email confirmation if email exists
+        // if (email) await sendBookingConfirmationEmail(savedOrder, email);
 
         return res.status(201).json({
             message: 'Order Confirmed!',
             data: savedOrder
         });
-
     } catch (error) {
         console.error("Error Creating Order:", error);
         return res.status(500).json({ message: 'Server error while creating Order' });
     }
 };
-
 
 // (Optional) @desc Get all bookings
 // @desc    Get all bookings with filtering, searching, sorting & pagination

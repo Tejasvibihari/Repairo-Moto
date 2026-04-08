@@ -3,7 +3,7 @@ import Heading from './ui/Heading';
 import AlertSnackBar from './ui/AlertSnackBar';
 import TextField from '@mui/material/TextField';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import { Phone, CircleHelp, IndianRupee, Bug, Plus } from 'lucide-react';
+import { Phone, CircleHelp, IndianRupee, Bug, Plus, Mail } from 'lucide-react';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
@@ -21,28 +21,27 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import axiosClient from '../service/axiosClient';
 import { Divider } from '@mui/material';
 import CircularLoading from './ui/CircularLoading';
-import { useParams } from 'react-router-dom';
-
 
 export default function ManualBookingForm({ coupon }) {
-
     const [brands, setBrands] = useState([]);
     const [models, setModels] = useState([]);
-    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
-    const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
-    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
-    const [loading, setLoading] = useState(false); // State to control loading spinner
+    const [snackBarOpen, setSnackBarOpen] = useState(false);
+    const [snackBarMessage, setSnackBarMessage] = useState('');
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success');
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        coupon,
+        coupon: coupon || '',
         name: '',
         contactNo: '',
+        email: '',
         city: 'Patna',
         selectedBrand: '',
         selectedModel: '',
-        // modelName: '',
+        modelName: '',
         cc: '',
         bs: '',
         services: [],
+        serviceType: 'Schedule Repair', // default
         otherService: '',
         preferredDate: null,
         preferredTime: null,
@@ -69,7 +68,6 @@ export default function ManualBookingForm({ coupon }) {
     const handleBrandChange = (e) => {
         const brandId = e.target.value;
         setFormData((prev) => ({ ...prev, selectedBrand: brandId, selectedModel: '' }));
-
         const selectedBrandData = brands.find((brand) => brand.brandName === brandId);
         setModels(selectedBrandData ? selectedBrandData.models : []);
     };
@@ -88,64 +86,58 @@ export default function ManualBookingForm({ coupon }) {
         e.preventDefault();
         try {
             setLoading(true);
-            const response = await axiosClient.post('/api/admin/order/manualorder', formData);
-            console.log('Form submitted successfully:', response.data);
-            console.log('Form submitted successfully:', response.data.message);
+            // Convert dayjs objects to ISO strings or as needed
+            const payload = {
+                ...formData,
+                preferredDate: formData.preferredDate ? formData.preferredDate.toISOString() : null,
+                preferredTime: formData.preferredTime ? formData.preferredTime.format('HH:mm') : null,
+            };
+            const response = await axiosClient.post('/api/admin/order/manualorder', payload);
             setSnackBarMessage(response.data.message);
             setSnackBarSeverity('success');
-            setSnackBarOpen(true); // Open the Snackbar
-            setLoading(false); // Stop loading state
+            setSnackBarOpen(true);
+            setLoading(false);
+            // Reset form
             setFormData({
+                coupon: '',
                 name: '',
                 contactNo: '',
+                email: '',
                 city: 'Patna',
                 selectedBrand: '',
                 selectedModel: '',
-                // modelName: '',
+                modelName: '',
                 cc: '',
                 bs: '',
                 services: [],
+                serviceType: 'Schedule Repair',
                 otherService: '',
                 preferredDate: null,
                 preferredTime: null,
                 issues: '',
-            }); // Reset form data
+            });
         } catch (error) {
-            console.log('Error submitting form:', error);
-
-            // Check if the error is an AxiosError and has a response
-            if (error.response) {
-                // Extract the error message from the response
-                const errorMessage = error.response.data.message || `Error: ${error.response.status}`;
-                setSnackBarMessage(errorMessage); // Set the message to display in the Snackbar
-            } else if (error.request) {
-                // Handle errors where the request was made but no response was received
-                setSnackBarMessage('No response from the server. Please try again later.');
-            } else {
-                // Handle other errors (e.g., network issues)
-                setSnackBarMessage(error.message || 'An unexpected error occurred.');
-            }
-
-            setSnackBarSeverity('error'); // Set severity to error
-            setSnackBarOpen(true); // Open the Snackbar
-            setLoading(false); // Stop loading state
+            console.error('Error submitting form:', error);
+            const errorMessage = error.response?.data?.message || 'An unexpected error occurred.';
+            setSnackBarMessage(errorMessage);
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+            setLoading(false);
         }
-        // Submit the form data to the server
     };
-    const handleCloseSnackBar = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
 
+    const handleCloseSnackBar = (event, reason) => {
+        if (reason === 'clickaway') return;
         setSnackBarOpen(false);
-    }
+    };
+
     return (
         <>
             <AlertSnackBar
                 open={snackBarOpen}
                 message={snackBarMessage}
                 severity={snackBarSeverity}
-                onClose={handleCloseSnackBar} // Close function for the Snackbar
+                onClose={handleCloseSnackBar}
             />
             <div>
                 <Heading heading={'Booking Form'} />
@@ -162,9 +154,7 @@ export default function ManualBookingForm({ coupon }) {
                             onChange={handleInputChange}
                             slotProps={{
                                 input: {
-                                    startAdornment: (
-                                        <AccountCircle sx={{ color: 'action.active', mr: 1 }} />
-                                    ),
+                                    startAdornment: <AccountCircle sx={{ color: 'action.active', mr: 1 }} />,
                                 },
                             }}
                         />
@@ -179,34 +169,46 @@ export default function ManualBookingForm({ coupon }) {
                             onChange={handleInputChange}
                             slotProps={{
                                 input: {
-                                    startAdornment: (
-                                        <Phone className='mr-1 text-gray-600' />
-                                    ),
+                                    startAdornment: <Phone className='mr-1 text-gray-600' />,
                                 },
                             }}
                         />
-
                     </div>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
-                        <div>
-                            <TextField
-                                fullWidth
-                                name="city"
-                                label="City"
-                                variant="outlined"
-                                placeholder="Enter City"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                required
-                                slotProps={{
-                                    input: {
-                                        startAdornment: (
-                                            <LocationCityIcon sx={{ color: 'action.active', mr: 1 }} />
-                                        ),
-                                    },
-                                }}
-                            />
-                        </div>
+
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
+                        <TextField
+                            fullWidth
+                            name="email"
+                            label="Email (Optional)"
+                            variant="outlined"
+                            placeholder="Enter Email"
+                            type="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            slotProps={{
+                                input: {
+                                    startAdornment: <Mail className='mr-1 text-gray-600' />,
+                                },
+                            }}
+                        />
+                        <TextField
+                            fullWidth
+                            name="city"
+                            label="City"
+                            variant="outlined"
+                            placeholder="Enter City"
+                            value={formData.city}
+                            onChange={handleInputChange}
+                            required
+                            slotProps={{
+                                input: {
+                                    startAdornment: <LocationCityIcon sx={{ color: 'action.active', mr: 1 }} />,
+                                },
+                            }}
+                        />
+                    </div>
+
+                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4 my-6'>
                         <div>
                             <Select
                                 name="selectedBrand"
@@ -215,11 +217,8 @@ export default function ManualBookingForm({ coupon }) {
                                 fullWidth
                                 required
                                 displayEmpty
-                                inputProps={{ 'aria-label': 'Select Brand' }}
                             >
-                                <MenuItem value="">
-                                    <em>Select a Brand</em>
-                                </MenuItem>
+                                <MenuItem value=""><em>Select a Brand</em></MenuItem>
                                 {brands.map((brand) => (
                                     <MenuItem key={brand._id} value={brand.brandName}>
                                         {brand.brandName}
@@ -228,8 +227,6 @@ export default function ManualBookingForm({ coupon }) {
                             </Select>
                             <FormHelperText>Select Brand Name from the dropdown</FormHelperText>
                         </div>
-                    </div>
-                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4 my-6'>
                         <div>
                             <Select
                                 name="selectedModel"
@@ -238,11 +235,8 @@ export default function ManualBookingForm({ coupon }) {
                                 fullWidth
                                 displayEmpty
                                 required
-                                inputProps={{ 'aria-label': 'Select Model' }}
                             >
-                                <MenuItem value="">
-                                    <em>Select a Model</em>
-                                </MenuItem>
+                                <MenuItem value=""><em>Select a Model</em></MenuItem>
                                 {models.map((model) => (
                                     <MenuItem key={model._id} value={model.name}>
                                         {model.name}
@@ -260,20 +254,19 @@ export default function ManualBookingForm({ coupon }) {
                                 label="Model Name"
                                 variant="outlined"
                                 placeholder="Enter Model Name"
-                                required
                                 disabled={formData.selectedModel !== 'other'}
                                 value={formData.selectedModel === 'other' ? formData.modelName : ''}
                                 onChange={handleInputChange}
                                 slotProps={{
                                     input: {
-                                        startAdornment: (
-                                            <CircleHelp className='mr-1 text-gray-600' />
-                                        ),
+                                        startAdornment: <CircleHelp className='mr-1 text-gray-600' />,
                                     },
                                 }}
                             />
                         </div>
-                        {/* Make select feild to select bs  */}
+                    </div>
+
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
                         <div>
                             <Select
                                 name="bs"
@@ -282,22 +275,17 @@ export default function ManualBookingForm({ coupon }) {
                                 fullWidth
                                 displayEmpty
                                 required
-                                inputProps={{ 'aria-label': 'Select Model' }}
                             >
-                                <MenuItem value="">
-                                    <em>Select BS</em>
-                                </MenuItem>
-                                <MenuItem value="I">Bs 1</MenuItem>
-                                <MenuItem value="II">Bs II</MenuItem>
-                                <MenuItem value="III">Bs III</MenuItem>
-                                <MenuItem value="IV">Bs IV</MenuItem>
-                                <MenuItem value="V">Bs V</MenuItem>
-                                <MenuItem value="VI">Bs VI</MenuItem>
+                                <MenuItem value=""><em>Select BS</em></MenuItem>
+                                <MenuItem value="I">BS 1</MenuItem>
+                                <MenuItem value="II">BS II</MenuItem>
+                                <MenuItem value="III">BS III</MenuItem>
+                                <MenuItem value="IV">BS IV</MenuItem>
+                                <MenuItem value="V">BS V</MenuItem>
+                                <MenuItem value="VI">BS VI</MenuItem>
                             </Select>
                             <FormHelperText>Select BS from the dropdown</FormHelperText>
                         </div>
-                    </div>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
                         <div>
                             <FormLabel id="cc-label">CC</FormLabel>
                             <RadioGroup
@@ -306,7 +294,6 @@ export default function ManualBookingForm({ coupon }) {
                                 onChange={handleInputChange}
                                 required
                                 row
-                                aria-labelledby="cc-label"
                             >
                                 <FormControlLabel value="100CC to 150CC" control={<Radio />} label="100CC to 150CC" />
                                 <FormControlLabel value="151CC to 180CC" control={<Radio />} label="151CC to 180CC" />
@@ -316,161 +303,118 @@ export default function ManualBookingForm({ coupon }) {
                                 <FormControlLabel value="500CC & Above" control={<Radio />} label="500CC & Above" />
                             </RadioGroup>
                         </div>
+                    </div>
+
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 my-6'>
+                        <div>
+                            <FormLabel component="legend">Service Type</FormLabel>
+                            <RadioGroup
+                                name="serviceType"
+                                value={formData.serviceType}
+                                onChange={handleInputChange}
+                                row
+                            >
+                                <FormControlLabel value="Schedule Repair" control={<Radio />} label="Schedule Repair" />
+                                <FormControlLabel value="Emergency Repair" control={<Radio />} label="Emergency Repair" />
+                            </RadioGroup>
+                        </div>
                         <div className='flex flex-col gap-2'>
                             <div>
                                 <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            value="Servicing"
-                                            checked={formData.services.includes('Servicing')}
-                                            onChange={handleServiceChange}
-                                        />
-                                    }
+                                    control={<Checkbox value="Servicing" checked={formData.services.includes('Servicing')} onChange={handleServiceChange} />}
                                     label="Servicing"
                                 />
                                 <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            value="Repairing"
-                                            checked={formData.services.includes('Repairing')}
-                                            onChange={handleServiceChange}
-                                        />
-                                    }
+                                    control={<Checkbox value="Repairing" checked={formData.services.includes('Repairing')} onChange={handleServiceChange} />}
                                     label="Repairing"
                                 />
                                 <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            value="Full Engine"
-                                            checked={formData.services.includes('Full Engine')}
-                                            onChange={handleServiceChange}
-                                        />
-                                    }
+                                    control={<Checkbox value="Full Engine" checked={formData.services.includes('Full Engine')} onChange={handleServiceChange} />}
                                     label="Full Engine"
                                 />
                                 <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            value="Inspection"
-                                            checked={formData.services.includes('Inspection')}
-                                            onChange={handleServiceChange}
-                                        />
-                                    }
+                                    control={<Checkbox value="Inspection" checked={formData.services.includes('Inspection')} onChange={handleServiceChange} />}
                                     label="Inspection"
                                 />
                                 <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            value="Other"
-                                            checked={formData.services.includes('Other')}
-                                            onChange={handleServiceChange}
-                                        />
-                                    }
+                                    control={<Checkbox value="Other" checked={formData.services.includes('Other')} onChange={handleServiceChange} />}
                                     label="Other"
                                 />
                             </div>
                             <div>
                                 <TextField
                                     fullWidth
-                                    id="outlined-basic"
-                                    name="otherService" // Corrected name to match the key in formData
+                                    name="otherService"
                                     label="Other Service"
                                     variant="outlined"
                                     placeholder="Enter Other Service"
-                                    disabled={!formData.services.includes('Other')} // Enable only if "Other" is selected
+                                    disabled={!formData.services.includes('Other')}
                                     value={formData.otherService}
                                     onChange={handleInputChange}
                                     slotProps={{
                                         input: {
-                                            startAdornment: (
-                                                <CircleHelp className="mr-1 text-gray-600" />
-                                            ),
+                                            startAdornment: <CircleHelp className="mr-1 text-gray-600" />,
                                         },
                                     }}
                                 />
                             </div>
                         </div>
                     </div>
+
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
-                        <div>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DemoContainer components={['DatePicker']}>
-                                    <DatePicker
-                                        label="Preferred Date"
-                                        value={formData.preferredDate}
-                                        required
-                                        onChange={(newValue) =>
-                                            setFormData((prev) => ({ ...prev, preferredDate: newValue }))
-                                        }
-                                        className="w-full"
-                                    />
-                                </DemoContainer>
-                            </LocalizationProvider>
-                        </div>
-                        <div>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DemoContainer components={['TimePicker']}>
-                                    <TimePicker
-                                        label="Preferred Time"
-                                        value={formData.preferredTime}
-                                        onChange={(newValue) =>
-                                            setFormData((prev) => ({ ...prev, preferredTime: newValue }))
-                                        }
-                                        required
-                                        className="w-full"
-                                    />
-                                </DemoContainer>
-                            </LocalizationProvider>
-                        </div>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DemoContainer components={['DatePicker']}>
+                                <DatePicker
+                                    label="Preferred Date"
+                                    value={formData.preferredDate}
+                                    required
+                                    onChange={(newValue) => setFormData((prev) => ({ ...prev, preferredDate: newValue }))}
+                                    className="w-full"
+                                />
+                            </DemoContainer>
+                        </LocalizationProvider>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DemoContainer components={['TimePicker']}>
+                                <TimePicker
+                                    label="Preferred Time"
+                                    value={formData.preferredTime}
+                                    onChange={(newValue) => setFormData((prev) => ({ ...prev, preferredTime: newValue }))}
+                                    required
+                                    className="w-full"
+                                />
+                            </DemoContainer>
+                        </LocalizationProvider>
                     </div>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
-                        {/* <div>
-                            <TextField
-                                fullWidth
-                                name="estimatedBudget"
-                                label="Estimated Budget"
-                                variant="outlined"
-                                placeholder="Estimated Budget"
-                                value={formData.estimatedBudget}
-                                onChange={handleInputChange}
-                                slotProps={{
-                                    input: {
-                                        startAdornment: (
-                                            <IndianRupee className='mr-1 text-gray-600' />
-                                        ),
-                                    },
-                                }}
-                            />
-                        </div> */}
-                        <div>
-                            <TextField
-                                fullWidth
-                                name="issues"
-                                label="Elaborate your Two wheeler's Issues"
-                                variant="outlined"
-                                placeholder="Elaborate your Two wheeler Issues"
-                                value={formData.issues}
-                                onChange={handleInputChange}
-                                slotProps={{
-                                    input: {
-                                        startAdornment: (
-                                            <Bug className='mr-1 text-gray-600' />
-                                        ),
-                                    },
-                                }}
-                            />
-                        </div>
+
+                    <div className='mb-6'>
+                        <TextField
+                            fullWidth
+                            name="issues"
+                            label="Elaborate your Two wheeler's Issues"
+                            variant="outlined"
+                            placeholder="Describe the issues"
+                            value={formData.issues}
+                            onChange={handleInputChange}
+                            slotProps={{
+                                input: {
+                                    startAdornment: <Bug className='mr-1 text-gray-600' />,
+                                },
+                            }}
+                        />
                     </div>
+
                     <button
                         type="submit"
-                        className="bg-primary mt-4  font-semibold hover:bg-transparent hover:text-primary  border-primary border text-white px-4 py-2 rounded cursor-pointer hover:bg-primary-dark"
+                        className="bg-primary mt-4 font-semibold hover:bg-transparent hover:text-primary border-primary border text-white px-4 py-2 rounded cursor-pointer"
                     >
                         {loading ? (
                             <div className='flex items-center justify-center'>
                                 <CircularLoading size={20} />
                             </div>
                         ) : (
-                            <span className='flex flex-row items-center justify-center'><Plus className='mr-2' /> Create Order</span>
+                            <span className='flex flex-row items-center justify-center'>
+                                <Plus className='mr-2' /> Create Order
+                            </span>
                         )}
                     </button>
                 </form>
