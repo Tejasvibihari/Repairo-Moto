@@ -253,6 +253,14 @@ export const updateMechanic = async (req, res) => {
             return res.status(404).json({ message: "Order not found" });
         }
 
+        // ✅ Prevent mechanic assignment if order is already in a final state
+        const forbiddenStatuses = ["Completed", "Invoice Generated", "Cancelled"];
+        if (forbiddenStatuses.includes(order.status)) {
+            return res.status(400).json({
+                message: `Cannot assign mechanic. Order is already ${order.status.toLowerCase()}.`,
+            });
+        }
+
         // Update the order with mechanic details + status
         order.status = "Mechanic Assigned";
         order.assignedMechanic = `${mechanic.firstName} ${mechanic.lastName}`;
@@ -262,7 +270,7 @@ export const updateMechanic = async (req, res) => {
         await order.save();
 
         return res.status(200).json({
-            message: "Mechanic updated successfully & referral logic applied",
+            message: "Mechanic assigned successfully.",
             data: order,
         });
 
@@ -271,7 +279,6 @@ export const updateMechanic = async (req, res) => {
         return res.status(500).json({ message: "Server error while updating mechanic" });
     }
 };
-
 export const updateDelivery = async (req, res) => {
     try {
         const { id } = req.params; // Order ID
@@ -286,20 +293,29 @@ export const updateDelivery = async (req, res) => {
             return res.status(404).json({ message: "Delivery person not found" });
         }
 
-        const updatedOrder = await Order.findByIdAndUpdate(
-            id,
-            {
-                assignedDelivery: `${deliveryPerson.firstName} ${deliveryPerson.lastName}`, // Update assignedDelivery with the delivery person's name
-                deliveryId: deliveryPerson._id, // Update deliveryId with the delivery person's ID
-            },
-            { new: true } // Return the updated document
-        );
-
-        if (!updatedOrder) {
+        // Fetch the order first to check its current status
+        const order = await Order.findById(id);
+        if (!order) {
             return res.status(404).json({ message: "Order not found" });
         }
 
-        res.status(200).json({ message: "Delivery person updated successfully", data: updatedOrder });
+        // ✅ Prevent delivery assignment if order is already in a final state
+        const forbiddenStatuses = ["Completed", "Invoice Generated", "Cancelled"];
+        if (forbiddenStatuses.includes(order.status)) {
+            return res.status(400).json({
+                message: `Cannot assign delivery person. Order is already ${order.status.toLowerCase()}.`,
+            });
+        }
+
+        // Proceed with the update
+        order.assignedDelivery = `${deliveryPerson.firstName} ${deliveryPerson.lastName}`;
+        order.deliveryId = deliveryPerson._id;
+        await order.save();
+
+        res.status(200).json({
+            message: "Delivery person assigned successfully.",
+            data: order,
+        });
     } catch (error) {
         console.error("Error updating delivery person:", error);
         res.status(500).json({ message: "Server error while updating delivery person" });
@@ -350,11 +366,34 @@ export const updateOrderStatus = async (req, res) => {
             return res.status(400).json({ message: "Status is required" });
         }
 
+        // ✅ Prevent manual updates to statuses that must be set via specific controllers
+        const restrictedStatuses = ["Mechanic Assigned", "Invoice Generated"];
+        if (restrictedStatuses.includes(status)) {
+            return res.status(400).json({
+                message: `Status "${status}" cannot be set manually. It is automatically assigned through the mechanic assignment or invoice generation process.`,
+            });
+        }
+
+        // Optional: Also block transitioning to a final state if the order isn't ready
+        // (e.g., "Completed" may require invoice generation first)
+        // Uncomment the following block if needed:
+
+        // const order = await Order.findById(id);
+        // if (!order) {
+        //     return res.status(404).json({ message: "Order not found" });
+        // }
+        // if (status === "Completed" && order.status !== "Invoice Generated") {
+        //     return res.status(400).json({
+        //         message: "Order must have 'Invoice Generated' status before marking as 'Completed'.",
+        //     });
+        // }
+
+
         // Update the order status
         const updatedOrder = await Order.findByIdAndUpdate(
             id,
-            { status }, // Update the status field
-            { new: true } // Return the updated document
+            { status },
+            { new: true, runValidators: true } // runValidators ensures enum check
         );
 
         if (!updatedOrder) {
@@ -371,24 +410,62 @@ export const updateOrderStatus = async (req, res) => {
     }
 };
 
-
 export const getAllBookingsByEmployee = async (req, res) => {
     const { employeeId } = req.params;
+    const {
+        page = 1,
+        limit = 10,
+        sort = 'createdAt:desc',
+    } = req.query;
+
     try {
-        // Fetch all bookings assigned to the given employee ID (mechanicId, deliveryId, or vendorId)
-        const orders = await Order.find({
+        // Build filter for orders assigned to this employee in any role
+        const filter = {
             $or: [
                 { mechanicId: employeeId },
                 { deliveryId: employeeId },
                 { vendorId: employeeId }
             ]
-        });
+        };
+
+        // Parse pagination values
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+        const skip = (pageNum - 1) * limitNum;
+
+        // Parse sorting
+        let sortCriteria = {};
+        if (sort) {
+            const [sortField, sortOrder] = sort.split(':');
+            sortCriteria[sortField] = sortOrder === 'desc' ? -1 : 1;
+        } else {
+            sortCriteria = { createdAt: -1 };
+        }
+
+        // Execute queries concurrently
+        const [orders, totalCount] = await Promise.all([
+            Order.find(filter)
+                .sort(sortCriteria)
+                .skip(skip)
+                .limit(limitNum)
+                .lean(),
+            Order.countDocuments(filter),
+        ]);
 
         if (!orders || orders.length === 0) {
             return res.status(404).json({ message: "No bookings found for this employee." });
         }
 
-        res.status(200).json({ message: "Orders fetched successfully", data: orders });
+        res.status(200).json({
+            message: "Orders fetched successfully",
+            data: orders,
+            pagination: {
+                currentPage: pageNum,
+                totalPages: Math.ceil(totalCount / limitNum),
+                totalItems: totalCount,
+                itemsPerPage: limitNum,
+            },
+        });
     } catch (error) {
         console.error("Error fetching bookings:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -397,28 +474,75 @@ export const getAllBookingsByEmployee = async (req, res) => {
 
 export const getAllBookingsByVendor = async (req, res) => {
     const { vendorId } = req.params;
+    const {
+        page = 1,
+        limit = 10,
+        sort = 'createdAt:desc',
+    } = req.query;
+
     try {
-        // Fetch all bookings assigned to the given vendor ID
-        const orders = await Order.find({ vendorId: vendorId });
+        // Build filter for orders assigned to this vendor
+        const filter = { vendorId: vendorId };
+
+        // Parse pagination values
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+        const skip = (pageNum - 1) * limitNum;
+
+        // Parse sorting
+        let sortCriteria = {};
+        if (sort) {
+            const [sortField, sortOrder] = sort.split(':');
+            sortCriteria[sortField] = sortOrder === 'desc' ? -1 : 1;
+        } else {
+            sortCriteria = { createdAt: -1 };
+        }
+
+        // Execute queries concurrently for performance
+        const [orders, totalCount] = await Promise.all([
+            Order.find(filter)
+                .sort(sortCriteria)
+                .skip(skip)
+                .limit(limitNum)
+                .lean(),
+            Order.countDocuments(filter),
+        ]);
 
         if (!orders || orders.length === 0) {
             return res.status(404).json({ message: "No bookings found for this vendor." });
         }
 
-        res.status(200).json({ message: "Bookings fetched successfully", data: orders });
+        res.status(200).json({
+            message: "Bookings fetched successfully",
+            data: orders,
+            pagination: {
+                currentPage: pageNum,
+                totalPages: Math.ceil(totalCount / limitNum),
+                totalItems: totalCount,
+                itemsPerPage: limitNum,
+            },
+        });
     } catch (error) {
         console.error("Error fetching bookings by vendor:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
 export const updatePartsUsed = async (req, res) => {
     const { id } = req.params;
     const { partsUsed } = req.body;
-    console.log(id)
+
     try {
         const order = await Order.findById(id);
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // ✅ Prevent parts update if order is cancelled
+        if (order.status === 'Cancelled') {
+            return res.status(400).json({
+                message: 'Cannot update parts. Order is cancelled.',
+            });
         }
 
         // Replace the entire partsUsed array with new data
@@ -437,6 +561,7 @@ export const updatePartsUsed = async (req, res) => {
         res.status(500).json({ message: 'Server error while updating parts' });
     }
 };
+
 export const updatePartsPrice = async (req, res) => {
     const { id } = req.params; // Order ID
     const { partsUsed, pricing } = req.body; // Array of partsUsed and pricing object
@@ -548,12 +673,22 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             serviceProvided,
             status: "Invoice Generated",
             total: {
-                subTotal: data.total.subtotal,
+                subTotal: data.total.subTotal,
                 discount: data.total.discount,
                 discountType: data.total.discountType,
                 referralDiscount: data.total.referralDiscount || 0,
+                sgst: data.total.sgst || 0,
+                cgst: data.total.cgst || 0,
+                sgstRate: data.total.sgstRate || 0,
+                cgstRate: data.total.cgstRate || 0,
+                baseAmount: data.total.baseAmount || 0,
                 total: data.total.total,
+                finalPayable: data.total.finalPayable || data.total.total,
             },
+            // Payment fields
+            paymentStatus: data.payment?.paymentStatus || 'unpaid',
+            paymentMethod: data.payment?.paymentMethod || null,
+            amountPaid: data.payment?.amountPaid || 0,
         };
 
         // Update order
