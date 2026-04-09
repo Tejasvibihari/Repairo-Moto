@@ -52,7 +52,6 @@ router.get('/', authGeneric, async (req, res) => {
 
         const shaped = notifications.map(n => {
             const notificationId = n._id?.toString?.() || String(n._id);
-            console.log('[GET /] Sending notification with id:', notificationId, 'type:', typeof notificationId);
             return {
                 id: notificationId,
                 title: n.title,
@@ -105,18 +104,11 @@ router.patch('/:id/read', authGeneric, async (req, res) => {
         const notificationId = req.params.id;
         const userId = req.user._id;
 
-        console.log('[Notifications markRead] Marking notification as read:', {
-            notificationId,
-            userId: userId.toString()
-        });
-
         // Validate notificationId is a valid MongoDB ObjectId
         if (!isValidObjectId(notificationId)) {
-            console.warn('[Notifications markRead] Invalid notification ID format:', notificationId);
             return res.status(400).json({
                 success: false,
-                message: 'Invalid notification ID format',
-                receivedId: notificationId
+                message: 'Invalid notification ID format'
             });
         }
 
@@ -127,20 +119,15 @@ router.patch('/:id/read', authGeneric, async (req, res) => {
         });
 
         if (!notification) {
-            console.warn('[Notifications markRead] Notification not found for user:', {
-                notificationId,
-                userId: userId.toString()
-            });
             return res.status(404).json({ success: false, message: 'Notification not found' });
         }
 
         // Mark as read
-        const result = await Notification.updateOne(
+        await Notification.updateOne(
             { _id: notificationId, 'recipients.userId': userId },
             { $set: { 'recipients.$.isRead': true, 'recipients.$.readAt': new Date() } }
         );
 
-        console.log('[Notifications markRead] Update result:', result);
         res.json({ success: true });
     } catch (err) {
         console.error('[Notifications PATCH /:id/read] Error:', err.message);
