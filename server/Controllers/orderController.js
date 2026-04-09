@@ -740,6 +740,8 @@ export const userOrder = async (req, res) => {
             getMechanicRecipients(),
         ]);
 
+        console.log(`[ORDER] Creating notification: admins=${adminRecipients.length}, mechanics=${mechanicRecipients.length}`);
+
         await createNotification({
             type: 'new_order',
             title: '🛵 New Order Received',

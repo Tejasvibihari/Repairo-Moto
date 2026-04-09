@@ -64,18 +64,15 @@ export async function createNotification({
 
 /** Get all admins as recipients */
 export async function getAdminRecipients() {
-    // Adjust model/field name to match your Admin model
-    // const admins = await Admin.find({}, '_id').lean();
-    // return admins.map(a => ({ userId: a._id, userModel: 'Admin', role: 'admin' }));
-
-    // If admins are stored in Employee model with role='admin':
-    const admins = await Employee.find({ role: 'admin' }, '_id').lean();
+    const admins = await Employee.find({ position: 'admin' }, '_id').lean();
+    console.log(`[NOTIFICATION] Found ${admins.length} admins`);
     return admins.map(a => ({ userId: a._id, userModel: 'Employee', role: 'admin' }));
 }
 
 /** Get all mechanics as recipients */
 export async function getMechanicRecipients() {
-    const mechanics = await Employee.find({ role: 'mechanic' }, '_id').lean();
+    const mechanics = await Employee.find({ position: 'mechanic' }, '_id').lean();
+    console.log(`[NOTIFICATION] Found ${mechanics.length} mechanics`);
     return mechanics.map(m => ({ userId: m._id, userModel: 'Employee', role: 'mechanic' }));
 }
 
