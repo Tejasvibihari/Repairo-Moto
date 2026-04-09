@@ -31,6 +31,11 @@ const adminSchema = new mongoose.Schema({
         type: String,
         default: 'default.jpg',
     },
+    expoPushToken: {
+        type: String,
+        default: null,
+        trim: true,
+    },
     otp: {
         type: String,
         default: null,

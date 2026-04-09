@@ -1,5 +1,6 @@
 import Notification from '../Models/notificationModel.js';
 import Employee from '../Models/employeeModel.js';
+import Admin from '../Models/adminModel.js';
 // import Admin from '../models/Admin.js';
 import { sendPushToRecipients } from './pushService.js';
 
@@ -64,9 +65,9 @@ export async function createNotification({
 
 /** Get all admins as recipients */
 export async function getAdminRecipients() {
-    const admins = await Employee.find({ position: 'admin' }, '_id').lean();
+    const admins = await Admin.find({}, '_id').lean();
     console.log(`[NOTIFICATION] Found ${admins.length} admins`);
-    return admins.map(a => ({ userId: a._id, userModel: 'Employee', role: 'admin' }));
+    return admins.map(a => ({ userId: a._id, userModel: 'Admin', role: 'admin' }));
 }
 
 /** Get all mechanics as recipients */
