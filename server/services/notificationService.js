@@ -24,7 +24,16 @@ export async function createNotification({
     data = {},
     triggeredBy = null,
 }) {
-    if (!recipients?.length) return null;
+    if (!recipients?.length) {
+        console.warn('[NOTIFICATION] Attempted to create notification with no recipients');
+        return null;
+    }
+
+    console.log(`[NOTIFICATION] Creating notification for ${recipients.length} recipients`, {
+        type,
+        title,
+        body,
+    });
 
     // 1. Save to DB
     const notification = await Notification.create({
@@ -42,9 +51,11 @@ export async function createNotification({
         triggeredBy,
     });
 
+    console.log(`[NOTIFICATION] Notification created with ID: ${notification._id}`);
+
     // 2. Fire push (non-blocking — don't await so order creation stays fast)
     sendPushToRecipients(recipients, { title, body, data: { ...data, type, orderId } })
-        .catch(err => console.error('Push send failed:', err));
+        .catch(err => console.error('[NOTIFICATION] Push send failed:', err));
 
     return notification;
 }
