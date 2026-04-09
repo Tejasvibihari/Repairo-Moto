@@ -47,7 +47,7 @@ router.get('/', authGeneric, async (req, res) => {
             }
         )
             .sort({ createdAt: -1 })
-            .limit(50)
+            .limit(10)
             .lean();
 
         const shaped = notifications.map(n => {
