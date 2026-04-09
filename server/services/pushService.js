@@ -1,8 +1,8 @@
 import axios from 'axios';
 import User from '../Models/userModel.js';
-import Employee from '../Models/employeeModel.js';   // adjust path if needed
-// import Admin from '../Models/adminModel.js';       // uncomment when you have Admin model
-// import Vendor from '../Models/vendorModel.js';     // uncomment when you have Vendor model
+import Employee from '../Models/employeeModel.js';
+import Admin from '../Models/adminModel.js';
+import Vendor from '../Models/vendorModel.js';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
@@ -35,7 +35,21 @@ async function getTokensForRecipients(recipients) {
         tokens.push(...employees.map(e => e.expoPushToken));
     }
 
-    // Add Admin and Vendor similarly when those models are ready
+    if (grouped['Admin']?.length) {
+        const admins = await Admin.find(
+            { _id: { $in: grouped['Admin'] }, expoPushToken: { $exists: true, $ne: null } },
+            'expoPushToken'
+        ).lean();
+        tokens.push(...admins.map(a => a.expoPushToken));
+    }
+
+    if (grouped['Vendor']?.length) {
+        const vendors = await Vendor.find(
+            { _id: { $in: grouped['Vendor'] }, expoPushToken: { $exists: true, $ne: null } },
+            'expoPushToken'
+        ).lean();
+        tokens.push(...vendors.map(v => v.expoPushToken));
+    }
 
     return tokens.filter(Boolean);
 }
