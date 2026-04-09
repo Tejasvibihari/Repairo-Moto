@@ -25,16 +25,7 @@ export async function createNotification({
     data = {},
     triggeredBy = null,
 }) {
-    if (!recipients?.length) {
-        console.warn('[NOTIFICATION] Attempted to create notification with no recipients');
-        return null;
-    }
-
-    console.log(`[NOTIFICATION] Creating notification for ${recipients.length} recipients`, {
-        type,
-        title,
-        body,
-    });
+    if (!recipients?.length) return null;
 
     // 1. Save to DB
     const notification = await Notification.create({
@@ -52,11 +43,9 @@ export async function createNotification({
         triggeredBy,
     });
 
-    console.log(`[NOTIFICATION] Notification created with ID: ${notification._id}`);
-
     // 2. Fire push (non-blocking — don't await so order creation stays fast)
     sendPushToRecipients(recipients, { title, body, data: { ...data, type, orderId } })
-        .catch(err => console.error('[NOTIFICATION] Push send failed:', err));
+        .catch(err => console.error('Push send failed:', err));
 
     return notification;
 }
@@ -66,14 +55,12 @@ export async function createNotification({
 /** Get all admins as recipients */
 export async function getAdminRecipients() {
     const admins = await Admin.find({}, '_id').lean();
-    console.log(`[NOTIFICATION] Found ${admins.length} admins`);
     return admins.map(a => ({ userId: a._id, userModel: 'Admin', role: 'admin' }));
 }
 
 /** Get all mechanics as recipients */
 export async function getMechanicRecipients() {
     const mechanics = await Employee.find({ position: 'mechanic' }, '_id').lean();
-    console.log(`[NOTIFICATION] Found ${mechanics.length} mechanics`);
     return mechanics.map(m => ({ userId: m._id, userModel: 'Employee', role: 'mechanic' }));
 }
 

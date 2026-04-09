@@ -15,22 +15,13 @@ router.post('/register-token', authGeneric, async (req, res) => {
     if (!expoPushToken) return res.status(400).json({ message: 'Token required' });
 
     try {
-        console.log(`[NOTIFICATION] Registering token for user ${req.user._id} (${req.user.model})`);
-        console.log(`[NOTIFICATION] Token: ${expoPushToken.substring(0, 20)}...`);
-
         // req.user should have { _id, role, model } — adjust to match your auth middleware
         const Model = req.user.model === 'Employee' ? Employee : req.user.model === 'Admin' ? Admin : req.user.model === 'Vendor' ? Vendor : User;
 
-        const result = await Model.findByIdAndUpdate(
-            req.user._id,
-            { expoPushToken },
-            { new: true }
-        );
+        await Model.findByIdAndUpdate(req.user._id, { expoPushToken });
 
-        console.log(`[NOTIFICATION] Token registered successfully for ${req.user.model} ${req.user._id}`);
-        res.json({ success: true, message: 'Token registered', userId: req.user._id, model: req.user.model });
+        res.json({ success: true });
     } catch (err) {
-        console.error(`[NOTIFICATION] Token registration error:`, err.message);
         res.status(500).json({ success: false, message: err.message });
     }
 });

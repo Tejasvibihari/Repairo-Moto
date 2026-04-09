@@ -45,7 +45,7 @@ export const adminSignIn = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
-        const token = jwt.sign({ id: user._id }, process.env.ADMIN_JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: user._id }, process.env.ADMIN_JWT_SECRET, { expiresIn: '7d' });
         res.status(200).json({
             token,
             user: { id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email, role: user.role }
