@@ -44,7 +44,17 @@ export async function createNotification({
     });
 
     // 2. Fire push (non-blocking — don't await so order creation stays fast)
-    sendPushToRecipients(recipients, { title, body, data: { ...data, type, orderId } })
+    // Include the MongoDB notification ID in the push data so client can use it to mark as read
+    sendPushToRecipients(recipients, {
+        title,
+        body,
+        data: {
+            ...data,
+            type,
+            orderId,
+            notificationId: notification._id.toString()  // ← Include MongoDB ID for client
+        }
+    })
         .catch(err => console.error('Push send failed:', err));
 
     return notification;

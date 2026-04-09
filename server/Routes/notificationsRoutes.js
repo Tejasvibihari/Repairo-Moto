@@ -50,16 +50,20 @@ router.get('/', authGeneric, async (req, res) => {
             .limit(50)
             .lean();
 
-        const shaped = notifications.map(n => ({
-            id: n._id,
-            title: n.title,
-            body: n.body,
-            type: n.type,
-            orderId: n.orderId,
-            data: n.data,
-            isRead: n.recipients?.[0]?.isRead ?? false,
-            createdAt: n.createdAt,
-        }));
+        const shaped = notifications.map(n => {
+            const notificationId = n._id?.toString?.() || String(n._id);
+            console.log('[GET /] Sending notification with id:', notificationId, 'type:', typeof notificationId);
+            return {
+                id: notificationId,
+                title: n.title,
+                body: n.body,
+                type: n.type,
+                orderId: n.orderId?.toString?.() || String(n.orderId),
+                data: n.data,
+                isRead: n.recipients?.[0]?.isRead ?? false,
+                createdAt: n.createdAt,
+            };
+        });
 
         res.json({ notifications: shaped });
     } catch (err) {
