@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Notification from '../Models/notificationModel.js';
 import User from '../Models/userModel.js';
 import Employee from '../Models/employeeModel.js';
@@ -7,6 +8,11 @@ import Vendor from '../Models/vendorModel.js';
 import authGeneric from '../Middleware/authGeneric.js'; // works for all roles
 
 const router = express.Router();
+
+// Helper to validate MongoDB ObjectId
+const isValidObjectId = (id) => {
+    return mongoose.Types.ObjectId.isValid(id);
+};
 
 // ── Register / update expo push token ─────────────────────────────────────────
 // Works for any role — just updates the token on whichever model the user is in
@@ -99,6 +105,16 @@ router.patch('/:id/read', authGeneric, async (req, res) => {
             notificationId,
             userId: userId.toString()
         });
+
+        // Validate notificationId is a valid MongoDB ObjectId
+        if (!isValidObjectId(notificationId)) {
+            console.warn('[Notifications markRead] Invalid notification ID format:', notificationId);
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid notification ID format',
+                receivedId: notificationId
+            });
+        }
 
         // First check if notification exists
         const notification = await Notification.findOne({
