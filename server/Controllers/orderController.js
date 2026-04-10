@@ -323,7 +323,17 @@ export const updateDelivery = async (req, res) => {
         order.assignedDelivery = `${deliveryPerson.firstName} ${deliveryPerson.lastName}`;
         order.deliveryId = deliveryPerson._id;
         await order.save();
+        const deliveryRecipients = getEmployeeRecipient(deliveryPerson._id, 'delivery');
 
+        await createNotification({
+            type: 'delivery_assigned',
+            title: '🛵 New Order Assigned',
+            body: `#${order.orderId} · ${order.selectedBrand} ${order.selectedModel} · ${order.serviceType}`,
+            recipients: deliveryRecipients,
+            orderId: order._id,
+            data: { orderId: order._id.toString(), screenOrderId: order.orderId },
+            triggeredBy: { userId: req.user._id, userModel: req.user.model },
+        });
         res.status(200).json({
             message: "Delivery person assigned successfully.",
             data: order,
