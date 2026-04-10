@@ -96,8 +96,8 @@ export const employeeSignIn = async (req, res) => {
 
         // Generate a JWT token
         const token = jwt.sign(
-            { id: employee._id, role: employee.role },
-            process.env.ADMIN_JWT_SECRET,
+            { id: employee._id, role: employee.position },
+            process.env.EMPLOYEE_JWT_SECRET,
             { expiresIn: "7d" } // Token expires in 7 day
         );
 

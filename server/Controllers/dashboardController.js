@@ -210,3 +210,80 @@ export const getAdminDashboard = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+
+export const getOrderCounts = async (req, res) => {
+    try {
+        const employee = req.employee; // from auth middleware
+        if (!employee) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+
+        const { _id: employeeId, position: role, city } = employee;
+
+        // Build match conditions based on role
+        let matchConditions = {};
+
+        if (role === 'mechanic') {
+            matchConditions = {
+                $or: [
+                    { mechanicId: new mongoose.Types.ObjectId(employeeId) },
+                    { assignedMechanic: employeeId.toString() }
+                ]
+            };
+        }
+        else if (role === 'delivery') {
+            matchConditions = {
+                $or: [
+                    { deliveryId: new mongoose.Types.ObjectId(employeeId) },
+                    { assignedDelivery: employeeId.toString() }
+                ]
+            };
+        }
+        else if (role === 'admin' || role === 'manager' || role === 'operational manager') {
+            if (city) matchConditions.city = city;
+        }
+        // telecaller or other roles: matchConditions = {} (all orders)
+
+        // Aggregate counts for each status
+        const aggregation = await Order.aggregate([
+            { $match: matchConditions },
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Convert aggregation result to a map
+        const countsMap = {};
+        aggregation.forEach(item => {
+            countsMap[item._id] = item.count;
+        });
+
+        // Compute totals
+        const totalOrders = aggregation.reduce((sum, item) => sum + item.count, 0);
+        const inProgressOrders = (countsMap['In Progress'] || 0) + (countsMap['Mechanic Assigned'] || 0);
+        const completedOrders = (countsMap['Completed'] || 0) + (countsMap['Invoice Generated'] || 0);
+        const cancelledOrders = countsMap['Cancelled'] || 0;
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                totalOrders,
+                inProgressOrders,
+                completedOrders,
+                cancelledOrders
+            }
+        });
+
+    } catch (error) {
+        console.error('Order counts error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
