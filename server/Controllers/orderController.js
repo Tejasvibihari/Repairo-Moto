@@ -4,7 +4,7 @@ import Vendor from '../Models/vendorModel.js'
 import VendorOrder from "../Models/vendorOrderModel.js";
 import { sendBookingConfirmationEmail, sendRefereeEmail } from "../Utils/mailer.js";
 import User from "../Models/userModel.js";
-import { createNotification, getAdminRecipients, getMechanicRecipients } from "../services/notificationService.js";
+import { createNotification, getAdminRecipients, getMechanicRecipients, getEmployeeRecipient } from "../services/notificationService.js";
 // @desc Create a new service booking
 // @route POST /api/bookings
 // @access Public
@@ -269,9 +269,7 @@ export const updateMechanic = async (req, res) => {
         // Save updated order
         await order.save();
 
-        const [mechanicRecipients] = await Promise.all([
-            getMechanicRecipients(),
-        ]);
+        const mechanicRecipients = getEmployeeRecipient(mechanic._id, 'mechanic');
 
         await createNotification({
             type: 'mechanic_assigned',
