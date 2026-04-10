@@ -909,9 +909,7 @@ export const userOrder = async (req, res) => {
         //     getAdminRecipients(),
         //     getMechanicRecipients(),
         // ]);
-        const adminRecipients = await Promise.all([
-            getAdminRecipients(),
-        ]);
+        const adminRecipients = await getAdminRecipients();
 
         await createNotification({
             type: 'new_order',

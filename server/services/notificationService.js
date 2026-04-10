@@ -1,9 +1,8 @@
 import Notification from '../Models/notificationModel.js';
 import Employee from '../Models/employeeModel.js';
 import Admin from '../Models/adminModel.js';
-// import Admin from '../models/Admin.js';
 import { sendPushToRecipients } from './pushService.js';
-
+import User from '../Models/userModel.js';
 /**
  * Create a notification in DB and fire push notifications.
  *
