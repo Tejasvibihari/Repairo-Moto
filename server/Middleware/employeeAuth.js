@@ -3,6 +3,8 @@ import Employee from '../Models/employeeModel.js';
 
 export const authenticateEmployee = async (req, res, next) => {
     try {
+        console.log("Employee Auth Middleware");
+        console.log(req.headers);
         // Get token from Authorization header (Bearer token)
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
