@@ -32,6 +32,19 @@ router.post('/register-token', authGeneric, async (req, res) => {
     }
 });
 
+// ── Unregister expo push token on logout ──────────────────────────────────────
+router.post('/unregister-token', authGeneric, async (req, res) => {
+    try {
+        const Model = req.user.model === 'Employee' ? Employee : req.user.model === 'Admin' ? Admin : req.user.model === 'Vendor' ? Vendor : User;
+
+        await Model.findByIdAndUpdate(req.user._id, { $unset: { expoPushToken: 1 } });
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // ── Get notifications for current user ────────────────────────────────────────
 router.get('/', authGeneric, async (req, res) => {
     try {

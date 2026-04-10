@@ -23,6 +23,7 @@ const notificationSchema = new mongoose.Schema({
         enum: [
             'new_order',        // → admin, mechanic sees new booking
             'order_assigned',   // → mechanic gets assigned
+            'mechanic_assigned',// → mechanic assigned specific
             'order_update',     // → user: status changed
             'order_cancelled',  // → admin, mechanic, user
             'invoice_generated',// → user gets invoice
