@@ -98,7 +98,7 @@ export const employeeSignIn = async (req, res) => {
         const token = jwt.sign(
             { id: employee._id, role: employee.role },
             process.env.ADMIN_JWT_SECRET,
-            { expiresIn: "1d" } // Token expires in 1 day
+            { expiresIn: "7d" } // Token expires in 7 day
         );
 
         // Exclude the password from the response
