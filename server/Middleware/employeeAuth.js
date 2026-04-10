@@ -1,6 +1,6 @@
 
 import Employee from '../Models/employeeModel.js';
-
+import jwt from 'jsonwebtoken';
 export const authenticateEmployee = async (req, res, next) => {
     try {
         console.log("Employee Auth Middleware");
