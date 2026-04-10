@@ -292,6 +292,8 @@ export const updateMechanic = async (req, res) => {
     }
 };
 export const updateDelivery = async (req, res) => {
+    console.log(req.params)
+    console.log(req.body)
     try {
         const { id } = req.params; // Order ID
         const { deliveryId } = req.body; // Delivery person ID
