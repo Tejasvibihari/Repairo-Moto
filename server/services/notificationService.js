@@ -25,7 +25,7 @@ export async function createNotification({
     triggeredBy = null,
 }) {
     if (!recipients?.length) return null;
-
+    console.log('Final recipients being saved:', JSON.stringify(recipients, null, 2));
     // 1. Save to DB
     const notification = await Notification.create({
         recipients: recipients.map(r => ({

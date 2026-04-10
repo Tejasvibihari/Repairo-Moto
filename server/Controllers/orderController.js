@@ -910,7 +910,7 @@ export const userOrder = async (req, res) => {
         //     getMechanicRecipients(),
         // ]);
         const adminRecipients = await getAdminRecipients();
-
+        console.log('Recipients:', JSON.stringify(adminRecipients, null, 2));
         await createNotification({
             type: 'new_order',
             title: '🛵 New Order Received',
