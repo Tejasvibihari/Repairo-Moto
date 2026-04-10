@@ -528,9 +528,11 @@ export const getAllBookingsByVendor = async (req, res) => {
     }
 };
 
-export const updatePartsUsed = async (req, res) => {
+// controllers/orderController.js (or appropriate file)
+
+export const updateItems = async (req, res) => {
     const { id } = req.params;
-    const { partsUsed } = req.body;
+    const { partsUsed, serviceProvided } = req.body;
 
     try {
         const order = await Order.findById(id);
@@ -538,27 +540,46 @@ export const updatePartsUsed = async (req, res) => {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        // ✅ Prevent parts update if order is cancelled
+        // Prevent updates if order is cancelled
         if (order.status === 'Cancelled') {
             return res.status(400).json({
-                message: 'Cannot update parts. Order is cancelled.',
+                message: 'Cannot update items. Order is cancelled.',
             });
         }
 
-        // Replace the entire partsUsed array with new data
-        order.partsUsed = partsUsed.map(part => ({
-            partName: part.partName,
-            quantity: part.quantity,
-            price: 0, // Default price 0
-            discountPrice: 0 // Optional: include if your schema allows it
-        }));
+        // Update partsUsed if provided
+        if (Array.isArray(partsUsed)) {
+            order.partsUsed = partsUsed.map(part => ({
+                partName: part.partName?.trim() || '',
+                quantity: part.quantity && !isNaN(part.quantity) ? Number(part.quantity) : 1,
+                price: part.price && !isNaN(part.price) ? Number(part.price) : 0,
+                discountPrice: part.discountPrice && !isNaN(part.discountPrice) ? Number(part.discountPrice) : 0,
+                discountType: part.discountType || undefined,
+            }));
+        }
 
+        // Update serviceProvided if provided
+        if (Array.isArray(serviceProvided)) {
+            order.serviceProvided = serviceProvided.map(service => ({
+                serviceName: service.serviceName?.trim() || '',
+                quantity: service.quantity && !isNaN(service.quantity) ? Number(service.quantity) : 1,
+                price: service.price && !isNaN(service.price) ? Number(service.price) : 0,
+                discountPrice: service.discountPrice && !isNaN(service.discountPrice) ? Number(service.discountPrice) : 0,
+                discountType: service.discountType || undefined,
+            }));
+        }
+
+        // Optionally recalculate totals here or rely on a separate hook/service
+        // For now, we save as is; totals may need recalculation separately
         await order.save();
 
-        res.status(200).json({ message: 'Parts updated successfully', order });
+        res.status(200).json({
+            message: 'Items updated successfully',
+            order,
+        });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error while updating parts' });
+        console.error('Error updating items:', error);
+        res.status(500).json({ message: 'Server error while updating items' });
     }
 };
 
