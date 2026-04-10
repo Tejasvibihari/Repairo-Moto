@@ -291,6 +291,7 @@ export const updateMechanic = async (req, res) => {
         return res.status(500).json({ message: "Server error while updating mechanic" });
     }
 };
+
 export const updateDelivery = async (req, res) => {
     console.log(req.params)
     console.log(req.body)
@@ -334,7 +335,10 @@ export const updateDelivery = async (req, res) => {
             recipients: deliveryRecipients,
             orderId: order._id,
             data: { orderId: order._id.toString(), screenOrderId: order.orderId },
-            triggeredBy: { userId: req.user._id, userModel: req.user.model },
+            triggeredBy: { 
+                userId: req.user?._id || deliveryPerson._id, 
+                userModel: req.user?.model || 'Employee' 
+            },
         });
         res.status(200).json({
             message: "Delivery person assigned successfully.",
