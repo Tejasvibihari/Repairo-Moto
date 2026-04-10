@@ -20,6 +20,7 @@ import vendorOrderRouter from "./Routes/vendorOrderRoutes.js"
 import bikeProfileRoutes from './Routes/bikeProfileRoutes.js';
 import serviceAreaRoutes from './Routes/serviceAreRoutes.js';
 import notificationRouter from './Routes/notificationsRoutes.js';
+import dashboardRouter from './Routes/dashboardRoutes.js';
 
 const app = express();
 dotenv.config();
@@ -46,6 +47,7 @@ app.use("/api/vendor/vendororder", vendorOrderRouter);
 app.use('/api/bike-profiles', bikeProfileRoutes);
 app.use('/api/service-areas', serviceAreaRoutes);
 app.use('/api/notifications', notificationRouter);
+app.use('/api/admin/dashboard', dashboardRouter);
 
 
 app.get("/", (req, res) => {
