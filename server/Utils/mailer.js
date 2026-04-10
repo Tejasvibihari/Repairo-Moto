@@ -12,18 +12,27 @@ import * as emailTemplates from './emailTemplates.js';
  */
 export const sendMail = async ({ to, subject, body }) => {
     try {
+        // const transporter = nodemailer.createTransport({
+        //     host: "smtpout.secureserver.net",
+        //     port: 465,
+        //     secure: true, // Use true for 465, false for other ports
+        //     auth: {
+        //         user: "contact@repairomoto.in", // GoDaddy email
+        //         pass: "Heybro@11", // GoDaddy email password
+        //     },
+        // });
         const transporter = nodemailer.createTransport({
-            host: "smtpout.secureserver.net",
+            host: "smtp.gmail.com",
             port: 465,
             secure: true, // Use true for 465, false for other ports
             auth: {
-                user: "contact@repairomoto.in", // GoDaddy email
-                pass: "Heybro@11", // GoDaddy email password
+                user: "librarysathi07@gmail.com", // GoDaddy email
+                pass: "xbkmzwaqbbrejcsd", // GoDaddy email password
             },
         });
 
         const emailFormat = {
-            from: '"Repairo Moto" <contact@repairomoto.in>', // Include a clear display name
+            from: '"Repairo Moto" <librarysathi07@gmail.com>', // Include a clear display name
             to: to,
             subject: subject,
             text: "Repairo Moto", // Consider adding a plaintext version of the email
