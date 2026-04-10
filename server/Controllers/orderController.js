@@ -269,6 +269,20 @@ export const updateMechanic = async (req, res) => {
         // Save updated order
         await order.save();
 
+        const [mechanicRecipients] = await Promise.all([
+            getMechanicRecipients(),
+        ]);
+
+        await createNotification({
+            type: 'mechanic_assigned',
+            title: '🛵 New Order Assigned',
+            body: `#${order.orderId} · ${order.selectedBrand} ${order.selectedModel} · ${order.serviceType}`,
+            recipients: mechanicRecipients,
+            orderId: order._id,
+            data: { orderId: order._id.toString(), screenOrderId: order.orderId },
+            triggeredBy: { userId: mechanic._id, userModel: 'Employee' },
+        });
+
         return res.status(200).json({
             message: "Mechanic assigned successfully.",
             data: order,
@@ -891,16 +905,19 @@ export const userOrder = async (req, res) => {
 
         const savedOrder = await newOrder.save();
         await sendBookingConfirmationEmail(savedOrder, user.email);
-        const [adminRecipients, mechanicRecipients] = await Promise.all([
+        // const [adminRecipients, mechanicRecipients] = await Promise.all([
+        //     getAdminRecipients(),
+        //     getMechanicRecipients(),
+        // ]);
+        const adminRecipients = await Promise.all([
             getAdminRecipients(),
-            getMechanicRecipients(),
         ]);
 
         await createNotification({
             type: 'new_order',
             title: '🛵 New Order Received',
             body: `#${savedOrder.orderId} · ${savedOrder.selectedBrand} ${savedOrder.selectedModel} · ${savedOrder.serviceType}`,
-            recipients: [...adminRecipients, ...mechanicRecipients],
+            recipients: adminRecipients,
             orderId: savedOrder._id,
             data: { orderId: savedOrder._id.toString(), screenOrderId: savedOrder.orderId },
             triggeredBy: { userId: userId, userModel: 'User' },

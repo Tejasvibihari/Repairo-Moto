@@ -89,7 +89,7 @@ router.get("/getorderbyid/:id", getOrderById);
  * @param   id - Order _id
  * @body    { mechanicId } - Employee ID of the mechanic
  */
-router.put("/update/updateMechanic/:id", updateMechanic);
+router.put("/update/updateMechanic/:id", authAdmin, updateMechanic);
 
 /**
  * @route   PUT /updateDelivery/:id
