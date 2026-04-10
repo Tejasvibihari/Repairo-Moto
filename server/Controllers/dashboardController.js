@@ -2,6 +2,7 @@ import Order from '../Models/orderModel.js';
 import User from '../Models/userModel.js';
 import Employee from '../Models/employeeModel.js';
 import Vendor from '../Models/vendorModel.js';
+import mongoose from 'mongoose';
 
 // ── Period → Date range ───────────────────────────────────────────────────────
 const getPeriodRange = (period) => {
