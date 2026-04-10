@@ -29,6 +29,7 @@ export const authenticateEmployee = async (req, res, next) => {
 
         // Attach employee to request object
         req.employee = employee;
+        req.user = employee; // Support shared routes 
         next();
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {

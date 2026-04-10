@@ -17,7 +17,26 @@ const authGeneric = async (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+        let decoded = null;
+        const secrets = [
+            process.env.ADMIN_JWT_SECRET,
+            process.env.EMPLOYEE_JWT_SECRET,
+            process.env.VENDOR_JWT_SECRET,
+            process.env.USER_JWT_SECRET
+        ].filter(Boolean);
+
+        for (const secret of secrets) {
+            try {
+                decoded = jwt.verify(token, secret);
+                if (decoded) break;
+            } catch (e) {
+                // Continue to next secret
+            }
+        }
+
+        if (!decoded || !decoded.id) {
+            return res.status(401).json({ message: 'Invalid token or unauthorized' });
+        }
 
         // Try User model
         const user = await User.findById(decoded.id).select('-password');

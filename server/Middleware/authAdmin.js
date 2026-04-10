@@ -11,7 +11,24 @@ const authAdmin = async (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+        let decoded = null;
+        const secrets = [
+            process.env.ADMIN_JWT_SECRET,
+            process.env.EMPLOYEE_JWT_SECRET
+        ].filter(Boolean);
+
+        for (const secret of secrets) {
+            try {
+                decoded = jwt.verify(token, secret);
+                if (decoded) break;
+            } catch (err) {
+                // Keep trying
+            }
+        }
+
+        if (!decoded || !decoded.id) {
+            return res.status(401).json({ message: 'Invalid token or unauthorized' });
+        }
 
         // Check Admin
         const admin = await Admin.findById(decoded.id).select('-password');
@@ -20,7 +37,7 @@ const authAdmin = async (req, res, next) => {
             req.user = {
                 _id: admin._id,
                 role: 'Admin',
-                model: 'User'
+                model: 'Admin'
             };
             return next();
         }
