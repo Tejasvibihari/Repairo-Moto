@@ -10,14 +10,14 @@ import {
     updateMechanic,
     updateOrderStatus,
     updatePartsPrice,
-    updatePartsUsed,
     updateVendor,
     updateOrderandGenerateInvoice,
     userOrder,
     cancelOrder,
     getOrdersByPosition,
     completedOrders,
-    completeRevenue
+    completeRevenue,
+    updateItems
 } from "../Controllers/orderController.js";
 import authAdmin from "../Middleware/authAdmin.js";
 import authUser from "../Middleware/authUser.js";
@@ -161,7 +161,7 @@ router.get("/employee/getorderbyid/:id", getOrderById);
  * @param   id - Order _id
  * @body    { partsUsed: [{ partName, quantity }] }
  */
-router.put('/bookings/:id/update-parts', updatePartsUsed);
+router.put('/bookings/:id/update-parts', updateItems);
 
 /**
  * @route   PUT /bookings/:id/update-parts-price
