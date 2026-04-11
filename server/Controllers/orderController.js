@@ -548,6 +548,7 @@ export const getAllBookingsByVendor = async (req, res) => {
             mechanicId: order.mechanicId?._id || order.mechanicId,
             deliveryId: order.deliveryId?._id || order.deliveryId,
         }));
+        console.log(transformedOrders, "from vendor orders screen")
 
         res.status(200).json({
             message: "Bookings fetched successfully",
