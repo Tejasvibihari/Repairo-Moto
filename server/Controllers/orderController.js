@@ -335,9 +335,9 @@ export const updateDelivery = async (req, res) => {
             recipients: deliveryRecipients,
             orderId: order._id,
             data: { orderId: order._id.toString(), screenOrderId: order.orderId },
-            triggeredBy: { 
-                userId: req.user?._id || deliveryPerson._id, 
-                userModel: req.user?.model || 'Employee' 
+            triggeredBy: {
+                userId: req.user?._id || deliveryPerson._id,
+                userModel: req.user?.model || 'Employee'
             },
         });
         res.status(200).json({
@@ -499,7 +499,6 @@ export const getAllBookingsByEmployee = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
-
 export const getAllBookingsByVendor = async (req, res) => {
     const { vendorId } = req.params;
     const {
@@ -532,6 +531,8 @@ export const getAllBookingsByVendor = async (req, res) => {
                 .sort(sortCriteria)
                 .skip(skip)
                 .limit(limitNum)
+                .populate('mechanicId', 'phone')   // get mechanic's phone
+                .populate('deliveryId', 'phone')   // get delivery person's phone
                 .lean(),
             Order.countDocuments(filter),
         ]);
@@ -540,9 +541,18 @@ export const getAllBookingsByVendor = async (req, res) => {
             return res.status(404).json({ message: "No bookings found for this vendor." });
         }
 
+        // Transform orders to include phone numbers in a cleaner format
+        const transformedOrders = orders.map(order => ({
+            ...order,
+            mechanicPhone: order.mechanicId?.phone || null,
+            deliveryPhone: order.deliveryId?.phone || null,
+            mechanicId: order.mechanicId?._id || order.mechanicId,
+            deliveryId: order.deliveryId?._id || order.deliveryId,
+        }));
+
         res.status(200).json({
             message: "Bookings fetched successfully",
-            data: orders,
+            data: transformedOrders,
             pagination: {
                 currentPage: pageNum,
                 totalPages: Math.ceil(totalCount / limitNum),
@@ -555,7 +565,6 @@ export const getAllBookingsByVendor = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
-
 // controllers/orderController.js (or appropriate file)
 
 export const updateItems = async (req, res) => {
