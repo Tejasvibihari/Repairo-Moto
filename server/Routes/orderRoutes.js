@@ -140,7 +140,7 @@ router.get("/getorder/:employeeId", getAllBookingsByEmployee);
  * @param   vendorId - Vendor ID
  * @returns Array of orders
  */
-router.get("/getorder/:vendorId", getAllBookingsByVendor);
+router.get("/vendor/:vendorId", getAllBookingsByVendor);
 
 /**
  * @route   GET /employee/getorderbyid/:id
