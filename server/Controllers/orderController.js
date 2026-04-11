@@ -223,7 +223,6 @@ export const getOrderById = async (req, res) => {
 
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        console.log(order);
         return res.status(200).json(order);
     } catch (error) {
         console.error("Error fetching booking:", error);
@@ -293,8 +292,6 @@ export const updateMechanic = async (req, res) => {
 };
 
 export const updateDelivery = async (req, res) => {
-    console.log(req.params)
-    console.log(req.body)
     try {
         const { id } = req.params; // Order ID
         const { deliveryId } = req.body; // Delivery person ID
@@ -701,7 +698,6 @@ export const updatePartsPrice = async (req, res) => {
 export const updateOrderandGenerateInvoice = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
-    console.log("Update Order and Generate Invoice Data:", data);
 
     try {
         // Separate parts and services
@@ -774,9 +770,6 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                 }
 
                 await user.save();
-                console.log(
-                    `Referral discount of ${data.total.referralDiscount} applied for user ${user.firstName}`
-                );
             }
         }
 
@@ -801,7 +794,6 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                         }
                     } else if (referee.accountType === "business") {
                         const orderTotal = updatedOrder.total.total || 0;
-                        console.log(orderTotal)
                         if (orderTotal >= 5000) {
                             referee.referralAmount = (referee.referralAmount || 0) + 249;
                         } else if (orderTotal >= 3500) {
@@ -933,7 +925,6 @@ export const userOrder = async (req, res) => {
         //     getMechanicRecipients(),
         // ]);
         const adminRecipients = await getAdminRecipients();
-        console.log('Recipients:', JSON.stringify(adminRecipients, null, 2));
         await createNotification({
             type: 'new_order',
             title: '🛵 New Order Received',
@@ -958,7 +949,6 @@ export const getOrderByUserId = async (req, res) => {
     try {
         const userId = req.user?._id;
 
-        console.log(userId);
 
         if (!userId) {
             return res.status(401).json({ message: 'User not authenticated' });
