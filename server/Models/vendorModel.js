@@ -80,6 +80,11 @@ const vendorSchema = new mongoose.Schema({
     role: {
         type: String,
         default: "vendor"
+    },
+    expoPushToken: {
+        type: String,
+        default: null,
+        trim: true,
     }
 }, {
     timestamps: true
