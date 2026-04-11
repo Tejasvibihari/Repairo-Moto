@@ -4,7 +4,7 @@ import Vendor from '../Models/vendorModel.js'
 import VendorOrder from "../Models/vendorOrderModel.js";
 import { sendBookingConfirmationEmail, sendRefereeEmail } from "../Utils/mailer.js";
 import User from "../Models/userModel.js";
-import { createNotification, getAdminRecipients, getMechanicRecipients, getEmployeeRecipient } from "../services/notificationService.js";
+import { createNotification, getAdminRecipients, getMechanicRecipients, getEmployeeRecipient, getVendorRecipient, getUserRecipient } from "../services/notificationService.js";
 // @desc Create a new service booking
 // @route POST /api/bookings
 // @access Public
@@ -280,6 +280,19 @@ export const updateMechanic = async (req, res) => {
             triggeredBy: { userId: mechanic._id, userModel: 'Employee' },
         });
 
+        if (order.userId) {
+            const userRecipient = getUserRecipient(order.userId);
+            await createNotification({
+                type: 'mechanic_assigned',
+                title: '🛵 Mechanic Assigned',
+                body: `${mechanic.firstName} has been assigned to your order and is on the way!`,
+                recipients: userRecipient,
+                orderId: order._id,
+                data: { orderId: order._id.toString(), screenOrderId: order.orderId },
+                triggeredBy: { userId: mechanic._id, userModel: 'Employee' }, 
+            });
+        }
+
         return res.status(200).json({
             message: "Mechanic assigned successfully.",
             data: order,
@@ -374,6 +387,20 @@ export const updateVendor = async (req, res) => {
             return res.status(404).json({ message: "Order not found" });
         }
 
+        const vendorRecipients = getVendorRecipient(vendor._id);
+        await createNotification({
+            type: 'order_assigned',
+            title: '🛵 Order Assigned',
+            body: `Order #${updatedOrder.orderId} has been assigned to you.`,
+            recipients: vendorRecipients,
+            orderId: updatedOrder._id,
+            data: { orderId: updatedOrder._id.toString(), screenOrderId: updatedOrder.orderId },
+            triggeredBy: { 
+                userId: req.user?._id, 
+                userModel: req.user?.model || 'Admin' 
+            },
+        });
+
         res.status(200).json({ message: "Vendor updated successfully", data: updatedOrder });
     } catch (error) {
         console.error("Error updating vendor:", error);
@@ -423,6 +450,32 @@ export const updateOrderStatus = async (req, res) => {
 
         if (!updatedOrder) {
             return res.status(404).json({ message: "Order not found" });
+        }
+
+        if (updatedOrder.userId) {
+            const userRecipient = getUserRecipient(updatedOrder.userId);
+            let title = '🛵 Order Status Updated';
+            let body = `Your order #${updatedOrder.orderId} status has changed to ${status}.`;
+
+            if (status === 'Completed') {
+                title = '✅ Order Completed';
+                body = `Your order #${updatedOrder.orderId} is now completed.`;
+            } else if (status === 'In Progress') {
+                title = '⚙️ Order In Progress';
+                body = `Your order #${updatedOrder.orderId} is currently being worked on.`;
+            } else if (status === 'Cancelled') {
+                title = '❌ Order Cancelled';
+                body = `Your order #${updatedOrder.orderId} has been cancelled.`;
+            }
+
+            await createNotification({
+                type: 'order_update',
+                title,
+                body,
+                recipients: userRecipient,
+                orderId: updatedOrder._id,
+                data: { orderId: updatedOrder._id.toString(), screenOrderId: updatedOrder.orderId },
+            });
         }
 
         return res.status(200).json({
@@ -548,7 +601,6 @@ export const getAllBookingsByVendor = async (req, res) => {
             mechanicId: order.mechanicId?._id || order.mechanicId,
             deliveryId: order.deliveryId?._id || order.deliveryId,
         }));
-        console.log(transformedOrders, "from vendor orders screen")
 
         res.status(200).json({
             message: "Bookings fetched successfully",
@@ -816,6 +868,17 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             }
         }
 
+        if (updatedOrder.userId) {
+            const userRecipient = getUserRecipient(updatedOrder.userId);
+            await createNotification({
+                type: 'invoice_generated',
+                title: '🧾 Invoice Generated',
+                body: `Invoice for order #${updatedOrder.orderId} is generated. Please pay the due amount.`,
+                recipients: userRecipient,
+                orderId: updatedOrder._id,
+                data: { orderId: updatedOrder._id.toString(), screenOrderId: updatedOrder.orderId },
+            });
+        }
 
         res.status(200).json({
             message:
@@ -999,6 +1062,18 @@ export const cancelOrder = async (req, res) => {
         order.cancelledAt = new Date();                  // store current timestamp
 
         await order.save();
+
+        if (order.userId) {
+            const userRecipient = getUserRecipient(order.userId);
+            await createNotification({
+                type: 'order_cancelled',
+                title: '❌ Order Cancelled',
+                body: `Your order #${order.orderId} has been cancelled.`,
+                recipients: userRecipient,
+                orderId: order._id,
+                data: { orderId: order._id.toString(), screenOrderId: order.orderId },
+            });
+        }
 
         res.status(200).json({
             message: 'Order cancelled successfully',

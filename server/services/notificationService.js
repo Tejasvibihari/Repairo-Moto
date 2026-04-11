@@ -82,3 +82,8 @@ export function getUserRecipient(userId) {
 export function getEmployeeRecipient(userId, role = 'employee') {
     return [{ userId, userModel: 'Employee', role }];
 }
+
+/** Get a single vendor as recipient */
+export function getVendorRecipient(userId) {
+    return [{ userId, userModel: 'Vendor', role: 'vendor' }];
+}
