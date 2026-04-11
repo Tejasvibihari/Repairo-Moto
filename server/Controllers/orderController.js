@@ -496,6 +496,8 @@ export const getAllBookingsByEmployee = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+
 export const getAllBookingsByVendor = async (req, res) => {
     const { vendorId } = req.params;
     const {
