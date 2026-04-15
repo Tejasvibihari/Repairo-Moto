@@ -100,7 +100,6 @@ const invoiceSchema = new mongoose.Schema({
 // Index for quick lookup by order
 invoiceSchema.index({ orderId: 1 });
 invoiceSchema.index({ userId: 1 });
-invoiceSchema.index({ invoiceNumber: 1 });
 
 const Invoice = mongoose.model('Invoice', invoiceSchema);
 export default Invoice;

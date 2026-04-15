@@ -11,11 +11,17 @@ import {
     getUserRecipient,
 } from '../services/notificationService.js';
 
-// ─── Razorpay instance ────────────────────────────────────────────────────────
-const razorpayInstance = new Razorpay({
-    key_id: process.env.RAZORPAY_API_KEY,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// ─── Razorpay instance (lazy — created on first use so env vars are loaded) ──
+let _razorpayInstance = null;
+function getRazorpay() {
+    if (!_razorpayInstance) {
+        _razorpayInstance = new Razorpay({
+            key_id: process.env.RAZORPAY_API_KEY,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
+        });
+    }
+    return _razorpayInstance;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -247,7 +253,7 @@ export const createRazorpayOrder = async (req, res) => {
         const amountInPaise = Math.round(payableAmount * 100);
 
         // Create Razorpay order
-        const rzpOrder = await razorpayInstance.orders.create({
+        const rzpOrder = await getRazorpay().orders.create({
             amount: amountInPaise,
             currency: 'INR',
             receipt: `receipt_${order.orderId}`,
