@@ -289,7 +289,7 @@ export const updateMechanic = async (req, res) => {
                 recipients: userRecipient,
                 orderId: order._id,
                 data: { orderId: order._id.toString(), screenOrderId: order.orderId },
-                triggeredBy: { userId: mechanic._id, userModel: 'Employee' }, 
+                triggeredBy: { userId: mechanic._id, userModel: 'Employee' },
             });
         }
 
@@ -395,9 +395,9 @@ export const updateVendor = async (req, res) => {
             recipients: vendorRecipients,
             orderId: updatedOrder._id,
             data: { orderId: updatedOrder._id.toString(), screenOrderId: updatedOrder.orderId },
-            triggeredBy: { 
-                userId: req.user?._id, 
-                userModel: req.user?.model || 'Admin' 
+            triggeredBy: {
+                userId: req.user?._id,
+                userModel: req.user?.model || 'Admin'
             },
         });
 
@@ -899,6 +899,7 @@ export const userOrder = async (req, res) => {
             contactNo,
             email,
             city,
+            address,
             selectedBrand,
             selectedModel,
             modelName,
@@ -966,6 +967,7 @@ export const userOrder = async (req, res) => {
             contactNo,
             email: email || user.email,
             city: city.toUpperCase(),
+            address,
             userLocation: finalUserLocation, // GeoJSON
             isWithinServiceArea: isWithinServiceArea ?? false,
             distanceFromCenter: distanceFromCenter || 0,

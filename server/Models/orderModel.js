@@ -15,7 +15,7 @@ const orderSchema = new mongoose.Schema({
     email: { type: String },
     contactNo: { type: String, required: true, trim: true },
     city: { type: String, required: true, trim: true, uppercase: true },
-
+    address: { type: String, required: true, trim: true },
     userLocation: {
         type: { type: String, enum: ["Point"] },
         coordinates: { type: [Number] }, // [lng, lat]
