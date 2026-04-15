@@ -21,62 +21,58 @@ export default function OrderTable({ orders: initialOrders }) {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const handleClickOpen = (id) => {
-        setOrderId(id);         // Set the ID for JobAssignForm
-        setOpen(true);          // Open the Dialog
+        setOrderId(id);
+        setOpen(true);
     };
 
     const handleClose = () => {
         setOpen(false);
-        // Trigger a refresh when dialog closes
         setRefreshTrigger(prev => prev + 1);
     };
 
-    // Function to fetch updated orders from your API
     const fetchUpdatedOrders = async () => {
         try {
-            const response = await axiosClient.get('/orders'); // Replace with your actual API endpoint
+            const response = await axiosClient.get('/orders');
             setOrders(response.data);
         } catch (error) {
             console.error('Error fetching updated orders:', error);
         }
     };
 
-    // Update orders when parent component sends new props
     useEffect(() => {
         setOrders(initialOrders);
     }, [initialOrders]);
 
-    // Refresh orders when dialog closes or refreshTrigger changes
     useEffect(() => {
         if (refreshTrigger > 0) {
             fetchUpdatedOrders();
         }
     }, [refreshTrigger]);
+
     const exportToExcel = () => {
         const excelData = orders.map((order, index) => ({
             "S.No": index + 1,
             "Order ID": order.orderId,
-            "Name": order.name,
+            "Name & Phone": `${order.name} (${order.contactNo})`,
             "Email": order.email || "-",
-            "Contact No": order.contactNo,
             "City": order.city,
-            "Selected Brand": order.selectedBrand,
-            "Selected Model": order.selectedModel,
+            "Brand & Model": `${order.selectedBrand} - ${order.selectedModel}`,
             "Model Name": order.modelName || "-",
             "CC": order.cc,
             "BS": order.bs || "-",
-            "Latitude": order.location?.latitude || "-",
-            "Longitude": order.location?.longitude || "-",
+            "Latitude": order.userLocation?.coordinates?.[1] || "-",
+            "Longitude": order.userLocation?.coordinates?.[0] || "-",
             "Services": order.services?.join(", ") || "-",
             "Other Service": order.otherService || "-",
             "Preferred Date": order.preferredDate ? new Date(order.preferredDate).toLocaleDateString() : "-",
             "Preferred Time": order.preferredTime || "-",
-            "Estimated Budget": order.estimatedBudget,
             "Issues": order.issues || "-",
             "Status": order.status,
             "Assigned Mechanic": order.assignedMechanic || "-",
             "Assigned Vendor": order.assignedVendor || "-",
             "Assigned Delivery": order.assignedDelivery || "-",
+            "Parts Used": order.partsUsed?.map(p => p.partName).join(", ") || "-",
+            "Payment Status": order.paymentStatus || "-",
             "Invoice Date": order.invoiceDate ? new Date(order.invoiceDate).toLocaleDateString() : "-",
             "Sub Total": order.total?.subTotal || "-",
             "Discount": order.total?.discount || "-",
@@ -86,7 +82,6 @@ export default function OrderTable({ orders: initialOrders }) {
             "Updated At": order.updatedAt ? new Date(order.updatedAt).toLocaleString() : "-"
         }));
 
-
         const worksheet = XLSX.utils.json_to_sheet(excelData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Order");
@@ -95,6 +90,7 @@ export default function OrderTable({ orders: initialOrders }) {
         const file = new Blob([excelBuffer], { type: 'application/octet-stream' });
         saveAs(file, 'Orders.xlsx');
     };
+
     return (
         <>
             <div className="p-4 border border-gray-200 rounded shadow-sm">
@@ -112,17 +108,14 @@ export default function OrderTable({ orders: initialOrders }) {
                             <tr>
                                 <th className="px-4 py-2 text-left">No.</th>
                                 <th className="px-4 py-2 text-left">Order Id</th>
-                                <th className="px-4 py-2 text-left">Name</th>
-                                <th className="px-4 py-2 text-left">Phone</th>
-                                <th className="px-4 py-2 text-left">Brand</th>
-                                <th className="px-4 py-2 text-left">Model</th>
+                                <th className="px-4 py-2 text-left">Name & Phone</th>
+                                <th className="px-4 py-2 text-left">Brand & Model</th>
                                 <th className="px-4 py-2 text-left">Services</th>
                                 <th className="px-4 py-2 text-left">Date</th>
                                 <th className="px-4 py-2 text-left">Time</th>
-                                <th className="px-4 py-2 text-left">Budget</th>
                                 <th className="px-4 py-2 text-left">Mechanic</th>
                                 <th className="px-4 py-2 text-left">Parts Used</th>
-                                <th className="px-4 py-2 text-left">Coupon</th>
+                                <th className="px-4 py-2 text-left">Payment Status</th>
                                 <th className="px-4 py-2 text-left">Status</th>
                                 <th className="px-4 py-2 text-end">Actions</th>
                             </tr>
@@ -132,31 +125,45 @@ export default function OrderTable({ orders: initialOrders }) {
                                 <tr key={order._id} className="hover:bg-gray-50 border-b border-gray-200">
                                     <td className="px-3 py-2">{index + 1}</td>
                                     <td className="px-3 py-2">{order.orderId}</td>
-                                    <td className="px-3 py-2">{order.name}</td>
-                                    <td className="px-3 py-2">{order.contactNo}</td>
-                                    <td className="px-3 py-2">{order.selectedBrand}</td>
-                                    <td className="px-3 py-2">{order.selectedModel}</td>
-                                    <td className="px-3 py-2">{order.services.join(", ")}</td>
                                     <td className="px-3 py-2">
-                                        {new Date(order.preferredDate).toLocaleDateString('en-US', {
+                                        <div className="font-medium">{order.name}</div>
+                                        <div className="text-xs text-gray-500">{order.contactNo}</div>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <div>{order.selectedBrand}</div>
+                                        <div className="text-xs text-gray-500">{order.selectedModel}</div>
+                                    </td>
+                                    <td className="px-3 py-2">{order.services?.join(", ") || "-"}</td>
+                                    <td className="px-3 py-2">
+                                        {order.preferredDate ? new Date(order.preferredDate).toLocaleDateString('en-US', {
                                             year: 'numeric',
                                             month: 'short',
                                             day: 'numeric',
-                                        })}
+                                        }) : "-"}
                                     </td>
-                                    <td className="px-3 py-2">
-                                        {new Date(order.preferredTime).toLocaleTimeString('en-US', {
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                        })}
-                                    </td>
-                                    <td className="px-3 py-2">{order.estimatedBudget}</td>
+                                    <td className="px-3 py-2">{order.preferredTime || "-"}</td>
                                     <td className="px-3 py-2">{order.assignedMechanic || "Unassigned"}</td>
-
                                     <td className="px-3 py-2">
-                                        {order.partsUsed.length > 0 ? order.partsUsed.map(part => part.partName).join(", ") : "N/A"}
+                                        {order.partsUsed?.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1">
+                                                {order.partsUsed.map((part, idx) => (
+                                                    <span key={idx} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                                                        {part.partName}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : "N/A"}
                                     </td>
-                                    <td className="px-3 py-2">{order.coupon || "Unassigned"}</td>
+                                    <td className="px-3 py-2">
+                                        <span className={`px-2 py-1 rounded text-xs font-medium ${order.paymentStatus === "paid"
+                                            ? "bg-green-50 text-green-700"
+                                            : order.paymentStatus === "unpaid"
+                                                ? "bg-red-50 text-red-700"
+                                                : "bg-gray-100 text-gray-700"
+                                            }`}>
+                                            {order.paymentStatus || "unpaid"}
+                                        </span>
+                                    </td>
                                     <td className="px-3 py-2" style={{ minWidth: "120px" }}>
                                         <span
                                             className={`px-2 py-1 rounded text-xs font-medium ${order.status === "Pending"
@@ -176,9 +183,8 @@ export default function OrderTable({ orders: initialOrders }) {
                                         >
                                             {order.status}
                                         </span>
-
                                     </td>
-                                    <td className="px-3 py-2 flex gap-2 flex-wrap justify-end ">
+                                    <td className="px-3 py-2 flex gap-2 flex-wrap justify-end">
                                         <button onClick={() => handleClickOpen(order._id)} className="flex items-center justify-center bg-primary text-white py-2 rounded-md px-3 cursor-pointer hover:bg-transparent hover:text-primary border border-primary">
                                             <UserPen size={18} className="mr-0 md:mr-2" />
                                             <span className="hidden md:inline">Manage</span>
@@ -195,6 +201,7 @@ export default function OrderTable({ orders: initialOrders }) {
                 open={open}
                 TransitionComponent={Transition}
                 keepMounted
+                maxWidth="lg"
                 onClose={handleClose}
                 aria-describedby="alert-dialog-slide-description"
                 className='p-4'
