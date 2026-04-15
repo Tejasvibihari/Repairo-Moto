@@ -21,6 +21,8 @@ import bikeProfileRoutes from './Routes/bikeProfileRoutes.js';
 import serviceAreaRoutes from './Routes/serviceAreRoutes.js';
 import notificationRouter from './Routes/notificationsRoutes.js';
 import dashboardRouter from './Routes/dashboardRoutes.js';
+import paymentRouter from './Routes/paymentRoutes.js';
+import webhookRouter from './Routes/webhookRoutes.js';
 
 const app = express();
 dotenv.config();
@@ -48,6 +50,8 @@ app.use('/api/bike-profiles', bikeProfileRoutes);
 app.use('/api/service-areas', serviceAreaRoutes);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/admin/dashboard', dashboardRouter);
+app.use('/api/orders', paymentRouter);
+app.use('/api/webhooks', webhookRouter);
 
 
 app.get("/", (req, res) => {

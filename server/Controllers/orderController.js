@@ -1235,3 +1235,7 @@ export const completeRevenue = async (req, res) => {
         res.status(500).json({ message: "Something went wrong" });
     }
 }
+
+// ─── Payment logic has been moved to Controllers/paymentController.js ────────
+// Razorpay order creation, payment verification, invoice generation,
+// and webhook handling are now in the dedicated payment controller.

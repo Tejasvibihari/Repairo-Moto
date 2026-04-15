@@ -28,6 +28,7 @@ const notificationSchema = new mongoose.Schema({
             'order_update',     // → user: status changed
             'order_cancelled',  // → admin, mechanic, user
             'invoice_generated',// → user gets invoice
+            'payment_received', // → admin, mechanic: payment received + invoice generated
             'delivery_update',  // → delivery agent
             'general',          // → any role, generic message
         ],
