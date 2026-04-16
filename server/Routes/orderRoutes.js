@@ -90,7 +90,7 @@ router.post('/:id/complete-work', uploadSingle('afterPhoto'), markWorkComplete);
  * @body    { otp: string }
  * @access  Private (authUser)
  */
-router.post('/:id/confirm-completion', authUser, confirmWorkCompletion);
+router.post('/:id/confirm-completion', confirmWorkCompletion);
 
 /**
  * @route   POST /:id/resend-work-start-otp
