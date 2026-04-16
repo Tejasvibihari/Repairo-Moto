@@ -16,6 +16,11 @@ import {
 } from "../services/notificationService.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+const deleteUploadedFile = (filePath) => {
+    if (filePath && fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath); } catch (_) { }
+    }
+};
 
 /**
  * Generate a cryptographically random 4-digit OTP string (0000–9999).
@@ -52,7 +57,6 @@ const generateInvoiceNumber = async () => {
 
 /**
  * Build an Invoice document from an order.
- * Used for both COD and online payment paths.
  */
 const buildInvoiceData = async (order, paymentInfo) => {
     const invoiceNumber = await generateInvoiceNumber();
@@ -92,7 +96,6 @@ const buildInvoiceData = async (order, paymentInfo) => {
             subTotal: order.total?.subTotal || 0,
             discount: order.total?.discount || 0,
             discountType: order.total?.discountType || '',
-            // COD: no referral discount / coupon
             referralDiscount: paymentInfo.isCod ? 0 : (order.total?.referralDiscount || 0),
             sgst: order.total?.sgst || 0,
             cgst: order.total?.cgst || 0,
@@ -101,7 +104,7 @@ const buildInvoiceData = async (order, paymentInfo) => {
             baseAmount: order.total?.baseAmount || 0,
             total: order.total?.total || 0,
             finalPayable: paymentInfo.isCod
-                ? (order.total?.total || 0)   // COD ignores referral discount
+                ? (order.total?.total || 0)
                 : (order.total?.finalPayable || order.total?.total || 0),
         },
         paymentDetails: {
@@ -492,17 +495,6 @@ export const updateVendor = async (req, res) => {
         );
         if (!updatedOrder) return res.status(404).json({ message: "Order not found" });
 
-        const vendorRecipients = getVendorRecipient(vendor._id);
-        await createNotification({
-            type: 'order_assigned',
-            title: '🛵 Order Assigned',
-            body: `Order #${updatedOrder.orderId} has been assigned to you.`,
-            recipients: vendorRecipients,
-            orderId: updatedOrder._id,
-            data: { orderId: updatedOrder._id.toString(), screenOrderId: updatedOrder.orderId },
-            triggeredBy: { userId: req.user?._id, userModel: 'Admin' },
-        });
-
         res.status(200).json({ message: "Vendor updated successfully", data: updatedOrder });
     } catch (error) {
         console.error("Error updating vendor:", error);
@@ -517,14 +509,9 @@ export const updateOrderStatus = async (req, res) => {
 
         if (!status) return res.status(400).json({ message: "Status is required" });
 
-        // These statuses are set only via dedicated endpoints
         const restrictedStatuses = [
-            "Mechanic Assigned",
-            "Mechanic Arrived",
-            "In Progress",
-            "Work Completed",
-            "Invoice Generated",
-            "Completed",
+            "Mechanic Assigned", "Mechanic Arrived", "In Progress",
+            "Work Completed", "Invoice Generated", "Completed",
         ];
         if (restrictedStatuses.includes(status)) {
             return res.status(400).json({
@@ -556,14 +543,8 @@ export const updateOrderStatus = async (req, res) => {
     }
 };
 
-// ─── New Flow: Step 1 — Mechanic Confirms Arrival ────────────────────────────
+// ─── Step 1 — Mechanic Confirms Arrival ──────────────────────────────────────
 
-/**
- * @route   PUT /api/admin/order/:id/mechanic-arrived
- * @desc    Mechanic confirms they have arrived at the customer location.
- *          Status: Mechanic Assigned → Mechanic Arrived
- * @access  Employee (mechanic)
- */
 export const confirmMechanicArrival = async (req, res) => {
     try {
         const { id } = req.params;
@@ -580,7 +561,6 @@ export const confirmMechanicArrival = async (req, res) => {
         order.arrivedAt = new Date();
         await order.save();
 
-        // Notify the customer
         if (order.userId) {
             const userRecipient = getUserRecipient(order.userId);
             await createNotification({
@@ -600,36 +580,59 @@ export const confirmMechanicArrival = async (req, res) => {
     }
 };
 
-// ─── New Flow: Step 2 — Send Work-Start OTP to User ──────────────────────────
-
+// ─── Step 2 — Request Work Start: Upload temp before-photo + send OTP ────────
 /**
  * @route   POST /api/admin/order/:id/request-work-start
- * @desc    Mechanic requests to start work. A 4-digit OTP is sent to the user via
- *          push notification. Status must be "Mechanic Arrived".
+ * @desc    Mechanic uploads before-photo (stored as TEMP) and triggers OTP to customer.
+ *          Photo is saved to a temp path. It is only moved to beforePhotos[] on
+ *          successful OTP verification in verifyWorkStart.
+ *          If this endpoint is called again (retry/resend), any existing temp photo
+ *          is deleted and replaced with the new one.
+ * @files   beforePhoto (multipart, image)
  * @access  Employee (mechanic)
  */
 export const requestWorkStart = async (req, res) => {
+    let uploadedFilePath = req.file?.path || null;
     try {
         const { id } = req.params;
         const order = await Order.findById(id);
-        if (!order) return res.status(404).json({ message: 'Order not found' });
+        if (!order) {
+            deleteUploadedFile(uploadedFilePath);
+            return res.status(404).json({ message: 'Order not found' });
+        }
 
         if (order.status !== 'Mechanic Arrived') {
+            deleteUploadedFile(uploadedFilePath);
             return res.status(400).json({
                 message: `Cannot request work start. Current status is "${order.status}".`,
             });
         }
 
+        if (!req.file) {
+            return res.status(400).json({ message: 'Before-repair photo is required.' });
+        }
+
+        // ── Delete old pending temp photo if one exists ───────────────────────
+        // This handles the case where the mechanic retries or the app was killed
+        // mid-flow (photo uploaded but OTP never verified).
+        if (order.workStartOtp?.pendingPhotoPath) {
+            deleteUploadedFile(order.workStartOtp.pendingPhotoPath);
+        }
+
+        // Generate OTP
         const otp = generateOtp();
+
+        // Store temp photo path alongside OTP — NOT in beforePhotos yet
         order.workStartOtp = {
             code: otp,
             expiresAt: new Date(Date.now() + OTP_TTL_MS),
             verified: false,
             attempts: 0,
+            pendingPhotoPath: uploadedFilePath,   // ← temp storage
         };
         await order.save();
 
-        // Send OTP to the user via push notification (in-app)
+        // Send OTP to the user via push notification
         if (order.userId) {
             const userRecipient = getUserRecipient(order.userId);
             await createNotification({
@@ -641,241 +644,27 @@ export const requestWorkStart = async (req, res) => {
                 data: {
                     orderId: order._id.toString(),
                     screenOrderId: order.orderId,
-                    otp,          // Include OTP in data payload for in-app display
-                },
-            });
-        }
-
-        return res.status(200).json({
-            message: 'OTP sent to customer for work start confirmation.',
-        });
-    } catch (error) {
-        console.error('Error requesting work start:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// ─── New Flow: Step 3 — Verify Work-Start OTP + Upload Before Photo ───────────
-
-/**
- * @route   POST /api/admin/order/:id/verify-work-start
- * @desc    Mechanic submits the OTP received from the customer + uploads a before-photo.
- *          On success: status → In Progress, workStartedAt recorded.
- *          Before-photo is expected as a previously uploaded file path via multipart
- *          (handled by multer middleware attached at route level).
- * @body    { otp: string }
- * @files   beforePhoto (single file, field name "beforePhoto")
- * @access  Employee (mechanic)
- */
-export const verifyWorkStart = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { otp } = req.body;
-
-        if (!otp) return res.status(400).json({ message: 'OTP is required.' });
-
-        const order = await Order.findById(id);
-        if (!order) return res.status(404).json({ message: 'Order not found' });
-
-        if (order.status !== 'Mechanic Arrived') {
-            return res.status(400).json({
-                message: `Cannot verify work start. Current status is "${order.status}".`,
-            });
-        }
-
-        const { workStartOtp } = order;
-
-        // Check attempts
-        if ((workStartOtp.attempts || 0) >= MAX_OTP_ATTEMPTS) {
-            return res.status(429).json({ message: 'Too many incorrect attempts. Please request a new OTP.' });
-        }
-
-        // Check expiry
-        if (!workStartOtp.expiresAt || new Date() > workStartOtp.expiresAt) {
-            return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
-        }
-
-        // Check code
-        if (workStartOtp.code !== String(otp)) {
-            order.workStartOtp.attempts = (workStartOtp.attempts || 0) + 1;
-            await order.save();
-            return res.status(400).json({
-                message: 'Incorrect OTP.',
-                attemptsLeft: MAX_OTP_ATTEMPTS - order.workStartOtp.attempts,
-            });
-        }
-
-        // ── OTP correct ──────────────────────────────────────────────────────
-        // Handle uploaded before-photo (multer sets req.file)
-        if (!req.file) {
-            return res.status(400).json({ message: 'Before-repair photo is required to start work.' });
-        }
-
-        order.workStartOtp.verified = true;
-        order.workStartOtp.code = null; // clear OTP after use
-        order.status = 'In Progress';
-        order.workStartedAt = new Date();
-        order.beforePhotos = [...(order.beforePhotos || []), req.file.path];
-
-        await order.save();
-
-        // Notify the customer
-        if (order.userId) {
-            const userRecipient = getUserRecipient(order.userId);
-            await createNotification({
-                type: 'work_started',
-                title: '⚙️ Work In Progress',
-                body: `Work has started on your order #${order.orderId}.`,
-                recipients: userRecipient,
-                orderId: order._id,
-                data: { orderId: order._id.toString(), screenOrderId: order.orderId },
-            });
-        }
-
-        return res.status(200).json({ message: 'Work started successfully.', data: order });
-    } catch (error) {
-        console.error('Error verifying work start OTP:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// ─── New Flow: Step 4 — Mechanic Marks Work Done + Upload After Photo ─────────
-
-/**
- * @route   POST /api/admin/order/:id/complete-work
- * @desc    Mechanic signals work is done and uploads an after-repair photo.
- *          A completion OTP is sent to the customer for final confirmation.
- *          Status: In Progress → Work Completed
- * @files   afterPhoto (single file, field name "afterPhoto")
- * @access  Employee (mechanic)
- */
-export const markWorkComplete = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const order = await Order.findById(id);
-        if (!order) return res.status(404).json({ message: 'Order not found' });
-
-        if (order.status !== 'In Progress') {
-            return res.status(400).json({
-                message: `Cannot mark work complete. Current status is "${order.status}".`,
-            });
-        }
-
-        if (!req.file) {
-            return res.status(400).json({ message: 'After-repair photo is required.' });
-        }
-
-        const otp = generateOtp();
-        order.status = 'Work Completed';
-        order.workCompletedAt = new Date();
-        order.afterPhotos = [...(order.afterPhotos || []), req.file.path];
-        order.workCompleteOtp = {
-            code: otp,
-            expiresAt: new Date(Date.now() + OTP_TTL_MS),
-            verified: false,
-            attempts: 0,
-        };
-        await order.save();
-
-        // Notify the customer with completion OTP
-        if (order.userId) {
-            const userRecipient = getUserRecipient(order.userId);
-            await createNotification({
-                type: 'work_complete_otp',
-                title: '✅ Work Completed — Confirm',
-                body: `The mechanic has completed work on order #${order.orderId}. Your confirmation OTP is: ${otp}`,
-                recipients: userRecipient,
-                orderId: order._id,
-                data: {
-                    orderId: order._id.toString(),
-                    screenOrderId: order.orderId,
                     otp,
                 },
             });
         }
 
         return res.status(200).json({
-            message: 'Work marked as complete. OTP sent to customer for confirmation.',
-            data: order,
+            message: 'Photo uploaded. OTP sent to customer for work start confirmation.',
         });
     } catch (error) {
-        console.error('Error marking work complete:', error);
+        // Photo was uploaded but something failed — delete the temp file
+        deleteUploadedFile(uploadedFilePath);
+        console.error('Error requesting work start:', error);
         return res.status(500).json({ message: 'Server error' });
     }
 };
 
-// ─── New Flow: Step 5 — User Confirms Work Completion via OTP ─────────────────
-
-/**
- * @route   POST /api/admin/order/:id/confirm-completion
- * @desc    Customer submits the completion OTP to confirm the work is done satisfactorily.
- *          Status: Work Completed → Completed
- * @body    { otp: string }
- * @access  Private (authUser) — the actual customer
- */
-export const confirmWorkCompletion = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { otp } = req.body;
-
-        if (!otp) return res.status(400).json({ message: 'OTP is required.' });
-
-        const order = await Order.findById(id);
-        if (!order) return res.status(404).json({ message: 'Order not found' });
-
-        if (order.status !== 'Work Completed') {
-            return res.status(400).json({
-                message: `Cannot confirm completion. Current status is "${order.status}".`,
-            });
-        }
-
-        const { workCompleteOtp } = order;
-
-        if ((workCompleteOtp.attempts || 0) >= MAX_OTP_ATTEMPTS) {
-            return res.status(429).json({ message: 'Too many incorrect attempts. Please request a new OTP.' });
-        }
-
-        if (!workCompleteOtp.expiresAt || new Date() > workCompleteOtp.expiresAt) {
-            return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
-        }
-
-        if (workCompleteOtp.code !== String(otp)) {
-            order.workCompleteOtp.attempts = (workCompleteOtp.attempts || 0) + 1;
-            await order.save();
-            return res.status(400).json({
-                message: 'Incorrect OTP.',
-                attemptsLeft: MAX_OTP_ATTEMPTS - order.workCompleteOtp.attempts,
-            });
-        }
-
-        order.workCompleteOtp.verified = true;
-        order.workCompleteOtp.code = null;
-        order.status = 'Completed';
-        await order.save();
-
-        // Notify mechanic(s) and admin
-        const adminRecipients = await getAdminRecipients();
-        await createNotification({
-            type: 'order_confirmed_complete',
-            title: '✅ Customer Confirmed Completion',
-            body: `Customer confirmed completion for order #${order.orderId}.`,
-            recipients: adminRecipients,
-            orderId: order._id,
-            data: { orderId: order._id.toString(), screenOrderId: order.orderId },
-        });
-
-        return res.status(200).json({ message: 'Completion confirmed by customer.', data: order });
-    } catch (error) {
-        console.error('Error confirming work completion:', error);
-        return res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// ─── Resend OTP Helpers ───────────────────────────────────────────────────────
-
+// ─── Step 2b — Resend Work Start OTP (reuses existing temp photo) ─────────────
 /**
  * @route   POST /api/admin/order/:id/resend-work-start-otp
- * @desc    Resend the work-start OTP (regenerate) if it expired or was not received.
+ * @desc    Regenerates OTP. The pendingPhotoPath from a prior requestWorkStart
+ *          call is preserved — no new photo upload needed.
  * @access  Employee (mechanic)
  */
 export const resendWorkStartOtp = async (req, res) => {
@@ -883,12 +672,26 @@ export const resendWorkStartOtp = async (req, res) => {
         const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        if (!['Mechanic Arrived'].includes(order.status)) {
+        if (order.status !== 'Mechanic Arrived') {
             return res.status(400).json({ message: `Cannot resend OTP at status "${order.status}".` });
         }
 
+        // Must have a pending photo already (from a prior requestWorkStart call)
+        if (!order.workStartOtp?.pendingPhotoPath) {
+            return res.status(400).json({
+                message: 'No pending photo found. Please restart the work start flow.',
+            });
+        }
+
         const otp = generateOtp();
-        order.workStartOtp = { code: otp, expiresAt: new Date(Date.now() + OTP_TTL_MS), verified: false, attempts: 0 };
+        order.workStartOtp = {
+            ...order.workStartOtp.toObject?.() || order.workStartOtp,
+            code: otp,
+            expiresAt: new Date(Date.now() + OTP_TTL_MS),
+            verified: false,
+            attempts: 0,
+            // pendingPhotoPath is preserved — no new upload
+        };
         await order.save();
 
         if (order.userId) {
@@ -910,9 +713,168 @@ export const resendWorkStartOtp = async (req, res) => {
     }
 };
 
+// ─── Step 3 — Verify Work Start OTP ──────────────────────────────────────────
+/**
+ * @route   POST /api/admin/order/:id/verify-work-start
+ * @desc    Mechanic submits customer OTP. On success the temp photo is moved
+ *          to beforePhotos[] and status advances to "In Progress".
+ *          On failure the temp photo stays until the mechanic retries or
+ *          explicitly re-initiates the flow.
+ * @body    { otp: string }
+ * @access  Employee (mechanic)
+ */
+export const verifyWorkStart = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { otp } = req.body;
+        if (!otp) return res.status(400).json({ message: 'OTP is required.' });
+
+        const order = await Order.findById(id);
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+
+        if (order.status !== 'Mechanic Arrived') {
+            return res.status(400).json({
+                message: `Cannot verify work start. Current status is "${order.status}".`,
+            });
+        }
+
+        const workStartOtp = order.workStartOtp;
+
+        if (!workStartOtp?.pendingPhotoPath) {
+            return res.status(400).json({
+                message: 'No pending photo found. Please initiate the work start flow again.',
+            });
+        }
+
+        if ((workStartOtp.attempts || 0) >= MAX_OTP_ATTEMPTS) {
+            // Clean up the pending photo since max attempts exhausted
+            deleteUploadedFile(workStartOtp.pendingPhotoPath);
+            order.workStartOtp.pendingPhotoPath = null;
+            await order.save();
+            return res.status(429).json({ message: 'Too many incorrect attempts. Please retake the photo and restart.' });
+        }
+
+        if (!workStartOtp.expiresAt || new Date() > workStartOtp.expiresAt) {
+            // OTP expired — delete stale photo so mechanic must retake
+            deleteUploadedFile(workStartOtp.pendingPhotoPath);
+            order.workStartOtp.pendingPhotoPath = null;
+            await order.save();
+            return res.status(400).json({ message: 'OTP expired. Please retake the photo and restart.' });
+        }
+
+        if (workStartOtp.code !== String(otp)) {
+            order.workStartOtp.attempts = (workStartOtp.attempts || 0) + 1;
+            await order.save();
+            return res.status(400).json({
+                message: 'Incorrect OTP.',
+                attemptsLeft: MAX_OTP_ATTEMPTS - order.workStartOtp.attempts,
+            });
+        }
+
+        // ── OTP correct: commit the photo ────────────────────────────────────
+        const confirmedPhotoPath = workStartOtp.pendingPhotoPath;
+
+        order.workStartOtp = {
+            code: null,
+            expiresAt: null,
+            verified: true,
+            attempts: workStartOtp.attempts,
+            pendingPhotoPath: null,   // cleared — photo now lives in beforePhotos
+        };
+        order.status = 'In Progress';
+        order.workStartedAt = new Date();
+        order.beforePhotos = [...(order.beforePhotos || []), confirmedPhotoPath];
+        await order.save();
+
+        if (order.userId) {
+            const userRecipient = getUserRecipient(order.userId);
+            await createNotification({
+                type: 'work_started',
+                title: '⚙️ Work In Progress',
+                body: `Work has started on your order #${order.orderId}.`,
+                recipients: userRecipient,
+                orderId: order._id,
+                data: { orderId: order._id.toString(), screenOrderId: order.orderId },
+            });
+        }
+
+        return res.status(200).json({ message: 'Work started successfully.', data: order });
+    } catch (error) {
+        console.error('Error verifying work start OTP:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ─── Step 4 — Mark Work Complete: Upload temp after-photo + send OTP ─────────
+/**
+ * @route   POST /api/admin/order/:id/complete-work
+ * @desc    Mechanic uploads after-photo (stored as TEMP) and triggers completion
+ *          OTP to the customer. Photo is only committed to afterPhotos[] on
+ *          successful OTP verification in confirmWorkCompletion.
+ *          If called again (retry), old temp photo is deleted and replaced.
+ * @files   afterPhoto (multipart, image)
+ * @access  Employee (mechanic)
+ */
+export const markWorkComplete = async (req, res) => {
+    let uploadedFilePath = req.file?.path || null;
+    try {
+        const { id } = req.params;
+        const order = await Order.findById(id);
+        if (!order) {
+            deleteUploadedFile(uploadedFilePath);
+            return res.status(404).json({ message: 'Order not found' });
+        }
+        if (order.status !== 'In Progress') {
+            deleteUploadedFile(uploadedFilePath);
+            return res.status(400).json({ message: `Cannot mark work complete. Current status is "${order.status}".` });
+        }
+        if (!req.file) {
+            return res.status(400).json({ message: 'After-repair photo is required.' });
+        }
+
+        // ── Delete old pending temp after-photo if one exists ─────────────────
+        if (order.workCompleteOtp?.pendingPhotoPath) {
+            deleteUploadedFile(order.workCompleteOtp.pendingPhotoPath);
+        }
+
+        const otp = generateOtp();
+
+        // Status moves to Work Completed but photo is NOT committed yet
+        order.status = 'Work Completed';
+        order.workCompletedAt = new Date();
+        order.workCompleteOtp = {
+            code: otp,
+            expiresAt: new Date(Date.now() + OTP_TTL_MS),
+            verified: false,
+            attempts: 0,
+            pendingPhotoPath: uploadedFilePath,   // ← temp storage
+        };
+        await order.save();
+
+        if (order.userId) {
+            const userRecipient = getUserRecipient(order.userId);
+            await createNotification({
+                type: 'work_complete_otp',
+                title: '✅ Work Completed — Confirm',
+                body: `The mechanic has completed work on order #${order.orderId}. Your confirmation OTP is: ${otp}`,
+                recipients: userRecipient,
+                orderId: order._id,
+                data: { orderId: order._id.toString(), screenOrderId: order.orderId, otp },
+            });
+        }
+
+        return res.status(200).json({ message: 'Work marked as complete. OTP sent to customer.', data: order });
+    } catch (error) {
+        deleteUploadedFile(uploadedFilePath);
+        console.error('Error marking work complete:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ─── Step 4b — Resend Completion OTP (reuses existing temp photo) ─────────────
 /**
  * @route   POST /api/admin/order/:id/resend-completion-otp
- * @desc    Resend the work completion OTP if it expired or was not received.
+ * @desc    Regenerates completion OTP. The pendingPhotoPath is preserved.
  * @access  Employee (mechanic)
  */
 export const resendCompletionOtp = async (req, res) => {
@@ -924,8 +886,21 @@ export const resendCompletionOtp = async (req, res) => {
             return res.status(400).json({ message: `Cannot resend OTP at status "${order.status}".` });
         }
 
+        if (!order.workCompleteOtp?.pendingPhotoPath) {
+            return res.status(400).json({
+                message: 'No pending photo found. Please restart the complete work flow.',
+            });
+        }
+
         const otp = generateOtp();
-        order.workCompleteOtp = { code: otp, expiresAt: new Date(Date.now() + OTP_TTL_MS), verified: false, attempts: 0 };
+        order.workCompleteOtp = {
+            ...order.workCompleteOtp.toObject?.() || order.workCompleteOtp,
+            code: otp,
+            expiresAt: new Date(Date.now() + OTP_TTL_MS),
+            verified: false,
+            attempts: 0,
+            // pendingPhotoPath preserved
+        };
         await order.save();
 
         if (order.userId) {
@@ -947,16 +922,88 @@ export const resendCompletionOtp = async (req, res) => {
     }
 };
 
-// ─── Invoice Generation (price display only — pre-payment) ───────────────────
-
+// ─── Step 5 — User Confirms Work Completion via OTP ──────────────────────────
 /**
- * @route   PUT /api/admin/order/:id/update-order/generate-invoice
- * @desc    Admin/mechanic finalises parts & services, calculates totals, and sets
- *          status to "Invoice Generated". This is the "show the bill" step.
- *          Payment has NOT happened yet at this point.
- *          Order must be in "Completed" status before invoicing.
- * @access  Admin / Mechanic
+ * @route   POST /api/admin/order/:id/confirm-completion
+ * @desc    Customer submits the completion OTP. On success the temp after-photo
+ *          is committed to afterPhotos[]. Status → Completed.
+ * @body    { otp: string }
+ * @access  Private (authUser)
  */
+export const confirmWorkCompletion = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { otp } = req.body;
+
+        if (!otp) return res.status(400).json({ message: 'OTP is required.' });
+
+        const order = await Order.findById(id);
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+
+        if (order.status !== 'Work Completed') {
+            return res.status(400).json({
+                message: `Cannot confirm completion. Current status is "${order.status}".`,
+            });
+        }
+
+        const { workCompleteOtp } = order;
+
+        if ((workCompleteOtp.attempts || 0) >= MAX_OTP_ATTEMPTS) {
+            deleteUploadedFile(workCompleteOtp.pendingPhotoPath);
+            order.workCompleteOtp.pendingPhotoPath = null;
+            await order.save();
+            return res.status(429).json({ message: 'Too many incorrect attempts. Please request a new OTP.' });
+        }
+
+        if (!workCompleteOtp.expiresAt || new Date() > workCompleteOtp.expiresAt) {
+            deleteUploadedFile(workCompleteOtp.pendingPhotoPath);
+            order.workCompleteOtp.pendingPhotoPath = null;
+            await order.save();
+            return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+        }
+
+        if (workCompleteOtp.code !== String(otp)) {
+            order.workCompleteOtp.attempts = (workCompleteOtp.attempts || 0) + 1;
+            await order.save();
+            return res.status(400).json({
+                message: 'Incorrect OTP.',
+                attemptsLeft: MAX_OTP_ATTEMPTS - order.workCompleteOtp.attempts,
+            });
+        }
+
+        // ── OTP correct: commit the after-photo ──────────────────────────────
+        const confirmedPhotoPath = workCompleteOtp.pendingPhotoPath;
+
+        order.workCompleteOtp = {
+            code: null,
+            expiresAt: null,
+            verified: true,
+            attempts: workCompleteOtp.attempts,
+            pendingPhotoPath: null,
+        };
+        order.status = 'Completed';
+        order.afterPhotos = [...(order.afterPhotos || []), confirmedPhotoPath];
+        await order.save();
+
+        const adminRecipients = await getAdminRecipients();
+        await createNotification({
+            type: 'order_confirmed_complete',
+            title: '✅ Customer Confirmed Completion',
+            body: `Customer confirmed completion for order #${order.orderId}.`,
+            recipients: adminRecipients,
+            orderId: order._id,
+            data: { orderId: order._id.toString(), screenOrderId: order.orderId },
+        });
+
+        return res.status(200).json({ message: 'Completion confirmed by customer.', data: order });
+    } catch (error) {
+        console.error('Error confirming work completion:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ─── Invoice Generation ───────────────────────────────────────────────────────
+
 export const updateOrderandGenerateInvoice = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
@@ -1035,17 +1082,8 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
     }
 };
 
-// ─── COD Payment — Mark as Paid by Mechanic / Admin ─────────────────────────
+// ─── COD Payment ──────────────────────────────────────────────────────────────
 
-/**
- * @route   POST /api/admin/order/:id/mark-paid-cod
- * @desc    Mark an order as paid via Cash on Delivery (collected by mechanic or admin).
- *          - No coupon or referral discount is applied for COD.
- *          - Creates a real Invoice document with status "paid".
- *          - Sets photo cleanup schedule (7 days from now).
- * @access  Admin / Employee (mechanic)
- * @body    { amountCollected: number }
- */
 export const markPaidCod = async (req, res) => {
     try {
         const { id } = req.params;
@@ -1064,27 +1102,21 @@ export const markPaidCod = async (req, res) => {
             return res.status(400).json({ message: 'Order is already paid.' });
         }
 
-        // COD: use gross total (ignore referral discount / coupon)
         const codPayable = order.total?.total || 0;
         const collected = amountCollected != null ? Number(amountCollected) : codPayable;
 
-        // Strip referral discount / coupon from order totals for COD
         order.total.referralDiscount = 0;
         order.total.finalPayable = codPayable;
         order.coupon = null;
-
         order.paymentStatus = 'paid';
         order.paymentMethod = 'cash';
         order.amountPaid = collected;
         order.balanceDue = 0;
         order.paymentDate = new Date();
-
-        // Schedule photo deletion 7 days after payment
         order.photosScheduledDeleteAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
         await order.save();
 
-        // Create the real Invoice document
         const invoiceData = await buildInvoiceData(order, {
             method: 'cash',
             amountPaid: collected,
@@ -1092,7 +1124,6 @@ export const markPaidCod = async (req, res) => {
         });
         const invoice = await Invoice.create(invoiceData);
 
-        // Notify user
         if (order.userId) {
             const userRecipient = getUserRecipient(order.userId);
             await createNotification({

@@ -26,7 +26,7 @@ const orderSchema = new mongoose.Schema({
         lastUpdated: Date,
     },
     isWithinServiceArea: { type: Boolean, default: false },
-    distanceFromCenter: { type: Number }, // in meters
+    distanceFromCenter: { type: Number },
 
     selectedBrand: { type: String, required: true, trim: true },
     selectedModel: { type: String, required: true, trim: true },
@@ -47,8 +47,6 @@ const orderSchema = new mongoose.Schema({
     issues: { type: String, default: '', trim: true },
 
     // ─── Status Flow ──────────────────────────────────────────────────────────
-    // Pending → Mechanic Assigned → Mechanic Arrived → In Progress →
-    // Work Completed → Invoice Generated → Completed → Cancelled
     status: {
         type: String,
         default: 'Pending',
@@ -64,47 +62,45 @@ const orderSchema = new mongoose.Schema({
         ],
     },
 
-    // ─── Mechanic Arrival ─────────────────────────────────────────────────────
     arrivedAt: { type: Date, default: null },
 
-    // ─── Work Start OTP (sent to user when mechanic wants to start) ───────────
+    // ─── Work Start OTP ───────────────────────────────────────────────────────
+    // pendingPhotoPath: temporary before-photo path stored here until OTP is
+    // verified. On success it is moved to beforePhotos[]. On failure/expiry it
+    // is deleted from disk and this field is cleared.
     workStartOtp: {
-        code: { type: String, default: null },          // 4-digit string
+        code: { type: String, default: null },
         expiresAt: { type: Date, default: null },
         verified: { type: Boolean, default: false },
         attempts: { type: Number, default: 0 },
+        pendingPhotoPath: { type: String, default: null },
     },
 
-    // ─── Work Completion OTP (sent to user when mechanic marks work done) ─────
+    // ─── Work Completion OTP ──────────────────────────────────────────────────
+    // Same pattern: pendingPhotoPath holds the temp after-photo until the
+    // customer's OTP confirms the work. On success it moves to afterPhotos[].
     workCompleteOtp: {
         code: { type: String, default: null },
         expiresAt: { type: Date, default: null },
         verified: { type: Boolean, default: false },
         attempts: { type: Number, default: 0 },
+        pendingPhotoPath: { type: String, default: null },
     },
 
     workStartedAt: { type: Date, default: null },
     workCompletedAt: { type: Date, default: null },
 
-    // ─── Before / After Repair Photos ────────────────────────────────────────
-    // Uploaded by mechanic. Stored as relative paths (e.g. /uploads/orders/<orderId>/before-1.jpg)
-    beforePhotos: {
-        type: [String],
-        default: [],
-    },
-    afterPhotos: {
-        type: [String],
-        default: [],
-    },
+    // ─── Confirmed Repair Photos ──────────────────────────────────────────────
+    // Only populated after successful OTP verification.
+    beforePhotos: { type: [String], default: [] },
+    afterPhotos: { type: [String], default: [] },
 
     // ─── Photo Cleanup Tracking ───────────────────────────────────────────────
-    // Set when order is fully paid + invoice generated.
-    // A cron job deletes photo files and clears these arrays 7 days after this date.
     photosScheduledDeleteAt: { type: Date, default: null },
     photosDeleted: { type: Boolean, default: false },
 
     // ─── Assignments ──────────────────────────────────────────────────────────
-    assignedMechanics: [{ type: String, trim: true }],      // array of mechanic names
+    assignedMechanics: [{ type: String, trim: true }],
     mechanicIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Employee' }],
     assignedVendor: { type: String, default: null, trim: true },
     vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', default: null },
@@ -149,7 +145,6 @@ const orderSchema = new mongoose.Schema({
 
     coupon: { type: String },
 
-    // ─── Payment Fields ────────────────────────────────────────────────────────
     paymentStatus: {
         type: String,
         enum: ['unpaid', 'partial', 'paid'],
@@ -164,7 +159,6 @@ const orderSchema = new mongoose.Schema({
     balanceDue: { type: Number, default: 0, min: 0 },
     paymentDate: { type: Date, default: null },
 
-    // ─── Razorpay Integration Fields ──────────────────────────────────────────
     razorpay: {
         orderId: { type: String, default: null, trim: true },
         paymentId: { type: String, default: null, trim: true },
@@ -181,7 +175,6 @@ const orderSchema = new mongoose.Schema({
         webhookPayload: { type: mongoose.Schema.Types.Mixed, default: null },
     },
 
-    // ─── Cancellation Fields ──────────────────────────────────────────────────
     cancellationReason: { type: String, default: null, trim: true },
     cancelledAt: { type: Date, default: null },
 }, {
@@ -190,7 +183,6 @@ const orderSchema = new mongoose.Schema({
 
 orderSchema.index({ userLocation: '2dsphere' });
 
-// ─── Pre-save hook: auto-calculate balanceDue & paymentStatus ────────────────
 orderSchema.pre('save', function (next) {
     if (this.total?.total != null) {
         const payableAmount = this.total.finalPayable || this.total.total || 0;
