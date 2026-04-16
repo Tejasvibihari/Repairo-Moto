@@ -24,6 +24,7 @@ const notificationSchema = new mongoose.Schema({
             'new_order',        // → admin, mechanic sees new booking
             'order_assigned',   // → mechanic gets assigned
             'mechanic_assigned',// → mechanic assigned specific
+            'mechanic_arrived',// → mechanic assigned specific
             'delivery_assigned',// → delivery agent assigned specific
             'order_update',     // → user: status changed
             'order_cancelled',  // → admin, mechanic, user
