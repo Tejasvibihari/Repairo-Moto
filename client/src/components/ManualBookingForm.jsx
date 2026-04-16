@@ -92,6 +92,7 @@ export default function ManualBookingForm({ coupon }) {
                 preferredDate: formData.preferredDate ? formData.preferredDate.toISOString() : null,
                 preferredTime: formData.preferredTime ? formData.preferredTime.format('HH:mm') : null,
             };
+            console.log(payload);
             const response = await axiosClient.post('/api/admin/order/manualorder', payload);
             setSnackBarMessage(response.data.message);
             setSnackBarSeverity('success');
@@ -104,6 +105,7 @@ export default function ManualBookingForm({ coupon }) {
                 contactNo: '',
                 email: '',
                 city: 'Patna',
+                address: "",
                 selectedBrand: '',
                 selectedModel: '',
                 modelName: '',
@@ -175,7 +177,7 @@ export default function ManualBookingForm({ coupon }) {
                         />
                     </div>
 
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
+                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
                         <TextField
                             fullWidth
                             name="email"
@@ -198,6 +200,21 @@ export default function ManualBookingForm({ coupon }) {
                             variant="outlined"
                             placeholder="Enter City"
                             value={formData.city}
+                            onChange={handleInputChange}
+                            required
+                            slotProps={{
+                                input: {
+                                    startAdornment: <LocationCityIcon sx={{ color: 'action.active', mr: 1 }} />,
+                                },
+                            }}
+                        />
+                        <TextField
+                            fullWidth
+                            name="address"
+                            label="Address"
+                            variant="outlined"
+                            placeholder="Enter Address"
+                            value={formData.address}
                             onChange={handleInputChange}
                             required
                             slotProps={{

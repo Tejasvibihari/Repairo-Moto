@@ -1,4 +1,7 @@
 import express from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import {
     createManualOrder,
     getAllBookings,
@@ -17,10 +20,52 @@ import {
     getOrdersByPosition,
     completedOrders,
     completeRevenue,
-    updateItems
+    updateItems,
+    // ── New flow ──
+    confirmMechanicArrival,
+    requestWorkStart,
+    verifyWorkStart,
+    markWorkComplete,
+    confirmWorkCompletion,
+    resendWorkStartOtp,
+    resendCompletionOtp,
+    markPaidCod,
 } from "../Controllers/orderController.js";
 import authAdmin from "../Middleware/authAdmin.js";
 import authUser from "../Middleware/authUser.js";
+
+// ─── Multer: photo upload config ──────────────────────────────────────────────
+// Photos are stored under  /uploads/orders/<orderId>/  at the server level.
+// The orderId is embedded in the form field "orderId" that the client must send
+// alongside the file so the storage engine can build the folder path.
+// After 7 days (tracked via Order.photosScheduledDeleteAt) a cron job removes them.
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        // req.params.id is the order _id; we create a per-order subdirectory
+        const dir = path.join('uploads', 'orders', req.params.id);
+        fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const prefix = file.fieldname; // "beforePhoto" or "afterPhoto"
+        cb(null, `${prefix}-${Date.now()}${ext}`);
+    },
+});
+
+const fileFilter = (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|webp/;
+    const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+    if (allowed.test(ext)) return cb(null, true);
+    cb(new Error('Only image files (jpeg, jpg, png, webp) are allowed.'));
+};
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per photo
+});
 
 const router = express.Router();
 
@@ -30,52 +75,118 @@ const router = express.Router();
 
 /**
  * @route   POST /manualorder
- * @desc    Create a new service booking manually (by admin/staff) without requiring user authentication.
- *          Expects customer details, vehicle info, service selections, and preferred date/time.
- *          Generates a unique orderId (ORD-DDMMYY-XXX) and stores the order.
- * @access  Public (consider adding authAdmin if restricted)
- * @body    { name, contactNo, email?, city, selectedBrand, selectedModel, modelName?, cc, bs?,
- *            services[], serviceType?, otherService?, preferredDate, preferredTime, issues?, coupon?,
- *            userLocation?, isWithinServiceArea?, distanceFromCenter? }
- * @returns 201 with created order, or 400/500 on error
+ * @desc    Create a new service booking manually (by admin/staff).
+ * @access  Public / Admin
  */
 router.post("/manualorder", createManualOrder);
 
 /**
  * @route   POST /userorder
- * @desc    Create a new service booking for an authenticated user. Extracts userId from token.
- *          Sends booking confirmation email to the user and creates a notification for admins/mechanics.
- * @access  Private (requires valid user token)
- * @middleware authUser - attaches req.user
- * @body    Similar to manualorder, but userId is taken from token.
- * @returns 201 with created order
+ * @desc    Create a new booking for an authenticated user.
+ * @access  Private (authUser)
  */
 router.post("/userorder", authUser, userOrder);
 
 // -------------------------------------------------------------------
-// ORDER RETRIEVAL ROUTES (ADMIN/GENERAL)
+// ORDER RETRIEVAL ROUTES
 // -------------------------------------------------------------------
 
 /**
  * @route   GET /getallorder
- * @desc    Fetch all orders with advanced filtering, searching, sorting, and pagination.
- *          Supports query params: page, limit, status, serviceType, assignedMechanic, mechanicId,
- *          assignedVendor, vendorId, assignedDelivery, deliveryId, isWithinServiceArea,
- *          referralProcessed, selectedBrand, selectedModel, city, fromDate, toDate, dateField,
- *          q (search term), sort (field:asc|desc).
- * @access  Public (should likely be restricted to admin)
- * @returns { success, data[], pagination }
+ * @desc    Fetch all orders with filtering, searching, sorting & pagination.
  */
 router.get("/getallorder", getAllBookings);
 
 /**
  * @route   GET /getorderbyid/:id
- * @desc    Get a single order by its MongoDB _id. Populates userId and mechanicId details.
- * @access  Public/Private (adjust middleware as needed)
- * @param   id - Order _id
- * @returns Order object or 404
+ * @desc    Get a single order by its MongoDB _id.
  */
 router.get("/getorderbyid/:id", getOrderById);
+
+/**
+ * @route   GET /all
+ * @desc    Get all orders for the authenticated user.
+ * @access  Private (authUser)
+ */
+router.get('/all', authUser, getOrderByUserId);
+
+// -------------------------------------------------------------------
+// MECHANIC FLOW ROUTES  (new)
+// -------------------------------------------------------------------
+
+/**
+ * @route   PUT /:id/mechanic-arrived
+ * @desc    Mechanic confirms arrival at the customer's location.
+ *          Status: Mechanic Assigned → Mechanic Arrived
+ * @access  Employee (mechanic)
+ */
+router.put('/:id/mechanic-arrived', confirmMechanicArrival);
+
+/**
+ * @route   POST /:id/request-work-start
+ * @desc    Mechanic requests to start work. Sends a 4-digit OTP to the customer
+ *          via push notification. Status must be "Mechanic Arrived".
+ * @access  Employee (mechanic)
+ */
+router.post('/:id/request-work-start', requestWorkStart);
+
+/**
+ * @route   POST /:id/verify-work-start
+ * @desc    Mechanic submits the customer-provided OTP + uploads a before-repair photo.
+ *          On success: status → In Progress.
+ * @access  Employee (mechanic)
+ * @body    { otp: string }
+ * @files   beforePhoto (multipart, image)
+ */
+router.post('/:id/verify-work-start', upload.single('beforePhoto'), verifyWorkStart);
+
+/**
+ * @route   POST /:id/complete-work
+ * @desc    Mechanic marks the job as done and uploads an after-repair photo.
+ *          A completion OTP is sent to the customer.
+ *          Status: In Progress → Work Completed
+ * @access  Employee (mechanic)
+ * @files   afterPhoto (multipart, image)
+ */
+router.post('/:id/complete-work', upload.single('afterPhoto'), markWorkComplete);
+
+/**
+ * @route   POST /:id/confirm-completion
+ * @desc    Customer confirms work completion by submitting the OTP received.
+ *          Status: Work Completed → Completed
+ * @access  Private (authUser)
+ * @body    { otp: string }
+ */
+router.post('/:id/confirm-completion', authUser, confirmWorkCompletion);
+
+/**
+ * @route   POST /:id/resend-work-start-otp
+ * @desc    Resend (regenerate) the work-start OTP if it expired or wasn't received.
+ * @access  Employee (mechanic)
+ */
+router.post('/:id/resend-work-start-otp', resendWorkStartOtp);
+
+/**
+ * @route   POST /:id/resend-completion-otp
+ * @desc    Resend (regenerate) the completion OTP if it expired or wasn't received.
+ * @access  Employee (mechanic)
+ */
+router.post('/:id/resend-completion-otp', resendCompletionOtp);
+
+// -------------------------------------------------------------------
+// COD PAYMENT ROUTE  (new)
+// -------------------------------------------------------------------
+
+/**
+ * @route   POST /:id/mark-paid-cod
+ * @desc    Mark an order as paid via Cash on Delivery.
+ *          - Clears coupon and referral discount (COD cannot use either).
+ *          - Creates a real Invoice document (status: paid).
+ *          - Schedules photo deletion 7 days from now.
+ * @access  Admin / Employee (mechanic)
+ * @body    { amountCollected: number }
+ */
+router.post('/:id/mark-paid-cod', markPaidCod);
 
 // -------------------------------------------------------------------
 // ORDER ASSIGNMENT & STATUS UPDATE ROUTES (ADMIN ACTIONS)
@@ -83,71 +194,35 @@ router.get("/getorderbyid/:id", getOrderById);
 
 /**
  * @route   PUT /update/updateMechanic/:id
- * @desc    Assign a mechanic (employee) to an order. Updates order status to "Mechanic Assigned",
- *          stores mechanic name and ID. Also triggers referral logic if applicable.
- * @access  Admin only (should add authAdmin middleware)
- * @param   id - Order _id
- * @body    { mechanicId } - Employee ID of the mechanic
+ * @desc    Assign mechanic(s) to an order.
+ * @access  Admin
  */
 router.put("/update/updateMechanic/:id", authAdmin, updateMechanic);
 
 /**
  * @route   PUT /updateDelivery/:id
- * @desc    Assign a delivery person (employee) to an order.
- * @access  Admin only
- * @param   id - Order _id
- * @body    { deliveryId } - Employee ID of delivery person
+ * @desc    Assign a delivery person to an order.
  */
 router.put("/updateDelivery/:id", updateDelivery);
 
 /**
  * @route   PUT /updateVendor/:id
  * @desc    Assign a vendor (parts supplier) to an order.
- * @access  Admin only
- * @param   id - Order _id
- * @body    { vendorId } - Vendor ID
  */
 router.put("/updateVendor/:id", updateVendor);
 
 /**
  * @route   PUT /updateStatus/:id
- * @desc    Directly update the status field of an order (e.g., "In Progress", "Completed").
- * @access  Admin/Mechanic
- * @param   id - Order _id
- * @body    { status } - New status string
+ * @desc    Directly update order status (limited — restricted statuses blocked).
  */
 router.put("/updateStatus/:id", updateOrderStatus);
 
 // -------------------------------------------------------------------
-// EMPLOYEE/VENDOR SPECIFIC ORDER ROUTES
+// EMPLOYEE / VENDOR SPECIFIC ORDER ROUTES
 // -------------------------------------------------------------------
 
-/**
- * @route   GET /getorder/:employeeId
- * @desc    Fetch all orders assigned to a specific employee (as mechanic, delivery, or vendor).
- *          Note: This route conflicts with the vendor route below if not distinguished by path.
- *          Currently both use "/getorder/:id" - consider differentiating (e.g., "/employee/:employeeId").
- * @param   employeeId - Employee ID
- * @returns Array of orders
- */
 router.get("/getorder/:employeeId", getAllBookingsByEmployee);
-
-/**
- * @route   GET /getorder/:vendorId
- * @desc    Fetch all orders assigned to a specific vendor.
- *          WARNING: This route pattern is identical to the one above. The order of definition matters;
- *          Express will match the first one. Consider using distinct paths like "/vendor/:vendorId".
- * @param   vendorId - Vendor ID
- * @returns Array of orders
- */
 router.get("/vendor/:vendorId", getAllBookingsByVendor);
-
-/**
- * @route   GET /employee/getorderbyid/:id
- * @desc    Get a single order by ID - likely intended for employee portal view.
- *          (Functionally identical to /getorderbyid/:id, but may have different access control)
- * @param   id - Order _id
- */
 router.get("/employee/getorderbyid/:id", getOrderById);
 
 // -------------------------------------------------------------------
@@ -156,65 +231,42 @@ router.get("/employee/getorderbyid/:id", getOrderById);
 
 /**
  * @route   PUT /bookings/:id/update-parts
- * @desc    Update/replace the list of parts used in an order (without pricing).
- *          Used when mechanic adds parts to the service.
- * @param   id - Order _id
- * @body    { partsUsed: [{ partName, quantity }] }
+ * @desc    Update parts & services on an order (no pricing).
  */
 router.put('/bookings/:id/update-parts', updateItems);
 
 /**
  * @route   PUT /bookings/:id/update-parts-price
- * @desc    Update parts with pricing and create/update a VendorOrder document.
- *          Calculates subtotal, discount, and total for vendor billing.
- * @param   id - Order _id
- * @body    { partsUsed: [{ partName, quantity, price, discountPrice }], pricing: { subTotal, discountType, discountAmount, total } }
+ * @desc    Update parts pricing and create/update a VendorOrder document.
  */
 router.put('/bookings/:id/update-parts-price', updatePartsPrice);
 
 /**
  * @route   PUT /:id/update-order/generate-invoice
- * @desc    Finalize order: record parts & services, calculate totals, generate invoice,
- *          apply referral discounts (deduct from user's referral balance), process referral earnings for referee,
- *          and set status to "Invoice Generated".
- * @param   id - Order _id
- * @body    { partsAndServices, total, invoiceDetails }
- * @returns Updated order
+ * @desc    Finalise parts & services, calculate totals, set status to "Invoice Generated".
+ *          Order must be in "Completed" status.
+ *          This is the "show the bill" step — payment is NOT taken here.
  */
 router.put('/:id/update-order/generate-invoice', updateOrderandGenerateInvoice);
 
 // -------------------------------------------------------------------
-// USER-SPECIFIC ROUTES
+// CANCELLATION
 // -------------------------------------------------------------------
 
 /**
- * @route   GET /all
- * @desc    Get all orders belonging to the currently authenticated user.
- * @access  Private (requires authUser)
- * @returns { message, orders[] }
- */
-router.get('/all', authUser, getOrderByUserId);
-
-/**
  * @route   PUT /cancel/:id
- * @desc    Cancel an order by ID. Only allowed if order is not already completed/invoiced/assigned.
- *          Stores cancellation reason and timestamp.
- * @param   id - Order _id
- * @body    { reason } - optional cancellation reason
+ * @desc    Cancel an order. Not allowed once work is in progress or beyond.
  */
 router.put('/cancel/:id', cancelOrder);
 
 // -------------------------------------------------------------------
-// ROLE-BASED ORDER FETCH (for employee app)
+// ROLE-BASED ORDER FETCH (employee app)
 // -------------------------------------------------------------------
 
 /**
  * @route   GET /by-position
- * @desc    Fetch orders assigned to an employee based on their position (mechanic or delivery).
- *          Expects query parameters: position (mechanic|delivery) and employeeId.
- * @access  Employee (should be protected)
+ * @desc    Fetch orders by employee position (mechanic | delivery).
  * @query   position, employeeId
- * @returns Array of orders
  */
 router.get('/by-position', getOrdersByPosition);
 
@@ -222,22 +274,7 @@ router.get('/by-position', getOrdersByPosition);
 // ANALYTICS / DASHBOARD ROUTES
 // -------------------------------------------------------------------
 
-/**
- * @route   GET /orderstatus/completed-orders
- * @desc    Get count of completed orders (status "Invoice Generated") grouped by day (if timeFrame=month)
- *          or by month (default, current year). Used for admin dashboard charts.
- * @query   timeFrame - "month" for daily breakdown of current month, otherwise monthly for current year
- * @returns [{ label, count }]
- */
 router.get('/orderstatus/completed-orders', completedOrders);
-
-/**
- * @route   GET /orderstatus/revenue
- * @desc    Get total revenue from completed orders grouped by day (timeFrame=month),
- *          by month for last 6 months (timeFrame=last6), or by month for current year (default).
- * @query   timeFrame - "month" | "last6" | otherwise (yearly)
- * @returns [{ label, revenue }]
- */
 router.get('/orderstatus/revenue', completeRevenue);
 
 export default router;

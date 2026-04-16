@@ -78,7 +78,7 @@ const invoiceSchema = new mongoose.Schema({
     paymentDetails: {
         method: {
             type: String,
-            enum: ['razorpay', 'upi', 'card', 'bank_transfer'],
+            enum: ['razorpay', 'upi', 'card', 'bank_transfer', 'referral'],
             default: 'razorpay',
         },
         razorpayPaymentId: { type: String, trim: true, default: null },

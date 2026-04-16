@@ -46,14 +46,66 @@ const orderSchema = new mongoose.Schema({
     estimatedBudget: { type: String, trim: true },
     issues: { type: String, default: '', trim: true },
 
+    // ─── Status Flow ──────────────────────────────────────────────────────────
+    // Pending → Mechanic Assigned → Mechanic Arrived → In Progress →
+    // Work Completed → Invoice Generated → Completed → Cancelled
     status: {
         type: String,
         default: 'Pending',
-        enum: ['Pending', 'In Progress', 'Mechanic Assigned', 'Completed', 'Invoice Generated', 'Cancelled'],
+        enum: [
+            'Pending',
+            'Mechanic Assigned',
+            'Mechanic Arrived',
+            'In Progress',
+            'Work Completed',
+            'Invoice Generated',
+            'Completed',
+            'Cancelled',
+        ],
     },
 
-    assignedMechanic: { type: String, default: null, trim: true },
-    mechanicId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', default: null },
+    // ─── Mechanic Arrival ─────────────────────────────────────────────────────
+    arrivedAt: { type: Date, default: null },
+
+    // ─── Work Start OTP (sent to user when mechanic wants to start) ───────────
+    workStartOtp: {
+        code: { type: String, default: null },          // 4-digit string
+        expiresAt: { type: Date, default: null },
+        verified: { type: Boolean, default: false },
+        attempts: { type: Number, default: 0 },
+    },
+
+    // ─── Work Completion OTP (sent to user when mechanic marks work done) ─────
+    workCompleteOtp: {
+        code: { type: String, default: null },
+        expiresAt: { type: Date, default: null },
+        verified: { type: Boolean, default: false },
+        attempts: { type: Number, default: 0 },
+    },
+
+    workStartedAt: { type: Date, default: null },
+    workCompletedAt: { type: Date, default: null },
+
+    // ─── Before / After Repair Photos ────────────────────────────────────────
+    // Uploaded by mechanic. Stored as relative paths (e.g. /uploads/orders/<orderId>/before-1.jpg)
+    beforePhotos: {
+        type: [String],
+        default: [],
+    },
+    afterPhotos: {
+        type: [String],
+        default: [],
+    },
+
+    // ─── Photo Cleanup Tracking ───────────────────────────────────────────────
+    // Set when order is fully paid + invoice generated.
+    // A cron job deletes photo files and clears these arrays 7 days after this date.
+    photosScheduledDeleteAt: { type: Date, default: null },
+    photosDeleted: { type: Boolean, default: false },
+
+    // ─── Assignments ──────────────────────────────────────────────────────────
+    assignedMechanics: [{ type: String, trim: true }],      // array of mechanic names
+    mechanicIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Employee' }],
     assignedVendor: { type: String, default: null, trim: true },
     vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', default: null },
     assignedDelivery: { type: String, default: null, trim: true },
@@ -83,17 +135,16 @@ const orderSchema = new mongoose.Schema({
 
     total: {
         subTotal: { type: Number },
-        total: { type: Number },                  // GST-inclusive total (before referral discount)
-        discount: { type: Number },               // overall discount amount
+        total: { type: Number },
+        discount: { type: Number },
         referralDiscount: { type: Number, default: 0 },
-        discountType: { type: String },           // 'Flat' or 'Percentage'
-        // GST fields (inclusive — prices already contain tax)
-        sgst: { type: Number, default: 0 },       // SGST amount
-        cgst: { type: Number, default: 0 },       // CGST amount
-        sgstRate: { type: Number, default: 0 },   // SGST percentage
-        cgstRate: { type: Number, default: 0 },   // CGST percentage
-        baseAmount: { type: Number, default: 0 }, // base after removing GST from total
-        finalPayable: { type: Number, default: 0 }, // total - referralDiscount (actual payable)
+        discountType: { type: String },
+        sgst: { type: Number, default: 0 },
+        cgst: { type: Number, default: 0 },
+        sgstRate: { type: Number, default: 0 },
+        cgstRate: { type: Number, default: 0 },
+        baseAmount: { type: Number, default: 0 },
+        finalPayable: { type: Number, default: 0 },
     },
 
     coupon: { type: String },
@@ -106,80 +157,28 @@ const orderSchema = new mongoose.Schema({
     },
     paymentMethod: {
         type: String,
-        enum: ['cash', 'upi', 'card', 'razorpay', 'bank_transfer'],
+        enum: ['cash', 'upi', 'card', 'razorpay', 'bank_transfer', 'referral', null],
         default: null,
     },
-    // Amount actually received (useful for partial payments)
-    amountPaid: {
-        type: Number,
-        default: 0,
-        min: 0,
-    },
-    // Balance remaining (computed but stored for quick querying)
-    balanceDue: {
-        type: Number,
-        default: 0,
-        min: 0,
-    },
-    // Timestamp when payment was completed / last updated
-    paymentDate: {
-        type: Date,
-        default: null,
-    },
+    amountPaid: { type: Number, default: 0, min: 0 },
+    balanceDue: { type: Number, default: 0, min: 0 },
+    paymentDate: { type: Date, default: null },
 
     // ─── Razorpay Integration Fields ──────────────────────────────────────────
     razorpay: {
-        // Razorpay Order ID (created via Razorpay API, e.g. order_xxxxxxxxxx)
-        orderId: {
-            type: String,
-            default: null,
-            trim: true,
-        },
-        // Razorpay Payment ID returned after successful payment
-        paymentId: {
-            type: String,
-            default: null,
-            trim: true,
-        },
-        // Razorpay Payment Link ID (if using payment links)
-        paymentLinkId: {
-            type: String,
-            default: null,
-            trim: true,
-        },
-        // Short URL sent to customer
-        paymentLinkUrl: {
-            type: String,
-            default: null,
-            trim: true,
-        },
-        // Razorpay signature for webhook verification
-        signature: {
-            type: String,
-            default: null,
-        },
-        // Status as returned by Razorpay: created | sent | paid | cancelled | expired
+        orderId: { type: String, default: null, trim: true },
+        paymentId: { type: String, default: null, trim: true },
+        paymentLinkId: { type: String, default: null, trim: true },
+        paymentLinkUrl: { type: String, default: null, trim: true },
+        signature: { type: String, default: null },
         status: {
             type: String,
             enum: ['created', 'sent', 'paid', 'cancelled', 'expired', null],
             default: null,
         },
-        // Timestamp when Razorpay payment link was created
-        linkCreatedAt: {
-            type: Date,
-            default: null,
-        },
-        // Razorpay receipt ID (for reconciliation)
-        receiptId: {
-            type: String,
-            default: null,
-            trim: true,
-        },
-        // Raw webhook payload snapshot (for audit)
-        webhookPayload: {
-            type: mongoose.Schema.Types.Mixed,
-            default: null,
-        },
+        linkCreatedAt: { type: Date, default: null },
+        receiptId: { type: String, default: null, trim: true },
+        webhookPayload: { type: mongoose.Schema.Types.Mixed, default: null },
     },
 
     // ─── Cancellation Fields ──────────────────────────────────────────────────
@@ -191,15 +190,13 @@ const orderSchema = new mongoose.Schema({
 
 orderSchema.index({ userLocation: '2dsphere' });
 
-// ─── Pre-save hook: auto-calculate balanceDue ─────────────────────────────────
+// ─── Pre-save hook: auto-calculate balanceDue & paymentStatus ────────────────
 orderSchema.pre('save', function (next) {
     if (this.total?.total != null) {
-        // Use finalPayable (total minus referral discount) as the amount to compare against
         const payableAmount = this.total.finalPayable || this.total.total || 0;
         const paid = this.amountPaid || 0;
         this.balanceDue = Math.max(0, payableAmount - paid);
 
-        // Auto-update paymentStatus based on amounts
         if (paid <= 0) {
             this.paymentStatus = 'unpaid';
         } else if (paid >= payableAmount) {

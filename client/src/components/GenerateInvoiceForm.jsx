@@ -4,16 +4,15 @@ import axiosClient from '../service/axiosClient';
 import AlertSnackBar from './ui/AlertSnackBar';
 
 const GenerateInvoiceForm = () => {
-    // Order data from the provided JSON
-    const [loading, setLoading] = useState(false)
-    const [snackBarOpen, setSnackBarOpen] = useState(false); // State to control Snackbar visibility
-    const [snackBarMessage, setSnackBarMessage] = useState(''); // State to store Snackbar message
-    const [snackBarSeverity, setSnackBarSeverity] = useState('success'); // State to store Snackbar severity
+    const [loading, setLoading] = useState(false);
+    const [snackBarOpen, setSnackBarOpen] = useState(false);
+    const [snackBarMessage, setSnackBarMessage] = useState('');
+    const [snackBarSeverity, setSnackBarSeverity] = useState('success');
 
     const [orderData, setOrderData] = useState({});
     const [partsAndServices, setPartsAndServices] = useState([]);
     const [customerDetails, setCustomerDetails] = useState({});
-    const [fromDetails, setFromDetails] = useState({
+    const [fromDetails] = useState({
         companyName: "Repairo Moto",
         address: "123 Mechanic Street, Workshop Area",
         city: "New Delhi",
@@ -25,13 +24,12 @@ const GenerateInvoiceForm = () => {
     const [invoiceDetails, setInvoiceDetails] = useState({
         invoiceDate: new Date().toISOString().slice(0, 10)
     });
-    const [totalDiscount, setTotaldiscount] = useState(0)
-    const [totalDiscountType, setTotaldiscountType] = useState("percentage")
+    const [totalDiscount, setTotalDiscount] = useState(0);
+    const [totalDiscountType, setTotalDiscountType] = useState("percentage");
 
-    // New states for referral discount
-    const [applyReferralDiscount, setApplyReferralDiscount] = useState(true);
-    const [referralAmount, setReferralAmount] = useState(0);
-    const [customerAccountType, setCustomerAccountType] = useState('');
+    // GST state (rates as percentages)
+    const [sgstRate, setSgstRate] = useState(9);
+    const [cgstRate, setCgstRate] = useState(9);
 
     const { id } = useParams();
 
@@ -39,10 +37,9 @@ const GenerateInvoiceForm = () => {
         const getOrderDetail = async () => {
             try {
                 setLoading(true);
-                const response = await axiosClient.get(`/api/admin/order/employee/getorderbyid/${id}`)
+                const response = await axiosClient.get(`/api/admin/order/employee/getorderbyid/${id}`);
                 const data = response.data;
-                // console.log(response)
-                setOrderData(response.data)
+                setOrderData(data);
 
                 setCustomerDetails({
                     name: data.name || '',
@@ -50,15 +47,6 @@ const GenerateInvoiceForm = () => {
                     city: data.city || '',
                     vehicleDetails: `${data.selectedBrand || ''} ${data.selectedModel || ''} (${data.cc || ''})`
                 });
-                // console.log(data.userId.accountType)
-                // Set customer account type and referral amount
-                setCustomerAccountType(data.userId.accountType || '');
-                setReferralAmount(data.userId.referralAmount || 0);
-
-                // Auto-apply referral discount for personal accounts
-                if (data.accountType === 'personal' && data.referralAmount > 0) {
-                    setApplyReferralDiscount(true);
-                }
 
                 const servicesProvided = data.serviceProvided?.map(service => ({
                     type: 'service',
@@ -66,7 +54,9 @@ const GenerateInvoiceForm = () => {
                     quantity: service.quantity,
                     price: service.price,
                     discountPrice: service.discountPrice || 0,
+                    discountType: 'amount'
                 })) || [];
+
                 const parts = data.partsUsed?.map(part => ({
                     type: 'part',
                     name: part.partName,
@@ -75,102 +65,93 @@ const GenerateInvoiceForm = () => {
                     discountPrice: part.discountPrice,
                     discountType: part.discountType || 'amount'
                 })) || [];
-                const service = {
-                    type: 'service',
-                    name: `${data.services?.join(", ") || ''} - ${data.issues || ''}`,
-                    quantity: 1,
-                    price: parseFloat(data.estimatedBudget || 0)
-                };
-
-                setTotaldiscount(data?.total?.discount || 0);
-                setTotaldiscountType(data?.total?.discountType || 'percentage');
 
                 setPartsAndServices([...parts, ...servicesProvided]);
 
-                setLoading(false)
-            } catch (error) {
-                console.log(error)
-                setLoading(false)
-            }
-        }
-        getOrderDetail()
-    }, [id])
+                setTotalDiscount(data?.total?.discount || 0);
+                setTotalDiscountType(data?.total?.discountType || 'percentage');
 
-    // Calculate totals
+                if (data?.total?.sgstRate) setSgstRate(data.total.sgstRate);
+                if (data?.total?.cgstRate) setCgstRate(data.total.cgstRate);
+
+                setLoading(false);
+            } catch (error) {
+                console.log(error);
+                setLoading(false);
+            }
+        };
+        getOrderDetail();
+    }, [id]);
+
+    // Subtotal = sum of (unit price * quantity) before any discounts
     const calculateSubtotal = () => {
+        return partsAndServices.reduce((total, item) => {
+            return total + (item.price * item.quantity);
+        }, 0);
+    };
+
+    // Total after item-level discounts (still exclusive of tax conceptually, but will be used to apply overall discount)
+    const calculateTotalAfterItemDiscounts = () => {
         return partsAndServices.reduce((total, item) => {
             const priceAfterDiscount =
                 item.discountType === 'percentage'
                     ? item.price - (item.price * item.discountPrice / 100)
                     : item.price - item.discountPrice;
-
             return total + (priceAfterDiscount * item.quantity);
         }, 0);
     };
 
-    const calculateTotal = () => {
-        const subtotal = calculateSubtotal();
-        let discountAmount = 0;
-
+    // Overall discount amount (applied to the after-item-discounts total)
+    const calculateOverallDiscount = () => {
+        const base = calculateTotalAfterItemDiscounts();
         if (totalDiscountType === 'percentage') {
-            discountAmount = (subtotal * totalDiscount) / 100;
-        } else if (totalDiscountType === 'amount') {
-            discountAmount = totalDiscount;
+            return (base * totalDiscount) / 100;
+        } else {
+            return totalDiscount;
         }
-
-        let totalAfterDiscount = subtotal - discountAmount;
-
-        // Apply referral discount if enabled
-        if (applyReferralDiscount) {
-            const referralDiscountAmount = Math.min(referralAmount, totalAfterDiscount);
-            totalAfterDiscount = Math.max(totalAfterDiscount - referralDiscountAmount, 0);
-        }
-
-        return Math.max(totalAfterDiscount, 0); // Prevent negative totals
     };
 
-    const calculateReferralDiscount = () => {
-        if (!applyReferralDiscount) return 0;
-
-        const subtotal = calculateSubtotal();
-        let discountAmount = 0;
-
-        if (totalDiscountType === 'percentage') {
-            discountAmount = (subtotal * totalDiscount) / 100;
-        } else if (totalDiscountType === 'amount') {
-            discountAmount = totalDiscount;
-        }
-
-        const totalAfterRegularDiscount = subtotal - discountAmount;
-        return Math.min(referralAmount, totalAfterRegularDiscount);
+    // Final total (inclusive of GST) = after-item-discounts - overall discount
+    const calculateTotalInclusive = () => {
+        const afterItemDiscounts = calculateTotalAfterItemDiscounts();
+        const overallDiscount = calculateOverallDiscount();
+        return Math.max(afterItemDiscounts - overallDiscount, 0);
     };
 
-    console.log(totalDiscount)
+    // Base amount (taxable value) derived from inclusive total
+    const calculateBaseAmount = () => {
+        const total = calculateTotalInclusive();
+        const totalTaxRate = (sgstRate + cgstRate) / 100;
+        if (totalTaxRate === 0) return total;
+        return total / (1 + totalTaxRate);
+    };
+
+    // SGST amount
+    const calculateSGST = () => {
+        return (calculateBaseAmount() * sgstRate) / 100;
+    };
+
+    // CGST amount
+    const calculateCGST = () => {
+        return (calculateBaseAmount() * cgstRate) / 100;
+    };
 
     const handleInvoiceDetailsChange = (e) => {
         const { name, value } = e.target;
-        setInvoiceDetails(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setInvoiceDetails(prev => ({ ...prev, [name]: value }));
     };
 
     const handleCustomerDetailsChange = (e) => {
         const { name, value } = e.target;
-        setCustomerDetails(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setCustomerDetails(prev => ({ ...prev, [name]: value }));
     };
 
-    // Handle parts and services changes
     const handleItemChange = (index, field, value) => {
         const updatedItems = [...partsAndServices];
         updatedItems[index][field] = field === 'quantity' || field === 'price' ? parseFloat(value) : value;
         setPartsAndServices(updatedItems);
     };
 
-    // Add new item (part or service)
     const addItem = (type) => {
         setPartsAndServices([
             ...partsAndServices,
@@ -185,7 +166,6 @@ const GenerateInvoiceForm = () => {
         ]);
     };
 
-    // Remove item
     const removeItem = (index) => {
         const updatedItems = [...partsAndServices];
         updatedItems.splice(index, 1);
@@ -195,39 +175,49 @@ const GenerateInvoiceForm = () => {
     const handleSaveInvoice = async () => {
         try {
             setLoading(true);
+            const subtotal = calculateSubtotal();
+            const afterItemDiscounts = calculateTotalAfterItemDiscounts();
+            const overallDiscount = calculateOverallDiscount();
+            const totalInclusive = calculateTotalInclusive();
+            const baseAmount = calculateBaseAmount();
+            const sgstAmount = calculateSGST();
+            const cgstAmount = calculateCGST();
+
             const response = await axiosClient.put(`api/admin/order/${id}/update-order/generate-invoice`, {
                 invoiceDetails,
                 partsAndServices,
                 total: {
-                    subtotal: calculateSubtotal(),
+                    subTotal: subtotal,
+                    discount: overallDiscount,
                     discountType: totalDiscountType,
-                    discount: totalDiscount,
-                    referralDiscount: applyReferralDiscount ? calculateReferralDiscount() : 0,
-                    total: calculateTotal()
+                    sgst: sgstAmount,
+                    cgst: cgstAmount,
+                    sgstRate: sgstRate,
+                    cgstRate: cgstRate,
+                    baseAmount: baseAmount,
+                    total: totalInclusive,
+                    finalPayable: totalInclusive,
+                    referralDiscount: 0
                 }
             });
-            console.log(response.message)
-            // Set success message
-            setSnackBarMessage("Invoice saved successfully!"); // Set the message to display in the Snackbar
-            setSnackBarSeverity('success'); // Set severity to success
-            setSnackBarOpen(true); // Open the Snackbar
-            setLoading(false);
-        } catch (error) {
-            setSnackBarMessage(error.message); // Set the message to display in the Snackbar
-            setSnackBarSeverity("error"); // Set the message to display in the Snackbar
+            console.log(response.message);
+            setSnackBarMessage("Invoice saved successfully!");
+            setSnackBarSeverity('success');
             setSnackBarOpen(true);
             setLoading(false);
-            console.log(error)
+        } catch (error) {
+            setSnackBarMessage(error.message);
+            setSnackBarSeverity("error");
+            setSnackBarOpen(true);
+            setLoading(false);
+            console.log(error);
         }
-    }
+    };
 
     const handleCloseSnackBar = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-
+        if (reason === 'clickaway') return;
         setSnackBarOpen(false);
-    }
+    };
 
     return (
         <>
@@ -235,7 +225,7 @@ const GenerateInvoiceForm = () => {
                 open={snackBarOpen}
                 message={snackBarMessage}
                 severity={snackBarSeverity}
-                onClose={handleCloseSnackBar} // Close function for the Snackbar
+                onClose={handleCloseSnackBar}
             />
             <div className="bg-gray-50 min-h-screen p-4">
                 <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
@@ -280,6 +270,85 @@ const GenerateInvoiceForm = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* From Details (Business Info) */}
+                                <div className="bg-purple-50 p-5 rounded-xl border-l-4 border-purple-500">
+                                    <h2 className="text-xl font-semibold mb-4 text-purple-600 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                                        </svg>
+                                        From (Business Details)
+                                    </h2>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                                            <input
+                                                type="text"
+                                                value={fromDetails.companyName}
+                                                readOnly
+                                                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                            <input
+                                                type="text"
+                                                value={fromDetails.address}
+                                                readOnly
+                                                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                                                <input
+                                                    type="text"
+                                                    value={fromDetails.city}
+                                                    readOnly
+                                                    className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">PIN</label>
+                                                <input
+                                                    type="text"
+                                                    value={fromDetails.pin}
+                                                    readOnly
+                                                    className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Contact No</label>
+                                                <input
+                                                    type="text"
+                                                    value={fromDetails.contactNo}
+                                                    readOnly
+                                                    className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                                <input
+                                                    type="text"
+                                                    value={fromDetails.email}
+                                                    readOnly
+                                                    className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">GST No</label>
+                                            <input
+                                                type="text"
+                                                value={fromDetails.gstNo}
+                                                readOnly
+                                                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="bg-green-50 p-5 rounded-xl border-l-4 border-green-500">
@@ -288,11 +357,6 @@ const GenerateInvoiceForm = () => {
                                         <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                                     </svg>
                                     To (Customer Details)
-                                    {customerAccountType === 'personal' && (
-                                        <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                                            Personal
-                                        </span>
-                                    )}
                                 </h2>
                                 <div className="grid grid-cols-1 gap-4">
                                     <div>
@@ -338,28 +402,6 @@ const GenerateInvoiceForm = () => {
                                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                                         />
                                     </div>
-
-                                    {/* Referral Amount Display for Personal Accounts */}
-                                    {customerAccountType === 'personal' && referralAmount > 0 && (
-                                        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-medium text-yellow-800">
-                                                        Available Referral Amount
-                                                    </p>
-                                                    <p className="text-lg font-bold text-yellow-900">
-                                                        ₹{referralAmount.toFixed(2)}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -399,7 +441,7 @@ const GenerateInvoiceForm = () => {
                                                 <th className="p-3 text-gray-600 font-semibold">Description</th>
                                                 <th className="p-3 text-gray-600 font-semibold">Quantity</th>
                                                 <th className="p-3 text-gray-600 font-semibold">Unit Price (₹)</th>
-                                                <th className="p-3 text-gray-600 font-semibold">Discount Amount (₹)</th>
+                                                <th className="p-3 text-gray-600 font-semibold">Discount</th>
                                                 <th className="p-3 text-gray-600 font-semibold">Amount (₹)</th>
                                                 <th className="p-3 text-gray-600 font-semibold rounded-r-lg">Action</th>
                                             </tr>
@@ -435,7 +477,6 @@ const GenerateInvoiceForm = () => {
                                                             min="1"
                                                         />
                                                     </td>
-
                                                     <td className="p-3 border-b border-gray-200">
                                                         <input
                                                             type="number"
@@ -473,7 +514,6 @@ const GenerateInvoiceForm = () => {
                                                                 : (item.price - item.discountPrice) * item.quantity
                                                         ).toFixed(2)}
                                                     </td>
-
                                                     <td className="p-3 border-b border-gray-200">
                                                         <button
                                                             onClick={() => removeItem(index)}
@@ -492,28 +532,33 @@ const GenerateInvoiceForm = () => {
                             </div>
                         </div>
 
-                        {/* Totals */}
+                        {/* Totals with Inclusive GST Breakdown */}
                         <div className="mb-8 flex justify-end">
-                            <div className="w-full md:w-72 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                <div className="flex justify-between py-3 border-b border-gray-200">
-                                    <span className="font-medium text-gray-600">Subtotal:</span>
+                            <div className="w-full md:w-96 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                <div className="flex justify-between py-2 border-b border-gray-200">
+                                    <span className="font-medium text-gray-600">Subtotal (before discounts):</span>
                                     <span className="font-medium">₹{calculateSubtotal().toFixed(2)}</span>
                                 </div>
 
-                                {/* Regular Discount */}
-                                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                                    <span className="font-medium text-gray-600">Discount:</span>
+                                <div className="flex justify-between py-2 border-b border-gray-200">
+                                    <span className="font-medium text-gray-600">After item discounts:</span>
+                                    <span className="font-medium">₹{calculateTotalAfterItemDiscounts().toFixed(2)}</span>
+                                </div>
+
+                                {/* Overall Discount */}
+                                <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                    <span className="font-medium text-gray-600">Overall Discount:</span>
                                     <div className="flex gap-2 items-center">
                                         <input
                                             type="number"
                                             value={totalDiscount}
-                                            onChange={(e) => setTotaldiscount(parseFloat(e.target.value) || 0)}
+                                            onChange={(e) => setTotalDiscount(parseFloat(e.target.value) || 0)}
                                             className="w-24 text-right p-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
                                             placeholder="0"
                                         />
                                         <select
                                             value={totalDiscountType}
-                                            onChange={(e) => setTotaldiscountType(e.target.value)}
+                                            onChange={(e) => setTotalDiscountType(e.target.value)}
                                             className="p-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
                                         >
                                             <option value="amount">₹</option>
@@ -522,42 +567,52 @@ const GenerateInvoiceForm = () => {
                                     </div>
                                 </div>
 
-                                {/* Referral Discount Section for Personal Accounts */}
-                                {customerAccountType === 'personal' && referralAmount > 0 && (
-                                    <div className="py-3 border-b border-gray-200">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <label className="flex items-center cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={applyReferralDiscount}
-                                                    onChange={(e) => setApplyReferralDiscount(e.target.checked)}
-                                                    className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
-                                                />
-                                                <span className="ml-2 text-sm font-medium text-gray-600">
-                                                    Apply Referral Discount
-                                                </span>
-                                            </label>
-                                            <div className="flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
-                                                </svg>
-                                                <span className="text-sm font-medium text-green-600">
-                                                    -₹{calculateReferralDiscount().toFixed(2)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        {applyReferralDiscount && (
-                                            <div className="text-xs text-gray-500 mt-1">
-                                                Using ₹{calculateReferralDiscount().toFixed(2)} from available referral amount of ₹{referralAmount.toFixed(2)}
-                                            </div>
-                                        )}
+                                <div className="flex justify-between py-2 border-b border-gray-200">
+                                    <span className="font-medium text-gray-600">Total (incl. GST):</span>
+                                    <span className="font-medium">₹{calculateTotalInclusive().toFixed(2)}</span>
+                                </div>
+
+                                {/* GST Details */}
+                                <div className="flex justify-between py-2 border-b border-gray-200 text-sm text-gray-500">
+                                    <span>Taxable Value:</span>
+                                    <span>₹{calculateBaseAmount().toFixed(2)}</span>
+                                </div>
+
+                                <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                    <span className="font-medium text-gray-600">SGST ({sgstRate}%):</span>
+                                    <div className="flex gap-2 items-center">
+                                        <input
+                                            type="number"
+                                            value={sgstRate}
+                                            onChange={(e) => setSgstRate(parseFloat(e.target.value) || 0)}
+                                            className="w-16 text-right p-1 border border-gray-300 rounded"
+                                            min="0"
+                                            max="100"
+                                            step="0.5"
+                                        />
+                                        <span className="w-20 text-right">₹{calculateSGST().toFixed(2)}</span>
                                     </div>
-                                )}
+                                </div>
+
+                                <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                                    <span className="font-medium text-gray-600">CGST ({cgstRate}%):</span>
+                                    <div className="flex gap-2 items-center">
+                                        <input
+                                            type="number"
+                                            value={cgstRate}
+                                            onChange={(e) => setCgstRate(parseFloat(e.target.value) || 0)}
+                                            className="w-16 text-right p-1 border border-gray-300 rounded"
+                                            min="0"
+                                            max="100"
+                                            step="0.5"
+                                        />
+                                        <span className="w-20 text-right">₹{calculateCGST().toFixed(2)}</span>
+                                    </div>
+                                </div>
 
                                 <div className="flex justify-between py-3 text-lg font-bold">
-                                    <span className="text-gray-700">Total:</span>
-                                    <span className="text-primary">₹{calculateTotal().toFixed(2)}</span>
+                                    <span className="text-gray-700">Amount Payable:</span>
+                                    <span className="text-primary">₹{calculateTotalInclusive().toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
@@ -565,8 +620,7 @@ const GenerateInvoiceForm = () => {
                         <div className="flex justify-center">
                             <button
                                 onClick={handleSaveInvoice}
-                                className={`bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition duration-300 flex items-center ${loading ? 'opacity-50 cursor-not-allowed' : ''
-                                    }`}
+                                className={`bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition duration-300 flex items-center ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={loading}
                             >
                                 {loading ? (

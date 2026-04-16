@@ -11,7 +11,7 @@ import {
     getUserRecipient,
 } from '../services/notificationService.js';
 
-// ─── Razorpay instance (lazy — created on first use so env vars are loaded) ──
+// ─── Razorpay instance ────────────────────────────────────────────────────────
 let _razorpayInstance = null;
 function getRazorpay() {
     if (!_razorpayInstance) {
@@ -23,13 +23,13 @@ function getRazorpay() {
     return _razorpayInstance;
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+const REFERRAL_BONUS_AMOUNT = Number(process.env.REFERRAL_BONUS_AMOUNT) || 50;
+/** Photos are deleted 7 days after the order is paid and invoiced. */
+const PHOTO_DELETE_DELAY_MS = 7 * 24 * 60 * 60 * 1000;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const REFERRAL_BONUS_AMOUNT = Number(process.env.REFERRAL_BONUS_AMOUNT) || 50;
-
-/**
- * Verify Razorpay signature
- */
 const verifyRazorpaySignature = (rzpOrderId, rzpPaymentId, signature) => {
     const body = rzpOrderId + '|' + rzpPaymentId;
     const expectedSignature = crypto
@@ -40,11 +40,12 @@ const verifyRazorpaySignature = (rzpOrderId, rzpPaymentId, signature) => {
 };
 
 /**
- * Process referral credit for the user who placed the order.
+ * Credit referral bonus to the person who referred the order's user.
+ * Only runs for online (non-COD) payments.
  */
 const processReferralCredit = async (session, userId) => {
     const orderUser = await User.findById(userId).session(session);
-    if (!orderUser || !orderUser.referredBy) return;
+    if (!orderUser?.referredBy) return;
 
     const referrer = await User.findOne({ referralCode: orderUser.referredBy }).session(session);
     if (!referrer) return;
@@ -55,33 +56,37 @@ const processReferralCredit = async (session, userId) => {
 };
 
 /**
- * Generate a unique invoice number in the format INV-DDMMYY-XXX
+ * Generate a unique invoice number  INV-DDMMYY-XXX
  */
-const generateInvoiceNumber = async () => {
+const generateInvoiceNumber = async (session = null) => {
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const yy = String(now.getFullYear()).slice(-2);
-    const todayFormatted = `${dd}${mm}${yy}`;
+    const prefix = `INV-${dd}${mm}${yy}`;
 
-    // Find the latest invoice to get the next serial number
-    const latestInvoice = await Invoice.findOne({}).sort({ createdAt: -1 }).lean();
+    const query = Invoice.findOne({}).sort({ createdAt: -1 }).lean();
+    if (session) query.session(session);
+    const latest = await query;
+
     let serial = 1;
-    if (latestInvoice?.invoiceNumber) {
-        const parts = latestInvoice.invoiceNumber.split('-');
+    if (latest?.invoiceNumber) {
+        const parts = latest.invoiceNumber.split('-');
         if (parts.length === 3) {
-            const lastSerial = parseInt(parts[2], 10);
-            if (!isNaN(lastSerial)) serial = lastSerial + 1;
+            const n = parseInt(parts[2], 10);
+            if (!isNaN(n)) serial = n + 1;
         }
     }
-    return `INV-${todayFormatted}-${String(serial).padStart(3, '0')}`;
+    return `${prefix}-${String(serial).padStart(3, '0')}`;
 };
 
 /**
- * Create an Invoice document from order data and payment info.
+ * Create an Invoice document from an order + payment info.
+ * Online payments (Razorpay / referral) may include referral discount.
+ * COD is handled separately in orderController.markPaidCod.
  */
 const createInvoiceFromOrder = async (order, paymentInfo, session = null) => {
-    const invoiceNumber = await generateInvoiceNumber();
+    const invoiceNumber = await generateInvoiceNumber(session);
 
     const invoiceData = {
         invoiceNumber,
@@ -119,7 +124,7 @@ const createInvoiceFromOrder = async (order, paymentInfo, session = null) => {
             subTotal: order.total?.subTotal || 0,
             discount: order.total?.discount || 0,
             discountType: order.total?.discountType || '',
-            referralDiscount: order.total?.referralDiscount || 0,
+            referralDiscount: order.total?.referralDiscount || 0,   // online only
             sgst: order.total?.sgst || 0,
             cgst: order.total?.cgst || 0,
             sgstRate: order.total?.sgstRate || 0,
@@ -129,9 +134,9 @@ const createInvoiceFromOrder = async (order, paymentInfo, session = null) => {
             finalPayable: order.total?.finalPayable || 0,
         },
         paymentDetails: {
-            method: 'razorpay',
-            razorpayPaymentId: paymentInfo.razorpayPaymentId,
-            razorpayOrderId: paymentInfo.razorpayOrderId,
+            method: paymentInfo.razorpayPaymentId ? 'razorpay' : 'referral',
+            razorpayPaymentId: paymentInfo.razorpayPaymentId || null,
+            razorpayOrderId: paymentInfo.razorpayOrderId || null,
             amountPaid: paymentInfo.amountPaid,
             paymentDate: new Date(),
         },
@@ -146,10 +151,9 @@ const createInvoiceFromOrder = async (order, paymentInfo, session = null) => {
 };
 
 /**
- * Send payment success notifications to admin and assigned mechanic.
+ * Send payment success notifications to admin, assigned mechanic, and user.
  */
 const sendPaymentNotifications = async (order, invoice) => {
-    // 1. Notify admins
     const adminRecipients = await getAdminRecipients();
     await createNotification({
         type: 'payment_received',
@@ -164,27 +168,24 @@ const sendPaymentNotifications = async (order, invoice) => {
         },
     });
 
-    // 2. Notify assigned mechanic (if any)
-    if (order.mechanicId) {
-        const mechanicRecipients = getEmployeeRecipient(order.mechanicId, 'mechanic');
-        await createNotification({
-            type: 'payment_received',
-            title: '💰 Payment Received',
-            body: `Customer paid ₹${invoice.paymentDetails.amountPaid} for order #${order.orderId}. Invoice generated.`,
-            recipients: mechanicRecipients,
-            orderId: order._id,
-            data: {
-                orderId: order._id.toString(),
-                screenOrderId: order.orderId,
-                invoiceId: invoice._id.toString(),
-            },
-            triggeredBy: order.userId
-                ? { userId: order.userId, userModel: 'User' }
-                : null,
-        });
+    if (order.mechanicIds?.length) {
+        for (const mechanicId of order.mechanicIds) {
+            const mechanicRecipients = getEmployeeRecipient(mechanicId, 'mechanic');
+            await createNotification({
+                type: 'payment_received',
+                title: '💰 Payment Received',
+                body: `Customer paid ₹${invoice.paymentDetails.amountPaid} for order #${order.orderId}. Invoice generated.`,
+                recipients: mechanicRecipients,
+                orderId: order._id,
+                data: {
+                    orderId: order._id.toString(),
+                    screenOrderId: order.orderId,
+                    invoiceId: invoice._id.toString(),
+                },
+            });
+        }
     }
 
-    // 3. Notify the user
     if (order.userId) {
         const userRecipient = getUserRecipient(order.userId);
         await createNotification({
@@ -205,54 +206,93 @@ const sendPaymentNotifications = async (order, invoice) => {
 // ─── Controllers ──────────────────────────────────────────────────────────────
 
 /**
- * @desc    Create a Razorpay order for client-side payment
+ * @desc    Create a Razorpay order for client-side payment.
+ *          Optionally applies referral balance to reduce the payable amount.
+ *          COD orders should NOT use this endpoint — use /mark-paid-cod instead.
  * @route   POST /api/orders/:id/create-razorpay-order
  * @access  Private (authUser)
  */
 export const createRazorpayOrder = async (req, res) => {
     try {
+        const { useReferralBalance } = req.body;
         const order = await Order.findById(req.params.id);
         if (!order) {
             return res.status(404).json({ success: false, message: 'Order not found.' });
         }
 
-        // Only allow payment for orders that have a bill (Invoice Generated status)
         if (order.status !== 'Invoice Generated') {
             return res.status(400).json({
                 success: false,
-                message: 'Bill has not been generated yet. Please wait for the admin to generate the bill.',
+                message: 'Invoice has not been generated yet. Please wait for admin to generate the bill.',
             });
         }
 
-        // Prevent double-pay
         if (order.paymentStatus === 'paid') {
-            return res.status(400).json({
-                success: false,
-                message: 'This order has already been paid.',
-            });
+            return res.status(400).json({ success: false, message: 'This order has already been paid.' });
         }
 
-        // If a Razorpay order already exists, return it
-        if (order.razorpay?.orderId && order.razorpay?.status !== 'expired') {
-            return res.status(200).json({
-                success: true,
-                razorpayOrderId: order.razorpay.orderId,
-                amount: Math.round((order.total?.finalPayable || order.total?.total || 0) * 100),
-                currency: 'INR',
-            });
+        // ── Apply referral balance if requested (online only) ────────────────
+        let referralApplied = 0;
+        if (useReferralBalance && order.userId) {
+            const user = await User.findById(order.userId);
+            if (user?.referralAmount > 0) {
+                const currentPayable = order.total?.finalPayable || order.total?.total || 0;
+                referralApplied = Math.min(user.referralAmount, currentPayable);
+
+                if (referralApplied > 0) {
+                    order.total.referralDiscount = (order.total?.referralDiscount || 0) + referralApplied;
+                    order.total.finalPayable = Math.max(0, currentPayable - referralApplied);
+                    user.referralAmount = Math.max(0, user.referralAmount - referralApplied);
+                    await user.save();
+                    await order.save();
+                }
+            }
         }
 
         const payableAmount = order.total?.finalPayable || order.total?.total || 0;
+
+        // If referral covered everything — mark paid without Razorpay
         if (payableAmount <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'No payable amount found for this order.',
+            order.paymentStatus = 'paid';
+            order.paymentMethod = 'referral';
+            order.amountPaid = 0;
+            order.balanceDue = 0;
+            order.paymentDate = new Date();
+            order.photosScheduledDeleteAt = new Date(Date.now() + PHOTO_DELETE_DELAY_MS);
+            await order.save();
+
+            const invoice = await createInvoiceFromOrder(order, {
+                razorpayPaymentId: null,
+                razorpayOrderId: null,
+                amountPaid: 0,
+            });
+
+            sendPaymentNotifications(order, invoice).catch(err =>
+                console.error('Failed to send payment notifications:', err)
+            );
+
+            return res.status(200).json({
+                success: true,
+                fullyCoveredByReferral: true,
+                referralApplied,
+                message: 'Order fully covered by referral balance. Invoice generated.',
+                invoiceNumber: invoice.invoiceNumber,
+                invoiceId: invoice._id,
+            });
+        }
+
+        // Return existing Razorpay order if no referral was just applied
+        if (!referralApplied && order.razorpay?.orderId && order.razorpay?.status !== 'expired') {
+            return res.status(200).json({
+                success: true,
+                razorpayOrderId: order.razorpay.orderId,
+                amount: Math.round(payableAmount * 100),
+                currency: 'INR',
+                referralApplied: 0,
             });
         }
 
         const amountInPaise = Math.round(payableAmount * 100);
-
-        // Create Razorpay order
         const rzpOrder = await getRazorpay().orders.create({
             amount: amountInPaise,
             currency: 'INR',
@@ -260,10 +300,10 @@ export const createRazorpayOrder = async (req, res) => {
             notes: {
                 orderId: order._id.toString(),
                 orderNumber: order.orderId,
+                referralApplied: referralApplied.toString(),
             },
         });
 
-        // Save Razorpay order ID on the order
         order.razorpay = {
             ...order.razorpay,
             orderId: rzpOrder.id,
@@ -278,18 +318,17 @@ export const createRazorpayOrder = async (req, res) => {
             razorpayOrderId: rzpOrder.id,
             amount: amountInPaise,
             currency: 'INR',
+            referralApplied,
         });
     } catch (error) {
         console.error('Error creating Razorpay order:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to create payment order.',
-        });
+        return res.status(500).json({ success: false, message: 'Failed to create payment order.' });
     }
 };
 
 /**
- * @desc    Verify Razorpay payment, update order, create Invoice, send notifications
+ * @desc    Verify Razorpay signature, update order, create Invoice, send notifications.
+ *          Sets photo cleanup schedule on successful payment.
  * @route   POST /api/orders/:id/verify-payment
  * @access  Private (authUser)
  */
@@ -301,24 +340,18 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Missing required payment fields.' });
     }
 
-    // 1. Verify signature
     const isValid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
     if (!isValid) {
         return res.status(400).json({ success: false, message: 'Invalid payment signature.' });
     }
 
-    // Start transaction
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        // 2. Find the order
         const order = await Order.findById(orderId).session(session);
-        if (!order) {
-            throw new Error('Order not found.');
-        }
+        if (!order) throw new Error('Order not found.');
 
-        // Prevent duplicate payment
         if (order.paymentStatus === 'paid') {
             await session.abortTransaction();
             session.endSession();
@@ -329,13 +362,14 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
             });
         }
 
-        // 3. Update order payment fields
         const payableAmount = order.total?.finalPayable || order.total?.total || 0;
         order.paymentStatus = 'paid';
         order.paymentMethod = 'razorpay';
         order.amountPaid = payableAmount;
         order.balanceDue = 0;
         order.paymentDate = new Date();
+        // Schedule photo cleanup 7 days after payment
+        order.photosScheduledDeleteAt = new Date(Date.now() + PHOTO_DELETE_DELAY_MS);
 
         order.razorpay = {
             ...order.razorpay,
@@ -345,7 +379,6 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
             status: 'paid',
         };
 
-        // 4. Process referral if not already processed
         if (!order.referralProcessed && order.userId) {
             await processReferralCredit(session, order.userId);
             order.referralProcessed = true;
@@ -353,25 +386,22 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
 
         await order.save({ session });
 
-        // 5. Create Invoice
         const invoice = await createInvoiceFromOrder(order, {
             razorpayPaymentId: razorpay_payment_id,
             razorpayOrderId: razorpay_order_id,
             amountPaid: payableAmount,
         }, session);
 
-        // Commit transaction
         await session.commitTransaction();
         session.endSession();
 
-        // 6. Send notifications (non-blocking — outside transaction)
         sendPaymentNotifications(order, invoice).catch(err =>
             console.error('Failed to send payment notifications:', err)
         );
 
         return res.status(200).json({
             success: true,
-            message: 'Payment verified, invoice generated successfully.',
+            message: 'Payment verified and invoice generated successfully.',
             orderId: order._id,
             paymentStatus: order.paymentStatus,
             invoiceNumber: invoice.invoiceNumber,
@@ -389,7 +419,8 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
 };
 
 /**
- * @desc    Razorpay webhook handler for payment.captured event
+ * @desc    Razorpay webhook handler for payment.captured events.
+ *          Sets photo cleanup schedule on successful webhook processing.
  * @route   POST /api/webhooks/razorpay
  * @access  Public (signature-verified)
  */
@@ -402,7 +433,6 @@ export const razorpayWebhook = async (req, res) => {
         return res.status(500).send('Webhook secret not configured.');
     }
 
-    // Verify webhook signature
     const expectedSignature = crypto
         .createHmac('sha256', webhookSecret)
         .update(JSON.stringify(req.body))
@@ -415,7 +445,6 @@ export const razorpayWebhook = async (req, res) => {
     const event = req.body.event;
     const payload = req.body.payload;
 
-    // Only handle payment.captured
     if (event !== 'payment.captured') {
         return res.status(200).send('Event ignored.');
     }
@@ -423,21 +452,18 @@ export const razorpayWebhook = async (req, res) => {
     const paymentEntity = payload.payment.entity;
     const razorpayOrderId = paymentEntity.order_id;
     const razorpayPaymentId = paymentEntity.id;
-    const amount = paymentEntity.amount; // in paise
+    const amount = paymentEntity.amount; // paise
 
-    // Find order by razorpay.orderId
     const order = await Order.findOne({ 'razorpay.orderId': razorpayOrderId });
     if (!order) {
         console.error(`Order not found for Razorpay orderId: ${razorpayOrderId}`);
-        return res.status(200).send('Order not found.'); // 200 to acknowledge receipt
+        return res.status(200).send('Order not found.');
     }
 
-    // Prevent duplicate processing
     if (order.paymentStatus === 'paid') {
         return res.status(200).send('Already processed.');
     }
 
-    // Transaction for consistency
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -445,7 +471,6 @@ export const razorpayWebhook = async (req, res) => {
         const payableAmount = order.total?.finalPayable || order.total?.total || 0;
         const amountInRupees = amount / 100;
 
-        // Log amount mismatch for audit
         if (Math.abs(amountInRupees - payableAmount) > 0.01) {
             console.warn(`Amount mismatch: expected ${payableAmount}, received ${amountInRupees}`);
         }
@@ -455,6 +480,7 @@ export const razorpayWebhook = async (req, res) => {
         order.amountPaid = payableAmount;
         order.balanceDue = 0;
         order.paymentDate = new Date();
+        order.photosScheduledDeleteAt = new Date(Date.now() + PHOTO_DELETE_DELAY_MS);
 
         order.razorpay = {
             ...order.razorpay,
@@ -471,7 +497,6 @@ export const razorpayWebhook = async (req, res) => {
 
         await order.save({ session });
 
-        // Create Invoice
         const invoice = await createInvoiceFromOrder(order, {
             razorpayPaymentId,
             razorpayOrderId,
@@ -481,7 +506,6 @@ export const razorpayWebhook = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
-        // Send notifications (non-blocking)
         sendPaymentNotifications(order, invoice).catch(err =>
             console.error('Webhook notification error:', err)
         );
@@ -497,9 +521,9 @@ export const razorpayWebhook = async (req, res) => {
 };
 
 /**
- * @desc    Get invoice for an order
+ * @desc    Fetch the invoice for an order.
  * @route   GET /api/orders/:id/invoice
- * @access  Private
+ * @access  Private (authUser)
  */
 export const getInvoiceByOrder = async (req, res) => {
     try {
@@ -508,21 +532,12 @@ export const getInvoiceByOrder = async (req, res) => {
             .lean();
 
         if (!invoice) {
-            return res.status(404).json({
-                success: false,
-                message: 'Invoice not found for this order.',
-            });
+            return res.status(404).json({ success: false, message: 'Invoice not found for this order.' });
         }
 
-        return res.status(200).json({
-            success: true,
-            invoice,
-        });
+        return res.status(200).json({ success: true, invoice });
     } catch (error) {
         console.error('Error fetching invoice:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch invoice.',
-        });
+        return res.status(500).json({ success: false, message: 'Failed to fetch invoice.' });
     }
 };

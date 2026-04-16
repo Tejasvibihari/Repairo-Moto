@@ -32,6 +32,8 @@ export default function JobAsssignForm({ id }) {
     const [deliveryDialogOpen, setDeliveryDialogOpen] = useState(false);
     const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
 
+    const [currentMechanics, setCurrentMechanics] = useState([]);
+
     const handleMechanicDialogOpen = () => setMechanicDialogOpen(true);
     const handleMechanicDialogClose = () => {
         setMechanicDialogOpen(false);
@@ -64,7 +66,10 @@ export default function JobAsssignForm({ id }) {
             setMechanic(results[1].status === "fulfilled" ? results[1].value.data.employees : []);
             setDelivery(results[2].status === "fulfilled" ? results[2].value.data.employees : []);
             const orderDetail = results[3].status === "fulfilled" ? results[3].value.data : null;
-            if (orderDetail) setOrderById(orderDetail);
+            if (orderDetail) {
+                setOrderById(orderDetail);
+                setCurrentMechanics(orderDetail.assignedMechanics || []);
+            }
             else {
                 setSnackBarMessage("Failed to fetch order details.");
                 setSnackBarSeverity("error");
@@ -132,6 +137,18 @@ export default function JobAsssignForm({ id }) {
         }
     };
 
+    // Function to get payment badge classes (full Tailwind strings)
+    const getPaymentBadgeClasses = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'paid':
+                return 'bg-green-100 text-green-700 border-green-200';
+            case 'unpaid':
+                return 'bg-red-100 text-red-700 border-red-200';
+            default:
+                return 'bg-gray-100 text-gray-700 border-gray-200';
+        }
+    };
+
     const getPaymentStatusColor = (status) => {
         switch (status?.toLowerCase()) {
             case 'paid': return 'green';
@@ -167,7 +184,15 @@ export default function JobAsssignForm({ id }) {
     return (
         <>
             <AlertSnackBar open={snackBarOpen} message={snackBarMessage} severity={snackBarSeverity} onClose={handleCloseSnackBar} />
-            <SelectMechanicDialog open={mechanicDialogOpen} onClose={handleMechanicDialogClose} data={mechanic} bookingId={orderById._id} />
+
+            <SelectMechanicDialog
+                open={mechanicDialogOpen}
+                onClose={handleMechanicDialogClose}
+                data={mechanic}
+                bookingId={orderById._id}
+                currentMechanics={currentMechanics}
+            />
+
             <SelectDeliveryDialog open={deliveryDialogOpen} onClose={handleDeliveryDialogClose} data={delivery} bookingId={orderById._id} />
             <SelectVendorDialog open={vendorDialogOpen} onClose={handleVendorDialogClose} data={vendors} bookingId={orderById._id} />
 
@@ -187,20 +212,12 @@ export default function JobAsssignForm({ id }) {
                                     <StatusIcon size={18} className="text-white" />
                                     <span className="text-white font-medium">{statusConfig.label}</span>
                                 </div>
-                                <div className={`bg-${getPaymentStatusColor(orderById.paymentStatus)}-100 rounded-full px-4 py-2 flex items-center gap-2`}>
-                                    <IndianRupee size={18} className={`text-${getPaymentStatusColor(orderById.paymentStatus)}-700`} />
-                                    <span className={`font-medium text-${getPaymentStatusColor(orderById.paymentStatus)}-700`}>
+                                <div className={`rounded-full px-4 py-2 flex items-center gap-2 border ${getPaymentBadgeClasses(orderById.paymentStatus)}`}>
+                                    <IndianRupee size={18} />
+                                    <span className="font-medium">
                                         {orderById.paymentStatus === 'paid' ? 'Paid' : orderById.paymentStatus === 'unpaid' ? 'Unpaid' : 'N/A'}
                                     </span>
                                 </div>
-                                {/* <button
-                                    onClick={openInApp}
-                                    className="bg-white/20 hover:bg-white/30 text-white rounded-full px-4 py-2 flex items-center gap-2 transition"
-                                    title="View in Customer App"
-                                >
-                                    <ExternalLink size={18} />
-                                    <span className="hidden sm:inline">Open in App</span>
-                                </button> */}
                             </div>
                         </div>
                     </div>
@@ -247,8 +264,11 @@ export default function JobAsssignForm({ id }) {
                                 <div>
                                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</h3>
                                     <div className="space-y-2">
-                                        <button onClick={handleMechanicDialogOpen} className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:border-amber-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition">
-                                            <Wrench size={16} /> {orderById.assignedMechanic ? 'Change Mechanic' : 'Assign Mechanic'}
+                                        <button
+                                            onClick={handleMechanicDialogOpen}
+                                            className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:border-amber-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition"
+                                        >
+                                            <Wrench size={16} /> {orderById.assignedMechanics?.length ? 'Change Mechanics' : 'Assign Mechanics'}
                                         </button>
                                         <button onClick={handleVendorDialogOpen} className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:border-amber-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition">
                                             <Store size={16} /> {orderById.assignedVendor ? 'Change Vendor' : 'Assign Vendor'}
@@ -292,7 +312,6 @@ export default function JobAsssignForm({ id }) {
                                                     <div><span className="text-gray-500 text-sm">Full Name</span><p className="font-medium">{getCustomerName()}</p></div>
                                                     <div><span className="text-gray-500 text-sm">Phone Number</span><p className="font-medium flex items-center gap-2"><Phone size={14} /> {getCustomerPhone()}</p></div>
                                                     <div><span className="text-gray-500 text-sm">Email Address</span><p className="font-medium flex items-center gap-2"><Mail size={14} /> {getCustomerEmail()}</p></div>
-                                                    {/* <div><span className="text-gray-500 text-sm">User ID</span><p className="font-mono text-sm">{orderById.userId?._id || 'N/A'}</p></div> */}
                                                 </div>
                                             </div>
                                             <div className="bg-gray-50 rounded-xl p-5">
@@ -300,7 +319,6 @@ export default function JobAsssignForm({ id }) {
                                                 <div className="space-y-3">
                                                     <div><span className="text-gray-500 text-sm">City</span><p className="font-medium">{orderById.city || 'N/A'}</p></div>
                                                     <div><span className="text-gray-500 text-sm">Full Address</span><p className="text-gray-700">{orderById.address || 'N/A'}</p></div>
-                                                    {/* Coordinates removed */}
                                                 </div>
                                             </div>
                                         </div>
@@ -331,8 +349,21 @@ export default function JobAsssignForm({ id }) {
                                         </div>
                                         <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
                                             <div className="flex flex-wrap justify-between items-center gap-4">
-                                                <div><h3 className="font-semibold text-gray-800">Assigned Mechanic</h3><p className="text-amber-700">{orderById.assignedMechanic || 'Not assigned yet'}</p></div>
-                                                <button onClick={handleMechanicDialogOpen} className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition flex items-center gap-2"><RefreshCw size={16} /> {orderById.assignedMechanic ? 'Change' : 'Assign'} Mechanic</button>
+                                                <div>
+                                                    <h3 className="font-semibold text-gray-800">Assigned Mechanics</h3>
+                                                    {orderById.assignedMechanics?.length > 0 ? (
+                                                        <ul className="text-amber-700 list-disc list-inside">
+                                                            {orderById.assignedMechanics.map((m, idx) => (
+                                                                <li key={idx}>{typeof m === 'object' ? `${m.firstName} ${m.lastName}` : m}</li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p className="text-amber-700">Not assigned yet</p>
+                                                    )}
+                                                </div>
+                                                <button onClick={handleMechanicDialogOpen} className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
+                                                    <RefreshCw size={16} /> {orderById.assignedMechanics?.length ? 'Change' : 'Assign'} Mechanics
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -385,7 +416,12 @@ export default function JobAsssignForm({ id }) {
                                             <div className="bg-gray-50 rounded-xl p-5">
                                                 <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-4"><CreditCard size={18} /> Payment Summary</h3>
                                                 <div className="space-y-2">
-                                                    <div className="flex justify-between"><span className="text-gray-500">Status</span><span className={`px-2 py-0.5 rounded-full text-xs font-medium bg-${getPaymentStatusColor(orderById.paymentStatus)}-100 text-${getPaymentStatusColor(orderById.paymentStatus)}-700`}>{orderById.paymentStatus === 'paid' ? 'Paid' : orderById.paymentStatus === 'unpaid' ? 'Unpaid' : 'N/A'}</span></div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">Status</span>
+                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPaymentBadgeClasses(orderById.paymentStatus)}`}>
+                                                            {orderById.paymentStatus === 'paid' ? 'Paid' : orderById.paymentStatus === 'unpaid' ? 'Unpaid' : 'N/A'}
+                                                        </span>
+                                                    </div>
                                                     <div className="flex justify-between"><span className="text-gray-500">Amount Paid</span><span className="font-medium">₹{orderById.amountPaid || 0}</span></div>
                                                     <div className="flex justify-between"><span className="text-gray-500">Balance Due</span><span className="font-medium">₹{orderById.balanceDue || 0}</span></div>
                                                     {orderById.total?.finalPayable > 0 && <div className="flex justify-between pt-2 border-t"><span className="font-semibold">Total Amount</span><span className="font-bold text-amber-600">₹{orderById.total.finalPayable}</span></div>}
@@ -419,7 +455,11 @@ export default function JobAsssignForm({ id }) {
                                             <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:h-[calc(100%-16px)] before:w-0.5 before:bg-gray-300">
                                                 {[
                                                     { label: 'Order Placed', time: orderById.createdAt, completed: !!orderById.createdAt },
-                                                    { label: 'Mechanic Assigned', time: orderById.assignedMechanic, completed: !!orderById.assignedMechanic },
+                                                    {
+                                                        label: 'Mechanic Assigned',
+                                                        time: orderById.assignedMechanics?.length > 0,
+                                                        completed: orderById.assignedMechanics?.length > 0
+                                                    },
                                                     { label: 'Work In Progress', time: ['In Progress', 'Completed', 'Invoice Generated'].includes(orderById.status), completed: ['In Progress', 'Completed', 'Invoice Generated'].includes(orderById.status) },
                                                     { label: 'Service Completed', time: ['Completed', 'Invoice Generated'].includes(orderById.status), completed: ['Completed', 'Invoice Generated'].includes(orderById.status) },
                                                     { label: 'Invoice Generated', time: orderById.status === 'Invoice Generated', completed: orderById.status === 'Invoice Generated' }
@@ -437,12 +477,44 @@ export default function JobAsssignForm({ id }) {
 
                                 {/* Action Buttons */}
                                 <div className="mt-8 flex justify-end gap-4 pt-4 border-t border-gray-200">
-                                    <Link to={(orderById.status === 'Completed' || orderById.status === "Invoice Generated") ? `/generate-invoice-form/${orderById._id}` : '#'} onClick={(e) => { if (loading || (orderById.status !== 'Completed' && orderById.status !== "Invoice Generated")) e.preventDefault(); }} className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 ${(orderById.status === 'Completed' || orderById.status === "Invoice Generated") && !loading ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                                    <Link
+                                        to={(orderById.status === 'Completed' || orderById.status === "Invoice Generated") ? `/generate-invoice-form/${orderById._id}` : '#'}
+                                        onClick={(e) => { if (loading || (orderById.status !== 'Completed' && orderById.status !== "Invoice Generated")) e.preventDefault(); }}
+                                        className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 ${(orderById.status === 'Completed' || orderById.status === "Invoice Generated") && !loading
+                                            ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                            }`}
+                                    >
                                         <FileText size={18} /> Generate Invoice
                                     </Link>
-                                    <Link to={orderById.status === 'Invoice Generated' ? `/order/invoice/${orderById._id}` : '#'} onClick={(e) => { if (orderById.status !== 'Invoice Generated') e.preventDefault(); }} className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 border-2 ${orderById.status === 'Invoice Generated' ? 'border-purple-500 text-purple-700 bg-purple-50 hover:bg-purple-100' : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'}`}>
-                                        View Invoice
-                                    </Link>
+
+                                    {/* View Invoice button - only active when paid */}
+                                    <div className="relative group">
+                                        <Link
+                                            to={orderById.status === 'Invoice Generated' && orderById.paymentStatus === 'paid' ? `/order/invoice/${orderById._id}` : '#'}
+                                            onClick={(e) => {
+                                                if (!(orderById.status === 'Invoice Generated' && orderById.paymentStatus === 'paid')) {
+                                                    e.preventDefault();
+                                                }
+                                            }}
+                                            className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 border-2 ${orderById.status === 'Invoice Generated' && orderById.paymentStatus === 'paid'
+                                                ? 'border-purple-500 text-purple-700 bg-purple-50 hover:bg-purple-100'
+                                                : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed opacity-60'
+                                                }`}
+                                            title={orderById.paymentStatus !== 'paid' ? "Customer payment pending" : ""}
+                                        >
+                                            View Invoice
+                                            {orderById.status === 'Invoice Generated' && orderById.paymentStatus !== 'paid' && (
+                                                <span className="ml-1 text-xs text-red-500">⚠️</span>
+                                            )}
+                                        </Link>
+                                        {/* Tooltip on hover */}
+                                        {orderById.status === 'Invoice Generated' && orderById.paymentStatus !== 'paid' && (
+                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
+                                                Customer hasn't paid yet
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
