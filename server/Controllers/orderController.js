@@ -1018,7 +1018,7 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
         }
 
         // 2. Check if order is in the correct status for invoice generation
-        if (order.status !== 'Completed') {
+        if (order.status !== 'Work Completed') {
             return res.status(400).json({
                 success: false,
                 message: `Invoice cannot be generated. The order must be in "Work Completed" status. Current status: "${order.status}".`,
