@@ -72,14 +72,74 @@ const generateInvoiceNumber = async () => {
     return `${prefix}-${String(serial).padStart(3, '0')}`;
 };
 
+/**
+ * Build the invoice document from an order + resolved payment info.
+ *
+ * @param {Object} order            - Mongoose order document (lean or hydrated)
+ * @param {Object} paymentInfo
+ * @param {string|null} paymentInfo.razorpayPaymentId
+ * @param {string|null} paymentInfo.razorpayOrderId
+ * @param {number} paymentInfo.amountPaid        - actual INR collected via Razorpay
+ * @param {number} paymentInfo.referralApplied   - wallet amount deducted this transaction
+ */
 const createInvoiceFromOrder = async (order, paymentInfo) => {
     const invoiceNumber = await generateInvoiceNumber();
+
+    const {
+        razorpayPaymentId = null,
+        razorpayOrderId = null,
+        amountPaid = 0,
+        referralApplied = 0,
+    } = paymentInfo;
+
+    // ── Resolve per-item discounts ────────────────────────────────────────────
+    // These are discounts the admin set per service / part at invoice-generation time.
+    // We surface them verbatim from the order so the invoice reflects them faithfully.
+    const partsUsed = (order.partsUsed || []).map(p => ({
+        partName: p.partName,
+        quantity: p.quantity,
+        price: p.price,
+        // discountPrice: price after per-item discount (0 = no discount)
+        discountPrice: p.discountPrice ?? 0,
+        discountType: p.discountType ?? '',
+        // Effective line total for transparency
+        effectivePrice: (p.discountPrice > 0 && p.discountPrice < p.price)
+            ? p.discountPrice
+            : p.price,
+    }));
+
+    const serviceProvided = (order.serviceProvided || []).map(s => ({
+        serviceName: s.serviceName,
+        quantity: s.quantity,
+        price: s.price,
+        discountPrice: s.discountPrice ?? 0,
+        effectivePrice: (s.discountPrice > 0 && s.discountPrice < s.price)
+            ? s.discountPrice
+            : s.price,
+    }));
+
+    // ── Bill-level referral discount (applied by admin at invoice-gen time) ───
+    // This already lives in order.total.referralDiscount after the admin generates
+    // the invoice. It is separate from the wallet deduction below.
+    const billReferralDiscount = order.total?.referralDiscount ?? 0;
+
+    // ── Wallet deduction this transaction ─────────────────────────────────────
+    // referralApplied is the amount deducted from the user's referralAmount wallet
+    // during THIS payment flow. We store it distinctly so the invoice can show
+    // both "admin referral discount on bill" and "wallet amount used at checkout".
+    const walletAmountUsed = referralApplied;
+
+    // ── Final payable after everything ────────────────────────────────────────
+    // amountPaid = what Razorpay actually charged (already reduced by wallet).
+    // totalAmountPaid = Razorpay charge + wallet used = full settled amount.
+    const totalAmountPaid = amountPaid + walletAmountUsed;
 
     return await Invoice.create({
         invoiceNumber,
         orderId: order._id,
         userId: order.userId || null,
         invoiceDate: new Date(),
+
         customerDetails: {
             name: order.name,
             email: order.email,
@@ -87,6 +147,7 @@ const createInvoiceFromOrder = async (order, paymentInfo) => {
             address: order.address,
             city: order.city,
         },
+
         vehicleDetails: {
             brand: order.selectedBrand,
             model: order.selectedModel,
@@ -94,45 +155,58 @@ const createInvoiceFromOrder = async (order, paymentInfo) => {
             cc: order.cc,
             bs: order.bs,
         },
-        partsUsed: (order.partsUsed || []).map(p => ({
-            partName: p.partName,
-            quantity: p.quantity,
-            price: p.price,
-            discountPrice: p.discountPrice,
-            discountType: p.discountType,
-        })),
-        serviceProvided: (order.serviceProvided || []).map(s => ({
-            serviceName: s.serviceName,
-            quantity: s.quantity,
-            price: s.price,
-            discountPrice: s.discountPrice,
-        })),
+
+        partsUsed,
+        serviceProvided,
+
         total: {
-            subTotal: order.total?.subTotal || 0,
-            discount: order.total?.discount || 0,
-            discountType: order.total?.discountType || '',
-            referralDiscount: order.total?.referralDiscount || 0,
-            sgst: order.total?.sgst || 0,
-            cgst: order.total?.cgst || 0,
-            sgstRate: order.total?.sgstRate || 0,
-            cgstRate: order.total?.cgstRate || 0,
-            baseAmount: order.total?.baseAmount || 0,
-            total: order.total?.total || 0,
-            finalPayable: order.total?.finalPayable || 0,
+            subTotal: order.total?.subTotal ?? 0,
+
+            // Admin-set bill discount (coupon / flat)
+            discount: order.total?.discount ?? 0,
+            discountType: order.total?.discountType ?? '',
+
+            // Admin referral discount applied at invoice-generation time
+            referralDiscount: billReferralDiscount,
+
+            // Wallet balance used at checkout by the customer
+            walletAmountUsed,
+
+            sgst: order.total?.sgst ?? 0,
+            cgst: order.total?.cgst ?? 0,
+            sgstRate: order.total?.sgstRate ?? 0,
+            cgstRate: order.total?.cgstRate ?? 0,
+            baseAmount: order.total?.baseAmount ?? 0,
+
+            // Pre-wallet total (after admin discounts + taxes)
+            total: order.total?.total ?? 0,
+
+            // Post-wallet payable (= total - walletAmountUsed)
+            finalPayable: order.total?.finalPayable ?? 0,
+
+            // Actual settled amount = amountPaid (Razorpay) + walletAmountUsed
+            totalAmountPaid,
         },
+
         paymentDetails: {
-            method: paymentInfo.razorpayPaymentId ? 'razorpay' : 'referral',
-            razorpayPaymentId: paymentInfo.razorpayPaymentId || null,
-            razorpayOrderId: paymentInfo.razorpayOrderId || null,
-            amountPaid: paymentInfo.amountPaid,
+            method: razorpayPaymentId ? 'razorpay' : 'referral',
+            razorpayPaymentId,
+            razorpayOrderId,
+            // amountPaid = only the Razorpay portion (0 if fully wallet-covered)
+            amountPaid,
+            // walletAmountUsed = wallet portion
+            walletAmountUsed,
+            // totalSettled = sum of both
+            totalSettled: totalAmountPaid,
             paymentDate: new Date(),
         },
+
         status: 'paid',
     });
 };
 
 const sendPaymentNotifications = async (order, invoice) => {
-    const amountPaid = invoice.paymentDetails.amountPaid;
+    const totalSettled = invoice.paymentDetails.totalSettled ?? invoice.paymentDetails.amountPaid;
     const invoiceNumber = invoice.invoiceNumber;
     const orderId = order._id;
     const orderNumber = order.orderId;
@@ -142,7 +216,7 @@ const sendPaymentNotifications = async (order, invoice) => {
         screenOrderId: orderNumber,
         invoiceId: invoice._id.toString(),
         invoiceNumber,
-        amountPaid,
+        amountPaid: totalSettled,
     };
 
     const adminRecipients = await getAdminRecipients();
@@ -150,7 +224,7 @@ const sendPaymentNotifications = async (order, invoice) => {
         await createNotification({
             type: 'payment_received',
             title: '💰 Payment Received',
-            body: `₹${amountPaid} received for order #${orderNumber}. Invoice #${invoiceNumber} generated.`,
+            body: `₹${totalSettled} received for order #${orderNumber}. Invoice #${invoiceNumber} generated.`,
             recipients: adminRecipients,
             orderId,
             data: notificationData,
@@ -163,7 +237,7 @@ const sendPaymentNotifications = async (order, invoice) => {
             await createNotification({
                 type: 'payment_received',
                 title: '💰 Payment Confirmed',
-                body: `Customer paid ₹${amountPaid} for order #${orderNumber}. Invoice #${invoiceNumber} generated.`,
+                body: `Customer paid ₹${totalSettled} for order #${orderNumber}. Invoice #${invoiceNumber} generated.`,
                 recipients: mechanicRecipients,
                 orderId,
                 data: notificationData,
@@ -176,7 +250,7 @@ const sendPaymentNotifications = async (order, invoice) => {
         await createNotification({
             type: 'payment_received',
             title: '✅ Payment Successful',
-            body: `Your payment of ₹${amountPaid} for order #${orderNumber} is confirmed. Invoice #${invoiceNumber} generated.`,
+            body: `Your payment of ₹${totalSettled} for order #${orderNumber} is confirmed. Invoice #${invoiceNumber} generated.`,
             recipients: userRecipients,
             orderId,
             data: notificationData,
@@ -223,7 +297,7 @@ export const createRazorpayOrder = async (req, res) => {
 
         const payableAfterReferral = Math.max(0, originalPayable - referralToApply);
 
-        // Full referral cover
+        // ── Full referral cover (no card payment needed) ──────────────────────
         if (payableAfterReferral <= 0 && referralToApply > 0) {
             const updatedUser = await User.findByIdAndUpdate(
                 order.userId,
@@ -235,10 +309,12 @@ export const createRazorpayOrder = async (req, res) => {
                 return res.status(500).json({ success: false, message: 'Failed to apply referral balance.' });
             }
 
-            order.total.referralDiscount = (order.total?.referralDiscount || 0) + referralToApply;
+            // Update order totals to reflect wallet deduction
+            order.total.referralDiscount = (order.total?.referralDiscount || 0);
+            order.total.walletAmountUsed = referralToApply;
             order.total.finalPayable = 0;
             order.paymentStatus = 'paid';
-            order.status = 'Completed';                       // ✅ final state
+            order.status = 'Completed';
             order.paymentMethod = 'referral';
             order.amountPaid = 0;
             order.balanceDue = 0;
@@ -255,6 +331,7 @@ export const createRazorpayOrder = async (req, res) => {
                 razorpayPaymentId: null,
                 razorpayOrderId: null,
                 amountPaid: 0,
+                referralApplied: referralToApply,
             });
 
             sendPaymentNotifications(order, invoice).catch(err =>
@@ -270,7 +347,7 @@ export const createRazorpayOrder = async (req, res) => {
             });
         }
 
-        // Always create a fresh Razorpay order
+        // ── Partial or full Razorpay payment ─────────────────────────────────
         const amountInPaise = Math.round(payableAfterReferral * 100);
         const rzpOrder = await getRazorpay().orders.create({
             amount: amountInPaise,
@@ -311,7 +388,7 @@ export const createRazorpayOrder = async (req, res) => {
 };
 
 // ────────────────────────────────────────────────────────────────────────────────
-// VERIFY PAYMENT – FIXED: REMOVED STATUS REQUIREMENT AND SETS STATUS TO COMPLETED
+// VERIFY PAYMENT + GENERATE INVOICE
 // ────────────────────────────────────────────────────────────────────────────────
 export const verifyPaymentAndGenerateInvoice = async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -323,22 +400,19 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
 
     const isValid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
     if (!isValid) {
-        await Order.findByIdAndUpdate(orderId, {
-            'razorpay.hadFailedAttempt': true,
-        });
+        await Order.findByIdAndUpdate(orderId, { 'razorpay.hadFailedAttempt': true });
         return res.status(400).json({ success: false, message: 'Invalid payment signature.' });
     }
 
     try {
-        // 🔁 REMOVED `status: 'Completed'` condition – payment should happen from "Invoice Generated" state
         const order = await Order.findOneAndUpdate(
             {
                 _id: orderId,
-                paymentStatus: { $ne: 'paid' },          // only proceed if not already paid
+                paymentStatus: { $ne: 'paid' },
             },
             {
                 $set: {
-                    status: 'Completed',                 // ✅ move to final status
+                    status: 'Completed',
                     paymentStatus: 'paid',
                     paymentMethod: 'razorpay',
                     paymentDate: new Date(),
@@ -347,14 +421,13 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
                     'razorpay.signature': razorpay_signature,
                     'razorpay.status': 'paid',
                     'razorpay.hadFailedAttempt': false,
-                    'razorpay.pendingReferralToApply': 0,
                 },
             },
             { new: true }
         );
 
+        // Already paid — return existing invoice
         if (!order) {
-            const existing = await Order.findById(orderId).lean();
             const existingInvoice = await Invoice.findOne({ orderId }).lean();
             return res.status(200).json({
                 success: true,
@@ -363,10 +436,14 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
             });
         }
 
+        // ── Resolve referral wallet deduction ─────────────────────────────────
         const referralToApply = order.razorpay?.pendingReferralToApply || 0;
         const originalPayable = order.razorpay?.pendingOriginalPayable || order.total?.finalPayable || 0;
 
-        let finalAmountPaid = originalPayable;
+        // amountPaid via Razorpay = originalPayable - referralToApply
+        const razorpayAmountPaid = Math.max(0, originalPayable - referralToApply);
+
+        let finalReferralApplied = 0;
 
         if (referralToApply > 0 && order.userId) {
             const updatedUser = await User.findOneAndUpdate(
@@ -379,37 +456,51 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
             );
 
             if (updatedUser) {
-                finalAmountPaid = Math.max(0, originalPayable - referralToApply);
+                finalReferralApplied = referralToApply;
+                // Update order to reflect wallet usage
                 await Order.findByIdAndUpdate(orderId, {
                     $set: {
-                        'total.referralDiscount': (order.total?.referralDiscount || 0) + referralToApply,
-                        'total.finalPayable': finalAmountPaid,
-                        amountPaid: finalAmountPaid,
+                        'total.walletAmountUsed': referralToApply,
+                        'total.finalPayable': razorpayAmountPaid,
+                        amountPaid: razorpayAmountPaid,
                         balanceDue: 0,
+                        'razorpay.pendingReferralToApply': 0,
                     },
                 });
             } else {
-                finalAmountPaid = originalPayable;
+                // Referral balance was insufficient — charge full amount
                 await Order.findByIdAndUpdate(orderId, {
-                    $set: { amountPaid: originalPayable, balanceDue: 0 },
+                    $set: {
+                        amountPaid: originalPayable,
+                        balanceDue: 0,
+                        'razorpay.pendingReferralToApply': 0,
+                    },
                 });
             }
         } else {
             await Order.findByIdAndUpdate(orderId, {
-                $set: { amountPaid: originalPayable, balanceDue: 0 },
+                $set: {
+                    amountPaid: originalPayable,
+                    balanceDue: 0,
+                    'razorpay.pendingReferralToApply': 0,
+                },
             });
         }
 
+        // ── Referral credit for the order placer ──────────────────────────────
         if (!order.referralProcessed && order.userId) {
             await processReferralCredit(order.userId);
             await Order.findByIdAndUpdate(orderId, { $set: { referralProcessed: true } });
         }
 
+        // ── Fetch final order state for invoice ───────────────────────────────
         const finalOrder = await Order.findById(orderId).lean();
+
         const invoice = await createInvoiceFromOrder(finalOrder, {
             razorpayPaymentId: razorpay_payment_id,
             razorpayOrderId: razorpay_order_id,
-            amountPaid: finalAmountPaid,
+            amountPaid: razorpayAmountPaid,
+            referralApplied: finalReferralApplied,
         });
 
         sendPaymentNotifications(finalOrder, invoice).catch(err =>
@@ -435,7 +526,7 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
 };
 
 // ────────────────────────────────────────────────────────────────────────────────
-// WEBHOOK – FIXED: ALSO SETS STATUS TO COMPLETED
+// WEBHOOK
 // ────────────────────────────────────────────────────────────────────────────────
 export const razorpayWebhook = async (req, res) => {
     const webhookSignature = req.headers['x-razorpay-signature'];
@@ -475,7 +566,7 @@ export const razorpayWebhook = async (req, res) => {
             },
             {
                 $set: {
-                    status: 'Completed',                     // ✅ move to completed
+                    status: 'Completed',
                     paymentStatus: 'paid',
                     paymentMethod: 'razorpay',
                     paymentDate: new Date(),
@@ -484,7 +575,6 @@ export const razorpayWebhook = async (req, res) => {
                     'razorpay.status': 'paid',
                     'razorpay.webhookPayload': payload,
                     'razorpay.hadFailedAttempt': false,
-                    'razorpay.pendingReferralToApply': 0,
                 },
             },
             { new: true }
@@ -501,7 +591,8 @@ export const razorpayWebhook = async (req, res) => {
             order.total?.finalPayable ||
             (amountPaise / 100);
 
-        let finalAmountPaid = originalPayable;
+        const razorpayAmountPaid = Math.max(0, originalPayable - referralToApply);
+        let finalReferralApplied = 0;
 
         if (referralToApply > 0 && order.userId) {
             const updatedUser = await User.findOneAndUpdate(
@@ -511,24 +602,32 @@ export const razorpayWebhook = async (req, res) => {
             );
 
             if (updatedUser) {
-                finalAmountPaid = Math.max(0, originalPayable - referralToApply);
+                finalReferralApplied = referralToApply;
                 await Order.findByIdAndUpdate(order._id, {
                     $set: {
-                        'total.referralDiscount': (order.total?.referralDiscount || 0) + referralToApply,
-                        'total.finalPayable': finalAmountPaid,
-                        amountPaid: finalAmountPaid,
+                        'total.walletAmountUsed': referralToApply,
+                        'total.finalPayable': razorpayAmountPaid,
+                        amountPaid: razorpayAmountPaid,
                         balanceDue: 0,
+                        'razorpay.pendingReferralToApply': 0,
                     },
                 });
             } else {
-                finalAmountPaid = originalPayable;
                 await Order.findByIdAndUpdate(order._id, {
-                    $set: { amountPaid: originalPayable, balanceDue: 0 },
+                    $set: {
+                        amountPaid: originalPayable,
+                        balanceDue: 0,
+                        'razorpay.pendingReferralToApply': 0,
+                    },
                 });
             }
         } else {
             await Order.findByIdAndUpdate(order._id, {
-                $set: { amountPaid: originalPayable, balanceDue: 0 },
+                $set: {
+                    amountPaid: originalPayable,
+                    balanceDue: 0,
+                    'razorpay.pendingReferralToApply': 0,
+                },
             });
         }
 
@@ -538,10 +637,12 @@ export const razorpayWebhook = async (req, res) => {
         }
 
         const finalOrder = await Order.findById(order._id).lean();
+
         const invoice = await createInvoiceFromOrder(finalOrder, {
             razorpayPaymentId,
             razorpayOrderId,
-            amountPaid: finalAmountPaid,
+            amountPaid: razorpayAmountPaid,
+            referralApplied: finalReferralApplied,
         });
 
         sendPaymentNotifications(finalOrder, invoice).catch(err =>
@@ -558,7 +659,7 @@ export const razorpayWebhook = async (req, res) => {
 };
 
 // ────────────────────────────────────────────────────────────────────────────────
-// GET INVOICE – UNCHANGED
+// GET INVOICE
 // ────────────────────────────────────────────────────────────────────────────────
 export const getInvoiceByOrder = async (req, res) => {
     try {
