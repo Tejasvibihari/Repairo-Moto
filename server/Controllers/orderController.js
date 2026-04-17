@@ -618,6 +618,10 @@ export const requestWorkStart = async (req, res) => {
         if (order.workStartOtp?.pendingPhotoPath) {
             deleteUploadedFile(order.workStartOtp.pendingPhotoPath);
         }
+        // If a confirmed beforePhoto already exists, delete it (we're replacing)
+        if (order.beforePhoto) {
+            deleteUploadedFile(order.beforePhoto);
+        }
 
         // Generate OTP
         const otp = generateOtp();
@@ -783,9 +787,8 @@ export const verifyWorkStart = async (req, res) => {
         };
         order.status = 'In Progress';
         order.workStartedAt = new Date();
-        order.beforePhotos = [...(order.beforePhotos || []), confirmedPhotoPath];
+        order.beforePhoto = confirmedPhotoPath;
         await order.save();
-
         if (order.userId) {
             const userRecipient = getUserRecipient(order.userId);
             await createNotification({
@@ -835,6 +838,10 @@ export const markWorkComplete = async (req, res) => {
         // ── Delete old pending temp after-photo if one exists ─────────────────
         if (order.workCompleteOtp?.pendingPhotoPath) {
             deleteUploadedFile(order.workCompleteOtp.pendingPhotoPath);
+        }
+        // Delete existing confirmed afterPhoto (we're replacing)
+        if (order.afterPhoto) {
+            deleteUploadedFile(order.afterPhoto);
         }
 
         const otp = generateOtp();
@@ -982,7 +989,7 @@ export const confirmWorkCompletion = async (req, res) => {
             pendingPhotoPath: null,
         };
         order.status = 'Work Completed';
-        order.afterPhotos = [...(order.afterPhotos || []), confirmedPhotoPath];
+        order.afterPhoto = confirmedPhotoPath;
         await order.save();
 
         const adminRecipients = await getAdminRecipients();

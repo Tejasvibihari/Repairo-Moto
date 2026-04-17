@@ -92,9 +92,8 @@ const orderSchema = new mongoose.Schema({
 
     // ─── Confirmed Repair Photos ──────────────────────────────────────────────
     // Only populated after successful OTP verification.
-    beforePhotos: { type: [String], default: [] },
-    afterPhotos: { type: [String], default: [] },
-
+    beforePhoto: { type: String, default: null },
+    afterPhoto: { type: String, default: null },
     // ─── Photo Cleanup Tracking ───────────────────────────────────────────────
     photosScheduledDeleteAt: { type: Date, default: null },
     photosDeleted: { type: Boolean, default: false },
