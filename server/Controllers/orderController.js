@@ -1192,40 +1192,50 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
 };
 
 // ─── COD Payment ──────────────────────────────────────────────────────────────
-
 export const markPaidCod = async (req, res) => {
     try {
         const { id } = req.params;
         const { amountCollected } = req.body;
 
         const order = await Order.findById(id);
-        if (!order) return res.status(404).json({ message: 'Order not found' });
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
 
+        // ── Guard: only allow COD when invoice has been generated ─────────────
         if (order.status !== 'Invoice Generated') {
             return res.status(400).json({
                 message: `Order must be in "Invoice Generated" status to mark as paid. Current: "${order.status}".`,
             });
         }
 
+        // ── Guard: prevent double-payment ────────────────────────────────────
         if (order.paymentStatus === 'paid') {
             return res.status(400).json({ message: 'Order is already paid.' });
         }
 
+        // ── Resolve amount ────────────────────────────────────────────────────
+        // COD always uses order.total.total (the pre-referral, pre-wallet total).
+        // No referral or online-wallet discount applies for cash payment.
         const codPayable = order.total?.total || 0;
         const collected = amountCollected != null ? Number(amountCollected) : codPayable;
+
+        // ── Update order ──────────────────────────────────────────────────────
         order.status = 'Completed';
-        order.total.referralDiscount = 0;
+        order.total.referralDiscount = 0;       // no referral discount for COD
         order.total.finalPayable = codPayable;
-        order.coupon = null;
+        order.coupon = null;                    // coupons don't apply to COD
         order.paymentStatus = 'paid';
         order.paymentMethod = 'cash';
         order.amountPaid = collected;
         order.balanceDue = 0;
         order.paymentDate = new Date();
+        // Schedule repair photos for deletion 7 days after payment
         order.photosScheduledDeleteAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
         await order.save();
 
+        // ── Generate invoice ──────────────────────────────────────────────────
         const invoiceData = await buildInvoiceData(order, {
             method: 'cash',
             amountPaid: collected,
@@ -1233,23 +1243,58 @@ export const markPaidCod = async (req, res) => {
         });
         const invoice = await Invoice.create(invoiceData);
 
+        // ── Notifications ─────────────────────────────────────────────────────
+        const notificationData = {
+            orderId: order._id.toString(),
+            screenOrderId: order.orderId,
+            invoiceId: invoice._id.toString(),
+            invoiceNumber: invoice.invoiceNumber,
+            amountPaid: collected,
+        };
+
+        // Notify customer
         if (order.userId) {
             const userRecipient = getUserRecipient(order.userId);
             await createNotification({
                 type: 'payment_received',
                 title: '✅ Payment Confirmed',
-                body: `Cash payment of ₹${collected} received for order #${order.orderId}. Invoice #${invoice.invoiceNumber} generated.`,
+                body: `Your cash payment of ₹${collected} for order #${order.orderId} has been received. Invoice #${invoice.invoiceNumber} generated.`,
                 recipients: userRecipient,
                 orderId: order._id,
-                data: {
-                    orderId: order._id.toString(),
-                    screenOrderId: order.orderId,
-                    invoiceId: invoice._id.toString(),
-                },
+                data: notificationData,
             });
         }
 
+        // Notify admins
+        const adminRecipients = await getAdminRecipients();
+        if (adminRecipients.length) {
+            await createNotification({
+                type: 'payment_received',
+                title: '💰 Cash Payment Received',
+                body: `₹${collected} cash collected for order #${order.orderId}. Invoice #${invoice.invoiceNumber} generated.`,
+                recipients: adminRecipients,
+                orderId: order._id,
+                data: notificationData,
+            });
+        }
+
+        // Notify assigned mechanic(s)
+        if (order.mechanicIds?.length) {
+            for (const mechanicId of order.mechanicIds) {
+                const mechanicRecipients = getEmployeeRecipient(mechanicId, 'mechanic');
+                await createNotification({
+                    type: 'payment_received',
+                    title: '💰 Cash Payment Confirmed',
+                    body: `Cash ₹${collected} collected for order #${order.orderId}. Invoice #${invoice.invoiceNumber} generated.`,
+                    recipients: mechanicRecipients,
+                    orderId: order._id,
+                    data: notificationData,
+                });
+            }
+        }
+
         return res.status(200).json({
+            success: true,
             message: 'Cash payment recorded. Invoice generated.',
             order,
             invoice,
@@ -1259,6 +1304,7 @@ export const markPaidCod = async (req, res) => {
         return res.status(500).json({ message: 'Server error while recording payment.' });
     }
 };
+
 
 // ─── Parts & Items Update ─────────────────────────────────────────────────────
 
