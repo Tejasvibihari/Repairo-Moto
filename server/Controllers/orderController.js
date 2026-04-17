@@ -1192,8 +1192,7 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
     }
 };
 export const getInvoice = async (req, res) => {
-    console.log("getInvoice")
-    console.log(req.params, "From getinvoiec controller")
+
     try {
         const { id: orderId } = req.params;
 
@@ -1690,5 +1689,54 @@ export const completeRevenue = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Something went wrong' });
+    }
+};
+
+
+// ─── Admin Force Status Update (No Restrictions) ───────────────────────────
+/**
+ * @route   PUT /api/admin/order/force-update-status/:id
+ * @desc    Admin can set any status without transition checks.
+ * @access  Admin only
+ */
+export const forceUpdateOrderStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({ message: "Status is required" });
+        }
+
+        const order = await Order.findByIdAndUpdate(
+            id,
+            { status },
+            { new: true, runValidators: true }
+        );
+
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        // Optional: Notify the customer about the change
+        if (order.userId) {
+            const userRecipient = getUserRecipient(order.userId);
+            await createNotification({
+                type: 'order_update',
+                title: '🛵 Order Status Updated',
+                body: `Your order #${order.orderId} status has been updated to ${status}.`,
+                recipients: userRecipient,
+                orderId: order._id,
+                data: { orderId: order._id.toString(), screenOrderId: order.orderId },
+            });
+        }
+
+        return res.status(200).json({
+            message: "Order status forcefully updated",
+            data: order,
+        });
+    } catch (error) {
+        console.error("Error force updating order status:", error);
+        return res.status(500).json({ message: "Server error" });
     }
 };

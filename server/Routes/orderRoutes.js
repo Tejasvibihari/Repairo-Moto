@@ -25,6 +25,7 @@ import {
     confirmWorkCompletion,
     resendWorkStartOtp,
     resendCompletionOtp,
+    forceUpdateOrderStatus,
     getInvoice,
     markPaidCod,
 } from "../Controllers/orderController.js";
@@ -120,6 +121,10 @@ router.put("/updateDelivery/:id", updateDelivery);
 router.put("/updateVendor/:id", updateVendor);
 router.put("/updateStatus/:id", updateOrderStatus);
 
+//---------------------------------------------------------------------
+// FORCE UPDATE STATUS
+//---------------------------------------------------------------------
+router.put("/force-update-status/:id", authAdmin, forceUpdateOrderStatus);
 // -------------------------------------------------------------------
 // EMPLOYEE / VENDOR
 // -------------------------------------------------------------------
