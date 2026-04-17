@@ -37,10 +37,6 @@ const verifyRazorpaySignature = (rzpOrderId, rzpPaymentId, signature) => {
     return expectedSignature === signature;
 };
 
-/**
- * Credit referral bonus to the referrer of a user.
- * NO session — standalone MongoDB compatible.
- */
 const processReferralCredit = async (userId) => {
     const orderUser = await User.findById(userId);
     if (!orderUser?.referredBy) return;
@@ -48,7 +44,6 @@ const processReferralCredit = async (userId) => {
     const referrer = await User.findOne({ referralCode: orderUser.referredBy });
     if (!referrer) return;
 
-    // Atomic increment — safe without transactions
     await User.findByIdAndUpdate(referrer._id, {
         $inc: {
             referralAmount: REFERRAL_BONUS_AMOUNT,
@@ -57,10 +52,6 @@ const processReferralCredit = async (userId) => {
     });
 };
 
-/**
- * Generate a unique invoice number: INV-DDMMYY-XXX
- * Uses findOneAndUpdate for atomic serial increment — no transactions needed.
- */
 const generateInvoiceNumber = async () => {
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
@@ -68,7 +59,6 @@ const generateInvoiceNumber = async () => {
     const yy = String(now.getFullYear()).slice(-2);
     const prefix = `INV-${dd}${mm}${yy}`;
 
-    // Get latest invoice to derive serial
     const latest = await Invoice.findOne({}).sort({ createdAt: -1 }).lean();
 
     let serial = 1;
@@ -82,9 +72,6 @@ const generateInvoiceNumber = async () => {
     return `${prefix}-${String(serial).padStart(3, '0')}`;
 };
 
-/**
- * Create Invoice document — no session (standalone MongoDB).
- */
 const createInvoiceFromOrder = async (order, paymentInfo) => {
     const invoiceNumber = await generateInvoiceNumber();
 
@@ -144,10 +131,6 @@ const createInvoiceFromOrder = async (order, paymentInfo) => {
     });
 };
 
-/**
- * Send payment success notifications to admin, all assigned mechanics, and user.
- * Non-blocking — caller should .catch() this.
- */
 const sendPaymentNotifications = async (order, invoice) => {
     const amountPaid = invoice.paymentDetails.amountPaid;
     const invoiceNumber = invoice.invoiceNumber;
@@ -162,7 +145,6 @@ const sendPaymentNotifications = async (order, invoice) => {
         amountPaid,
     };
 
-    // ── Admin notification ──────────────────────────────────────────────────
     const adminRecipients = await getAdminRecipients();
     if (adminRecipients.length) {
         await createNotification({
@@ -175,7 +157,6 @@ const sendPaymentNotifications = async (order, invoice) => {
         });
     }
 
-    // ── Per-mechanic notification ───────────────────────────────────────────
     if (order.mechanicIds?.length) {
         for (const mechanicId of order.mechanicIds) {
             const mechanicRecipients = getEmployeeRecipient(mechanicId, 'mechanic');
@@ -190,7 +171,6 @@ const sendPaymentNotifications = async (order, invoice) => {
         }
     }
 
-    // ── User notification ───────────────────────────────────────────────────
     if (order.userId) {
         const userRecipients = getUserRecipient(order.userId);
         await createNotification({
@@ -205,7 +185,7 @@ const sendPaymentNotifications = async (order, invoice) => {
 };
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 🔧 FIX: CREATE RAZORPAY ORDER – ALWAYS FRESH (NO REUSE)
+// CREATE RAZORPAY ORDER – ALWAYS FRESH (NO REUSE)
 // ────────────────────────────────────────────────────────────────────────────────
 export const createRazorpayOrder = async (req, res) => {
     try {
@@ -228,13 +208,11 @@ export const createRazorpayOrder = async (req, res) => {
             });
         }
 
-        // ── Read current payable from DB (source of truth) ───────────────────
         const originalPayable =
             order.razorpay?.pendingOriginalPayable > 0
                 ? order.razorpay.pendingOriginalPayable
                 : (order.total?.finalPayable || order.total?.total || 0);
 
-        // ── Compute referral — DO NOT deduct yet ─────────────────────────────
         let referralToApply = 0;
         if (useReferralBalance && order.userId) {
             const user = await User.findById(order.userId);
@@ -245,7 +223,7 @@ export const createRazorpayOrder = async (req, res) => {
 
         const payableAfterReferral = Math.max(0, originalPayable - referralToApply);
 
-        // ── Full referral cover — no Razorpay needed ─────────────────────────
+        // Full referral cover
         if (payableAfterReferral <= 0 && referralToApply > 0) {
             const updatedUser = await User.findByIdAndUpdate(
                 order.userId,
@@ -260,6 +238,7 @@ export const createRazorpayOrder = async (req, res) => {
             order.total.referralDiscount = (order.total?.referralDiscount || 0) + referralToApply;
             order.total.finalPayable = 0;
             order.paymentStatus = 'paid';
+            order.status = 'Completed';                       // ✅ final state
             order.paymentMethod = 'referral';
             order.amountPaid = 0;
             order.balanceDue = 0;
@@ -291,10 +270,7 @@ export const createRazorpayOrder = async (req, res) => {
             });
         }
 
-        // ──────────────────────────────────────────────────────────────────────
-        // 🔁 FIX: ALWAYS CREATE A FRESH RAZORPAY ORDER.
-        //    Do not reuse old orders – eliminates expiration / stale order issues.
-        // ──────────────────────────────────────────────────────────────────────
+        // Always create a fresh Razorpay order
         const amountInPaise = Math.round(payableAfterReferral * 100);
         const rzpOrder = await getRazorpay().orders.create({
             amount: amountInPaise,
@@ -308,14 +284,13 @@ export const createRazorpayOrder = async (req, res) => {
             },
         });
 
-        // Store intent — referral deducted only after successful signature verify
         order.razorpay = {
             ...order.razorpay,
             orderId: rzpOrder.id,
             status: 'created',
             receiptId: rzpOrder.receipt,
             linkCreatedAt: new Date(),
-            hadFailedAttempt: false,           // reset for this new attempt
+            hadFailedAttempt: false,
             pendingReferralToApply: referralToApply,
             pendingOriginalPayable: originalPayable,
         };
@@ -336,7 +311,7 @@ export const createRazorpayOrder = async (req, res) => {
 };
 
 // ────────────────────────────────────────────────────────────────────────────────
-// VERIFY PAYMENT – REMAINS UNCHANGED (ALREADY ROBUST)
+// VERIFY PAYMENT – FIXED: REMOVED STATUS REQUIREMENT AND SETS STATUS TO COMPLETED
 // ────────────────────────────────────────────────────────────────────────────────
 export const verifyPaymentAndGenerateInvoice = async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -355,14 +330,15 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
     }
 
     try {
+        // 🔁 REMOVED `status: 'Completed'` condition – payment should happen from "Invoice Generated" state
         const order = await Order.findOneAndUpdate(
             {
                 _id: orderId,
-                paymentStatus: { $ne: 'paid' },
-                status: 'Completed',
+                paymentStatus: { $ne: 'paid' },          // only proceed if not already paid
             },
             {
                 $set: {
+                    status: 'Completed',                 // ✅ move to final status
                     paymentStatus: 'paid',
                     paymentMethod: 'razorpay',
                     paymentDate: new Date(),
@@ -459,7 +435,7 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
 };
 
 // ────────────────────────────────────────────────────────────────────────────────
-// WEBHOOK – UNCHANGED
+// WEBHOOK – FIXED: ALSO SETS STATUS TO COMPLETED
 // ────────────────────────────────────────────────────────────────────────────────
 export const razorpayWebhook = async (req, res) => {
     const webhookSignature = req.headers['x-razorpay-signature'];
@@ -499,6 +475,7 @@ export const razorpayWebhook = async (req, res) => {
             },
             {
                 $set: {
+                    status: 'Completed',                     // ✅ move to completed
                     paymentStatus: 'paid',
                     paymentMethod: 'razorpay',
                     paymentDate: new Date(),

@@ -67,6 +67,7 @@ export default function JobAsssignForm({ id }) {
             setMechanic(results[1].status === "fulfilled" ? results[1].value.data.employees : []);
             setDelivery(results[2].status === "fulfilled" ? results[2].value.data.employees : []);
             const orderDetail = results[3].status === "fulfilled" ? results[3].value.data : null;
+            console.log(orderDetail);
             if (orderDetail) {
                 setOrderById(orderDetail);
                 setCurrentMechanics(orderDetail.assignedMechanics || []);
