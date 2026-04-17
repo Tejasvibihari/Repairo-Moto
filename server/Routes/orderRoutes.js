@@ -25,6 +25,7 @@ import {
     confirmWorkCompletion,
     resendWorkStartOtp,
     resendCompletionOtp,
+    getInvoice,
     markPaidCod,
 } from "../Controllers/orderController.js";
 import authAdmin from "../Middleware/authAdmin.js";
