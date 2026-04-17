@@ -1703,7 +1703,7 @@ export const forceUpdateOrderStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-
+        console.log(status)
         if (!status) {
             return res.status(400).json({ message: "Status is required" });
         }
