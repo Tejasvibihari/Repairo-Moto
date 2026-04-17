@@ -1012,9 +1012,9 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
         const order = await Order.findById(id);
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        if (order.status !== 'Completed') {
+        if (order.status !== 'Work Completed') {
             return res.status(400).json({
-                message: `Invoice can only be generated once the order is "Completed". Current status: "${order.status}".`,
+                message: `Invoice can only be generated once the order is "Work Completed". Current status: "${order.status}".`,
             });
         }
 
