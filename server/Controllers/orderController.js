@@ -1192,6 +1192,8 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
     }
 };
 export const getInvoice = async (req, res) => {
+    console.log("getInvoice")
+    console.log(req.params, "From getinvoiec controller")
     try {
         const { id: orderId } = req.params;
 
