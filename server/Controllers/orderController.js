@@ -1003,82 +1003,184 @@ export const confirmWorkCompletion = async (req, res) => {
 };
 
 // ─── Invoice Generation ───────────────────────────────────────────────────────
-
 export const updateOrderandGenerateInvoice = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
 
     try {
+        // 1. Validate order existence
         const order = await Order.findById(id);
-        if (!order) return res.status(404).json({ message: 'Order not found' });
-
-        if (order.status !== 'Work Completed') {
-            return res.status(400).json({
-                message: `Invoice can only be generated once the order is "Work Completed". Current status: "${order.status}".`,
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: `Order with ID ${id} not found.`,
             });
         }
 
-        const partsUsed = (data.partsAndServices || [])
+        // 2. Check if order is in the correct status for invoice generation
+        if (order.status !== 'Completed') {
+            return res.status(400).json({
+                success: false,
+                message: `Invoice cannot be generated. The order must be in "Work Completed" status. Current status: "${order.status}".`,
+                currentStatus: order.status,
+                requiredStatus: 'Work Completed',
+            });
+        }
+
+        // 3. Validate required data structure
+        if (!data || typeof data !== 'object') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid request body. Expected an object with invoice details.',
+            });
+        }
+
+        const { partsAndServices, total, invoiceDetails } = data;
+
+        if (!Array.isArray(partsAndServices)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing or invalid "partsAndServices" array.',
+            });
+        }
+
+        if (!total || typeof total !== 'object') {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing or invalid "total" object containing financial details.',
+            });
+        }
+
+        // 4. Validate required total fields
+        const requiredTotalFields = ['subTotal', 'total', 'baseAmount'];
+        const missingFields = requiredTotalFields.filter(field => total[field] === undefined || total[field] === null);
+        if (missingFields.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Missing required total fields: ${missingFields.join(', ')}.`,
+            });
+        }
+
+        // 5. Process parts and services
+        const partsUsed = partsAndServices
             .filter(item => item.type === 'part')
-            .map(item => ({
-                partName: item.name,
-                quantity: item.quantity,
-                price: item.price,
-                discountPrice: item.discountPrice,
-                discountType: item.discountType,
-            }));
+            .map(item => {
+                if (!item.name || item.quantity == null || item.price == null) {
+                    throw new Error(`Invalid part entry: name, quantity, and price are required.`);
+                }
+                return {
+                    partName: item.name.trim(),
+                    quantity: Number(item.quantity),
+                    price: Number(item.price),
+                    discountPrice: Number(item.discountPrice) || 0,
+                    discountType: item.discountType || undefined,
+                };
+            });
 
-        const serviceProvided = (data.partsAndServices || [])
+        const serviceProvided = partsAndServices
             .filter(item => item.type === 'service')
-            .map(item => ({
-                serviceName: item.name,
-                quantity: item.quantity,
-                price: item.price,
-                discountPrice: item.discountPrice,
-            }));
+            .map(item => {
+                if (!item.name || item.quantity == null || item.price == null) {
+                    throw new Error(`Invalid service entry: name, quantity, and price are required.`);
+                }
+                return {
+                    serviceName: item.name.trim(),
+                    quantity: Number(item.quantity),
+                    price: Number(item.price),
+                    discountPrice: Number(item.discountPrice) || 0,
+                };
+            });
 
+        // 6. Build update object
         const updatedFields = {
-            invoiceDate: data.invoiceDetails?.invoiceDate || new Date(),
+            invoiceDate: invoiceDetails?.invoiceDate ? new Date(invoiceDetails.invoiceDate) : new Date(),
             partsUsed,
             serviceProvided,
             status: 'Invoice Generated',
             total: {
-                subTotal: data.total.subTotal,
-                discount: data.total.discount,
-                discountType: data.total.discountType,
-                referralDiscount: 0,
-                sgst: data.total.sgst || 0,
-                cgst: data.total.cgst || 0,
-                sgstRate: data.total.sgstRate || 0,
-                cgstRate: data.total.cgstRate || 0,
-                baseAmount: data.total.baseAmount || 0,
-                total: data.total.total,
-                finalPayable: data.total.finalPayable || data.total.total,
+                subTotal: Number(total.subTotal),
+                discount: Number(total.discount) || 0,
+                discountType: total.discountType || '',
+                referralDiscount: 0, // referral discount not applicable at invoice stage
+                sgst: Number(total.sgst) || 0,
+                cgst: Number(total.cgst) || 0,
+                sgstRate: Number(total.sgstRate) || 0,
+                cgstRate: Number(total.cgstRate) || 0,
+                baseAmount: Number(total.baseAmount),
+                total: Number(total.total),
+                finalPayable: Number(total.finalPayable) || Number(total.total),
             },
             paymentStatus: 'unpaid',
         };
 
-        const updatedOrder = await Order.findByIdAndUpdate(id, { $set: updatedFields }, { new: true });
+        // 7. Update the order
+        const updatedOrder = await Order.findByIdAndUpdate(
+            id,
+            { $set: updatedFields },
+            { new: true, runValidators: true }
+        );
 
-        if (updatedOrder.userId) {
-            const userRecipient = getUserRecipient(updatedOrder.userId);
-            await createNotification({
-                type: 'invoice_generated',
-                title: '🧾 Invoice Ready',
-                body: `Your invoice for order #${updatedOrder.orderId} is ready. Please review and pay.`,
-                recipients: userRecipient,
-                orderId: updatedOrder._id,
-                data: { orderId: updatedOrder._id.toString(), screenOrderId: updatedOrder.orderId },
+        if (!updatedOrder) {
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to update the order. Please try again.',
             });
         }
 
-        res.status(200).json({
-            message: 'Invoice generated successfully. Awaiting payment.',
+        // 8. Send notification to customer
+        if (updatedOrder.userId) {
+            try {
+                const userRecipient = getUserRecipient(updatedOrder.userId);
+                await createNotification({
+                    type: 'invoice_generated',
+                    title: '🧾 Invoice Ready',
+                    body: `Your invoice for order #${updatedOrder.orderId} is ready. Please review and pay.`,
+                    recipients: userRecipient,
+                    orderId: updatedOrder._id,
+                    data: {
+                        orderId: updatedOrder._id.toString(),
+                        screenOrderId: updatedOrder.orderId,
+                    },
+                });
+            } catch (notifError) {
+                console.error('Notification failed:', notifError);
+                // Non-critical – still return success
+            }
+        }
+
+        // 9. Success response
+        return res.status(200).json({
+            success: true,
+            message: 'Invoice generated successfully. The order is now awaiting payment.',
             order: updatedOrder,
         });
+
     } catch (error) {
         console.error('Error generating invoice:', error);
-        res.status(500).json({ message: 'Internal server error', error });
+
+        // Handle known validation errors from processing parts/services
+        if (error.message && error.message.includes('Invalid')) {
+            return res.status(400).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
+        // Handle Mongoose validation errors
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(e => e.message);
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed.',
+                errors: messages,
+            });
+        }
+
+        // Generic server error
+        return res.status(500).json({
+            success: false,
+            message: 'An unexpected error occurred while generating the invoice. Please try again later.',
+        });
     }
 };
 

@@ -201,18 +201,39 @@ const GenerateInvoiceForm = () => {
                 }
             });
             console.log(response.message);
-            setSnackBarMessage("Invoice saved successfully!");
+            setSnackBarMessage(response.data.message || 'Invoice generated successfully!');
             setSnackBarSeverity('success');
             setSnackBarOpen(true);
             setLoading(false);
         } catch (error) {
-            setSnackBarMessage(error.message);
-            setSnackBarSeverity("error");
+            let errorMessage = 'An unexpected error occurred. Please try again.';
+
+            // Extract backend friendly message if available
+            if (error.response) {
+                // The server responded with a status code outside 2xx
+                const backendMessage = error.response.data?.message;
+                if (backendMessage) {
+                    errorMessage = backendMessage;
+                } else if (error.response.data?.errors) {
+                    // Handle Mongoose validation errors (array of messages)
+                    errorMessage = error.response.data.errors.join(', ');
+                }
+            } else if (error.request) {
+                // The request was made but no response received
+                errorMessage = 'Network error. Please check your connection.';
+            } else {
+                // Something else happened
+                errorMessage = error.message;
+            }
+
+            setSnackBarMessage(errorMessage);
+            setSnackBarSeverity('error');
             setSnackBarOpen(true);
             setLoading(false);
-            console.log(error);
+            console.error('Invoice generation error:', error);
         }
     };
+
 
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') return;
