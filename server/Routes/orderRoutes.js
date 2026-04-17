@@ -132,6 +132,7 @@ router.get("/employee/getorderbyid/:id", getOrderById);
 router.put('/bookings/:id/update-parts', updateItems);
 router.put('/bookings/:id/update-parts-price', updatePartsPrice);
 router.put('/:id/update-order/generate-invoice', updateOrderandGenerateInvoice);
+router.get('/:id/invoice', getInvoice);
 
 // -------------------------------------------------------------------
 // CANCELLATION

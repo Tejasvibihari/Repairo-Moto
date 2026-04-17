@@ -14,6 +14,7 @@ import {
     getEmployeeRecipient,
     getUserRecipient,
 } from "../services/notificationService.js";
+import mongoose from "mongoose";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const deleteUploadedFile = (filePath) => {
@@ -1190,7 +1191,39 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
         });
     }
 };
+export const getInvoice = async (req, res) => {
+    try {
+        const { id: orderId } = req.params;
 
+        // Validate ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid order ID format',
+            });
+        }
+
+        const invoice = await Invoice.findOne({ orderId }).lean();
+
+        if (!invoice) {
+            return res.status(404).json({
+                success: false,
+                message: 'Invoice not found for this order',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            invoice,
+        });
+    } catch (error) {
+        console.error('Error fetching invoice:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching invoice',
+        });
+    }
+};
 // ─── COD Payment ──────────────────────────────────────────────────────────────
 export const markPaidCod = async (req, res) => {
     try {
