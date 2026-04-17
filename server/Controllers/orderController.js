@@ -1104,7 +1104,7 @@ export const markPaidCod = async (req, res) => {
 
         const codPayable = order.total?.total || 0;
         const collected = amountCollected != null ? Number(amountCollected) : codPayable;
-
+        order.status = 'Completed';
         order.total.referralDiscount = 0;
         order.total.finalPayable = codPayable;
         order.coupon = null;
