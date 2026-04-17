@@ -173,6 +173,9 @@ const orderSchema = new mongoose.Schema({
         linkCreatedAt: { type: Date, default: null },
         receiptId: { type: String, default: null, trim: true },
         webhookPayload: { type: mongoose.Schema.Types.Mixed, default: null },
+        hadFailedAttempt: { type: Boolean, default: false },
+        pendingReferralToApply: { type: Number, default: 0 },
+        pendingOriginalPayable: { type: Number, default: 0 },
     },
 
     cancellationReason: { type: String, default: null, trim: true },
