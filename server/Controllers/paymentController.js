@@ -387,6 +387,7 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
             {
                 _id: orderId,
                 paymentStatus: { $ne: 'paid' },   // only proceed if not yet paid
+                status: 'Completed',
             },
             {
                 $set: {
