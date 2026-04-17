@@ -204,14 +204,9 @@ const sendPaymentNotifications = async (order, invoice) => {
     }
 };
 
-// ─── Controllers ──────────────────────────────────────────────────────────────
-
-/**
- * @desc    Create a Razorpay order. Referral is only RESERVED here, not deducted.
- *          Deduction happens atomically in verifyPayment after signature check.
- * @route   POST /api/orders/:id/create-razorpay-order
- * @access  Private (authUser)
- */
+// ────────────────────────────────────────────────────────────────────────────────
+// 🔧 FIX: CREATE RAZORPAY ORDER – ALWAYS FRESH (NO REUSE)
+// ────────────────────────────────────────────────────────────────────────────────
 export const createRazorpayOrder = async (req, res) => {
     try {
         const { useReferralBalance } = req.body;
@@ -227,12 +222,13 @@ export const createRazorpayOrder = async (req, res) => {
             });
         }
         if (order.paymentStatus === 'paid') {
-            return res.status(400).json({ success: false, message: 'This order has already been paid.' });
+            return res.status(400).json({
+                success: false,
+                message: 'This order has already been paid.',
+            });
         }
 
         // ── Read current payable from DB (source of truth) ───────────────────
-        // We always use the ORIGINAL admin-set finalPayable, stored as pendingOriginalPayable.
-        // If a previous Razorpay attempt modified finalPayable directly, we ignore that.
         const originalPayable =
             order.razorpay?.pendingOriginalPayable > 0
                 ? order.razorpay.pendingOriginalPayable
@@ -251,14 +247,12 @@ export const createRazorpayOrder = async (req, res) => {
 
         // ── Full referral cover — no Razorpay needed ─────────────────────────
         if (payableAfterReferral <= 0 && referralToApply > 0) {
-            // Atomically deduct referral balance
             const updatedUser = await User.findByIdAndUpdate(
                 order.userId,
                 { $inc: { referralAmount: -referralToApply } },
                 { new: true }
             );
 
-            // Guard: if deduction failed for some reason
             if (!updatedUser) {
                 return res.status(500).json({ success: false, message: 'Failed to apply referral balance.' });
             }
@@ -297,25 +291,10 @@ export const createRazorpayOrder = async (req, res) => {
             });
         }
 
-        // ── Reuse existing Razorpay order only if safe ───────────────────────
-        const existingRzp = order.razorpay;
-        const canReuse =
-            referralToApply === 0 &&
-            existingRzp?.orderId &&
-            existingRzp?.status === 'created' &&
-            !existingRzp?.hadFailedAttempt;
-
-        if (canReuse) {
-            return res.status(200).json({
-                success: true,
-                razorpayOrderId: existingRzp.orderId,
-                amount: Math.round(payableAfterReferral * 100),
-                currency: 'INR',
-                referralApplied: 0,
-            });
-        }
-
-        // ── Create fresh Razorpay order ───────────────────────────────────────
+        // ──────────────────────────────────────────────────────────────────────
+        // 🔁 FIX: ALWAYS CREATE A FRESH RAZORPAY ORDER.
+        //    Do not reuse old orders – eliminates expiration / stale order issues.
+        // ──────────────────────────────────────────────────────────────────────
         const amountInPaise = Math.round(payableAfterReferral * 100);
         const rzpOrder = await getRazorpay().orders.create({
             amount: amountInPaise,
@@ -329,16 +308,16 @@ export const createRazorpayOrder = async (req, res) => {
             },
         });
 
-        // Store referral intent — deducted only after successful signature verify
+        // Store intent — referral deducted only after successful signature verify
         order.razorpay = {
             ...order.razorpay,
             orderId: rzpOrder.id,
             status: 'created',
             receiptId: rzpOrder.receipt,
             linkCreatedAt: new Date(),
-            hadFailedAttempt: false,
+            hadFailedAttempt: false,           // reset for this new attempt
             pendingReferralToApply: referralToApply,
-            pendingOriginalPayable: originalPayable,  // freeze the admin-set amount
+            pendingOriginalPayable: originalPayable,
         };
         await order.save();
 
@@ -356,12 +335,9 @@ export const createRazorpayOrder = async (req, res) => {
     }
 };
 
-/**
- * @desc    Verify Razorpay signature → deduct referral atomically → mark paid → create invoice → notify.
- *          NO MongoDB transactions — safe for standalone MongoDB.
- * @route   POST /api/orders/:id/verify-payment
- * @access  Private (authUser)
- */
+// ────────────────────────────────────────────────────────────────────────────────
+// VERIFY PAYMENT – REMAINS UNCHANGED (ALREADY ROBUST)
+// ────────────────────────────────────────────────────────────────────────────────
 export const verifyPaymentAndGenerateInvoice = async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     const orderId = req.params.id;
@@ -370,10 +346,8 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Missing required payment fields.' });
     }
 
-    // ── Signature check first — before any DB writes ──────────────────────
     const isValid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
     if (!isValid) {
-        // Mark the Razorpay order as failed so the next Pay tap creates a fresh one
         await Order.findByIdAndUpdate(orderId, {
             'razorpay.hadFailedAttempt': true,
         });
@@ -381,17 +355,15 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
     }
 
     try {
-        // ── Idempotency guard — use findOneAndUpdate to atomically claim processing
-        // This prevents double-invoice if webhook + client both hit verify simultaneously
         const order = await Order.findOneAndUpdate(
             {
                 _id: orderId,
-                paymentStatus: { $ne: 'paid' },   // only proceed if not yet paid
+                paymentStatus: { $ne: 'paid' },
                 status: 'Completed',
             },
             {
                 $set: {
-                    paymentStatus: 'paid',          // claim it atomically
+                    paymentStatus: 'paid',
                     paymentMethod: 'razorpay',
                     paymentDate: new Date(),
                     photosScheduledDeleteAt: new Date(Date.now() + PHOTO_DELETE_DELAY_MS),
@@ -402,10 +374,9 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
                     'razorpay.pendingReferralToApply': 0,
                 },
             },
-            { new: true }   // return the updated doc
+            { new: true }
         );
 
-        // If order is null here, it was already paid (idempotent — return success)
         if (!order) {
             const existing = await Order.findById(orderId).lean();
             const existingInvoice = await Invoice.findOne({ orderId }).lean();
@@ -416,26 +387,22 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
             });
         }
 
-        // ── Apply referral deduction atomically AFTER payment is confirmed ───
         const referralToApply = order.razorpay?.pendingReferralToApply || 0;
         const originalPayable = order.razorpay?.pendingOriginalPayable || order.total?.finalPayable || 0;
 
         let finalAmountPaid = originalPayable;
 
         if (referralToApply > 0 && order.userId) {
-            // Atomic decrement — if user doesn't have enough, we still proceed
-            // (edge case: balance was spent elsewhere between create and verify)
             const updatedUser = await User.findOneAndUpdate(
                 {
                     _id: order.userId,
-                    referralAmount: { $gte: referralToApply },  // only deduct if sufficient
+                    referralAmount: { $gte: referralToApply },
                 },
                 { $inc: { referralAmount: -referralToApply } },
                 { new: true }
             );
 
             if (updatedUser) {
-                // Referral deducted — update order totals
                 finalAmountPaid = Math.max(0, originalPayable - referralToApply);
                 await Order.findByIdAndUpdate(orderId, {
                     $set: {
@@ -446,36 +413,29 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
                     },
                 });
             } else {
-                // Referral not available — pay full amount
                 finalAmountPaid = originalPayable;
                 await Order.findByIdAndUpdate(orderId, {
                     $set: { amountPaid: originalPayable, balanceDue: 0 },
                 });
             }
         } else {
-            // No referral — just set amountPaid
             await Order.findByIdAndUpdate(orderId, {
                 $set: { amountPaid: originalPayable, balanceDue: 0 },
             });
         }
 
-        // ── Referral bonus credit (for the referrer) ─────────────────────────
         if (!order.referralProcessed && order.userId) {
             await processReferralCredit(order.userId);
             await Order.findByIdAndUpdate(orderId, { $set: { referralProcessed: true } });
         }
 
-        // ── Fetch final order state for invoice ───────────────────────────────
         const finalOrder = await Order.findById(orderId).lean();
-
-        // ── Create Invoice ────────────────────────────────────────────────────
         const invoice = await createInvoiceFromOrder(finalOrder, {
             razorpayPaymentId: razorpay_payment_id,
             razorpayOrderId: razorpay_order_id,
             amountPaid: finalAmountPaid,
         });
 
-        // ── Notifications (non-blocking) ──────────────────────────────────────
         sendPaymentNotifications(finalOrder, invoice).catch(err =>
             console.error('Payment notification error:', err)
         );
@@ -498,12 +458,9 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
     }
 };
 
-/**
- * @desc    Razorpay webhook — handles payment.captured as a safety net.
- *          Applies same referral logic as verifyPayment. No transactions.
- * @route   POST /api/webhooks/razorpay
- * @access  Public (signature-verified)
- */
+// ────────────────────────────────────────────────────────────────────────────────
+// WEBHOOK – UNCHANGED
+// ────────────────────────────────────────────────────────────────────────────────
 export const razorpayWebhook = async (req, res) => {
     const webhookSignature = req.headers['x-razorpay-signature'];
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
@@ -535,7 +492,6 @@ export const razorpayWebhook = async (req, res) => {
     const amountPaise = paymentEntity.amount;
 
     try {
-        // ── Atomic idempotency claim ──────────────────────────────────────────
         const order = await Order.findOneAndUpdate(
             {
                 'razorpay.orderId': razorpayOrderId,
@@ -558,12 +514,10 @@ export const razorpayWebhook = async (req, res) => {
         );
 
         if (!order) {
-            // Already processed by verify-payment — safe to ignore
             console.log(`Webhook: order for rzpOrderId ${razorpayOrderId} already paid. Skipping.`);
             return res.status(200).send('Already processed.');
         }
 
-        // ── Apply referral deduction (same as verifyPayment) ─────────────────
         const referralToApply = order.razorpay?.pendingReferralToApply || 0;
         const originalPayable =
             order.razorpay?.pendingOriginalPayable ||
@@ -601,13 +555,11 @@ export const razorpayWebhook = async (req, res) => {
             });
         }
 
-        // ── Referral bonus credit ─────────────────────────────────────────────
         if (!order.referralProcessed && order.userId) {
             await processReferralCredit(order.userId);
             await Order.findByIdAndUpdate(order._id, { $set: { referralProcessed: true } });
         }
 
-        // ── Invoice ───────────────────────────────────────────────────────────
         const finalOrder = await Order.findById(order._id).lean();
         const invoice = await createInvoiceFromOrder(finalOrder, {
             razorpayPaymentId,
@@ -615,7 +567,6 @@ export const razorpayWebhook = async (req, res) => {
             amountPaid: finalAmountPaid,
         });
 
-        // ── Notifications ─────────────────────────────────────────────────────
         sendPaymentNotifications(finalOrder, invoice).catch(err =>
             console.error('Webhook notification error:', err)
         );
@@ -629,11 +580,9 @@ export const razorpayWebhook = async (req, res) => {
     }
 };
 
-/**
- * @desc    Fetch invoice for an order.
- * @route   GET /api/orders/:id/invoice
- * @access  Private (authUser)
- */
+// ────────────────────────────────────────────────────────────────────────────────
+// GET INVOICE – UNCHANGED
+// ────────────────────────────────────────────────────────────────────────────────
 export const getInvoiceByOrder = async (req, res) => {
     try {
         const invoice = await Invoice.findOne({ orderId: req.params.id })
