@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react';
 import axiosClient from '../service/axiosClient';
 import AlertSnackBar from './ui/AlertSnackBar';
 import CircularLoading from './ui/CircularLoading';
@@ -6,8 +6,7 @@ import {
     User, Wrench, Store, Calendar, Clock, CreditCard,
     MapPin, Phone, Mail, Bike, Package, Truck, RefreshCw,
     CheckCircle, Clock as ClockIcon, XCircle, FileText, DollarSign,
-    Navigation, UserCheck, ExternalLink,
-    IndianRupee
+    Navigation, UserCheck, ExternalLink, IndianRupee, AlertCircle,
 } from 'lucide-react';
 import { formatDate, formatTime } from '../utils/DateFormate';
 import SelectMechanicDialog from './ui/SelectMechanicDialog';
@@ -19,14 +18,16 @@ export default function JobAsssignForm({ id }) {
     const [snackBarOpen, setSnackBarOpen] = useState(false);
     const [snackBarMessage, setSnackBarMessage] = useState('');
     const [snackBarSeverity, setSnackBarSeverity] = useState('success');
-    const [vendors, setVendors] = useState([])
-    const [mechanic, setMechanic] = useState([])
-    const [delivery, setDelivery] = useState([])
-    const [orderById, setOrderById] = useState({})
+    const [vendors, setVendors] = useState([]);
+    const [mechanic, setMechanic] = useState([]);
+    const [delivery, setDelivery] = useState([]);
+    const [orderById, setOrderById] = useState({});
     const [modalLoading, setModalLoading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [activeSection, setActiveSection] = useState('customer');
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
+    const [codLoading, setCodLoading] = useState(false);
 
     const [mechanicDialogOpen, setMechanicDialogOpen] = useState(false);
     const [deliveryDialogOpen, setDeliveryDialogOpen] = useState(false);
@@ -69,8 +70,7 @@ export default function JobAsssignForm({ id }) {
             if (orderDetail) {
                 setOrderById(orderDetail);
                 setCurrentMechanics(orderDetail.assignedMechanics || []);
-            }
-            else {
+            } else {
                 setSnackBarMessage("Failed to fetch order details.");
                 setSnackBarSeverity("error");
                 setSnackBarOpen(true);
@@ -92,7 +92,7 @@ export default function JobAsssignForm({ id }) {
     const handleCloseSnackBar = (event, reason) => {
         if (reason === 'clickaway') return;
         setSnackBarOpen(false);
-    }
+    };
 
     const updateOrderStatus = async () => {
         try {
@@ -118,7 +118,7 @@ export default function JobAsssignForm({ id }) {
                 setSnackBarOpen(true);
             }
         } catch (error) {
-            setSnackBarMessage(error.message || "Error updating status.");
+            setSnackBarMessage(error.response?.data?.message || "Error updating status.");
             setSnackBarSeverity('error');
             setSnackBarOpen(true);
         } finally {
@@ -126,34 +126,68 @@ export default function JobAsssignForm({ id }) {
         }
     };
 
+    const updatePaymentStatus = async () => {
+        try {
+            setPaymentStatusLoading(true);
+            const response = await axiosClient.put(`/api/admin/order/updateStatus/${orderById._id}`, {
+                paymentStatus: orderById.paymentStatus,
+            });
+            if (response.status === 200) {
+                setSnackBarMessage("Payment status updated!");
+                setSnackBarSeverity('success');
+                setSnackBarOpen(true);
+                fetchDetails();
+            } else {
+                throw new Error("Failed");
+            }
+        } catch (error) {
+            setSnackBarMessage(error.response?.data?.message || "Error updating payment status.");
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+        } finally {
+            setPaymentStatusLoading(false);
+        }
+    };
+
+    const handleMarkPaidCod = async () => {
+        if (!window.confirm('Mark this order as paid via cash? This will generate the invoice and complete the order.')) return;
+        try {
+            setCodLoading(true);
+            const response = await axiosClient.post(`/api/admin/order/${orderById._id}/mark-paid-cod`, {
+                amountCollected: orderById.total?.finalPayable || orderById.total?.total || 0,
+            });
+            setSnackBarMessage(`Payment recorded. Invoice #${response.data.invoice.invoiceNumber} generated.`);
+            setSnackBarSeverity('success');
+            setSnackBarOpen(true);
+            fetchDetails();
+        } catch (error) {
+            setSnackBarMessage(error.response?.data?.message || "Failed to mark as paid.");
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+        } finally {
+            setCodLoading(false);
+        }
+    };
+
     const getStatusConfig = (status) => {
         switch (status) {
             case 'Pending': return { color: 'amber', icon: ClockIcon, label: 'Pending' };
-            case 'In Progress': return { color: 'blue', icon: RefreshCw, label: 'In Progress' };
             case 'Mechanic Assigned': return { color: 'indigo', icon: UserCheck, label: 'Mechanic Assigned' };
+            case 'Mechanic Arrived': return { color: 'purple', icon: Navigation, label: 'Mechanic Arrived' };
+            case 'In Progress': return { color: 'blue', icon: RefreshCw, label: 'In Progress' };
+            case 'Work Completed': return { color: 'emerald', icon: CheckCircle, label: 'Work Completed' };
+            case 'Invoice Generated': return { color: 'orange', icon: FileText, label: 'Invoice Generated' };
             case 'Completed': return { color: 'green', icon: CheckCircle, label: 'Completed' };
             case 'Cancelled': return { color: 'red', icon: XCircle, label: 'Cancelled' };
             default: return { color: 'gray', icon: ClockIcon, label: status || 'Pending' };
         }
     };
 
-    // Function to get payment badge classes (full Tailwind strings)
     const getPaymentBadgeClasses = (status) => {
         switch (status?.toLowerCase()) {
-            case 'paid':
-                return 'bg-green-100 text-green-700 border-green-200';
-            case 'unpaid':
-                return 'bg-red-100 text-red-700 border-red-200';
-            default:
-                return 'bg-gray-100 text-gray-700 border-gray-200';
-        }
-    };
-
-    const getPaymentStatusColor = (status) => {
-        switch (status?.toLowerCase()) {
-            case 'paid': return 'green';
-            case 'unpaid': return 'red';
-            default: return 'gray';
+            case 'paid': return 'bg-green-100 text-green-700 border-green-200';
+            case 'unpaid': return 'bg-red-100 text-red-700 border-red-200';
+            default: return 'bg-gray-100 text-gray-700 border-gray-200';
         }
     };
 
@@ -175,10 +209,20 @@ export default function JobAsssignForm({ id }) {
         { id: 'schedule', label: 'Schedule & Status', icon: Calendar },
     ];
 
-    // Function to open order in customer app
-    const openInApp = () => {
-        const appUrl = `https://yourapp.com/order/${orderById.orderId}`; // Replace with actual app URL
-        window.open(appUrl, '_blank');
+    // Progress bar width calculation based on 7-step flow
+    const getProgressWidth = () => {
+        const stepMap = {
+            'Pending': 1,
+            'Mechanic Assigned': 2,
+            'Mechanic Arrived': 3,
+            'In Progress': 4,
+            'Work Completed': 5,
+            'Invoice Generated': 6,
+            'Completed': 7,
+            'Cancelled': 0,
+        };
+        const step = stepMap[orderById.status] || 0;
+        return step === 0 ? '0%' : `${(step / 7) * 100}%`;
     };
 
     return (
@@ -192,7 +236,6 @@ export default function JobAsssignForm({ id }) {
                 bookingId={orderById._id}
                 currentMechanics={currentMechanics}
             />
-
             <SelectDeliveryDialog open={deliveryDialogOpen} onClose={handleDeliveryDialogClose} data={delivery} bookingId={orderById._id} />
             <SelectVendorDialog open={vendorDialogOpen} onClose={handleVendorDialogClose} data={vendors} bookingId={orderById._id} />
 
@@ -264,10 +307,7 @@ export default function JobAsssignForm({ id }) {
                                 <div>
                                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</h3>
                                     <div className="space-y-2">
-                                        <button
-                                            onClick={handleMechanicDialogOpen}
-                                            className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:border-amber-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition"
-                                        >
+                                        <button onClick={handleMechanicDialogOpen} className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:border-amber-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition">
                                             <Wrench size={16} /> {orderById.assignedMechanics?.length ? 'Change Mechanics' : 'Assign Mechanics'}
                                         </button>
                                         <button onClick={handleVendorDialogOpen} className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 hover:border-amber-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition">
@@ -429,23 +469,74 @@ export default function JobAsssignForm({ id }) {
                                             </div>
                                         </div>
 
-                                        {/* Status Update Card */}
-                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                                            <h3 className="text-sm font-semibold text-gray-700 mb-4">Update Order Status</h3>
-                                            <div className="flex flex-wrap items-center gap-4">
-                                                <select value={orderById.status || 'Pending'} onChange={(e) => setOrderById(prev => ({ ...prev, status: e.target.value }))} className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500">
-                                                    <option value="Pending">Pending</option>
-                                                    <option value="In Progress">In Progress</option>
-                                                    <option value="Mechanic Assigned">Mechanic Assigned</option>
-                                                    <option value="Completed">Completed</option>
-                                                    <option value="Cancelled">Cancelled</option>
-                                                </select>
-                                                <button onClick={updateOrderStatus} disabled={loading} className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition flex items-center gap-2">
-                                                    {loading ? <CircularLoading size={20} color="white" /> : <><RefreshCw size={16} /> Update Status</>}
-                                                </button>
+                                        {/* Status & Payment Update Cards */}
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                                <h3 className="text-sm font-semibold text-gray-700 mb-4">Update Order Status</h3>
+                                                <div className="flex flex-col gap-3">
+                                                    <select
+                                                        value={orderById.status || 'Pending'}
+                                                        onChange={(e) => setOrderById(prev => ({ ...prev, status: e.target.value }))}
+                                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500"
+                                                    >
+                                                        <option value="Pending">Pending</option>
+                                                        <option value="Mechanic Assigned">Mechanic Assigned</option>
+                                                        <option value="Mechanic Arrived">Mechanic Arrived</option>
+                                                        <option value="In Progress">In Progress</option>
+                                                        <option value="Work Completed">Work Completed</option>
+                                                        <option value="Invoice Generated">Invoice Generated</option>
+                                                        <option value="Completed">Completed</option>
+                                                        <option value="Cancelled">Cancelled</option>
+                                                    </select>
+                                                    <button
+                                                        onClick={updateOrderStatus}
+                                                        disabled={loading}
+                                                        className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
+                                                    >
+                                                        {loading ? <CircularLoading size={20} color="white" /> : <><RefreshCw size={16} /> Update Status</>}
+                                                    </button>
+                                                </div>
+                                                <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+                                                    <div className="h-2 rounded-full bg-amber-500 transition-all" style={{ width: getProgressWidth() }}></div>
+                                                </div>
                                             </div>
-                                            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-                                                <div className="h-2 rounded-full bg-amber-500 transition-all" style={{ width: orderById.status === 'Pending' ? '25%' : orderById.status === 'In Progress' ? '50%' : orderById.status === 'Mechanic Assigned' ? '75%' : orderById.status === 'Completed' ? '100%' : orderById.status === 'Cancelled' ? '100%' : '0%' }}></div>
+
+                                            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                                <h3 className="text-sm font-semibold text-gray-700 mb-4">Payment Controls</h3>
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className="block text-sm text-gray-500 mb-1">Payment Status</label>
+                                                        <div className="flex gap-2">
+                                                            <select
+                                                                value={orderById.paymentStatus || 'unpaid'}
+                                                                onChange={(e) => setOrderById(prev => ({ ...prev, paymentStatus: e.target.value }))}
+                                                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500"
+                                                            >
+                                                                <option value="unpaid">Unpaid</option>
+                                                                <option value="paid">Paid</option>
+                                                            </select>
+                                                            <button
+                                                                onClick={updatePaymentStatus}
+                                                                disabled={paymentStatusLoading}
+                                                                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition"
+                                                            >
+                                                                {paymentStatusLoading ? <CircularLoading size={16} color="white" /> : 'Update'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    {orderById.status === 'Invoice Generated' && orderById.paymentStatus !== 'paid' && (
+                                                        <button
+                                                            onClick={handleMarkPaidCod}
+                                                            disabled={codLoading}
+                                                            className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
+                                                        >
+                                                            {codLoading ? <CircularLoading size={16} color="white" /> : <><IndianRupee size={16} /> Mark Paid (Cash)</>}
+                                                        </button>
+                                                    )}
+                                                    {orderById.paymentStatus === 'paid' && (
+                                                        <p className="text-xs text-green-600 flex items-center gap-1"><CheckCircle size={14} /> Payment completed</p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
 
@@ -455,19 +546,19 @@ export default function JobAsssignForm({ id }) {
                                             <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:h-[calc(100%-16px)] before:w-0.5 before:bg-gray-300">
                                                 {[
                                                     { label: 'Order Placed', time: orderById.createdAt, completed: !!orderById.createdAt },
-                                                    {
-                                                        label: 'Mechanic Assigned',
-                                                        time: orderById.assignedMechanics?.length > 0,
-                                                        completed: orderById.assignedMechanics?.length > 0
-                                                    },
-                                                    { label: 'Work In Progress', time: ['In Progress', 'Completed', 'Invoice Generated'].includes(orderById.status), completed: ['In Progress', 'Completed', 'Invoice Generated'].includes(orderById.status) },
-                                                    { label: 'Service Completed', time: ['Completed', 'Invoice Generated'].includes(orderById.status), completed: ['Completed', 'Invoice Generated'].includes(orderById.status) },
-                                                    { label: 'Invoice Generated', time: orderById.status === 'Invoice Generated', completed: orderById.status === 'Invoice Generated' }
+                                                    { label: 'Mechanic Assigned', time: orderById.assignedMechanics?.length > 0 ? 'Assigned' : null, completed: orderById.assignedMechanics?.length > 0 },
+                                                    { label: 'Mechanic Arrived', time: orderById.arrivedAt, completed: !!orderById.arrivedAt },
+                                                    { label: 'Work In Progress', time: orderById.workStartedAt, completed: !!orderById.workStartedAt },
+                                                    { label: 'Work Completed', time: orderById.workCompletedAt, completed: !!orderById.workCompletedAt },
+                                                    { label: 'Invoice Generated', time: orderById.invoiceDate, completed: orderById.status === 'Invoice Generated' || orderById.status === 'Completed' },
+                                                    { label: 'Payment Completed', time: orderById.paymentDate, completed: orderById.paymentStatus === 'paid' },
                                                 ].map((item, idx) => (
                                                     <div key={idx} className="relative">
                                                         <div className={`absolute -left-6 w-4 h-4 rounded-full border-2 border-white ${item.completed ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                                                         <p className="font-medium text-gray-800">{item.label}</p>
-                                                        <p className="text-xs text-gray-500">{typeof item.time === 'string' ? (item.time.includes('T') ? new Date(item.time).toLocaleString() : item.time) : (item.completed ? 'Completed' : 'Pending')}</p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {item.time instanceof Date ? item.time.toLocaleString() : (item.time || (item.completed ? 'Completed' : 'Pending'))}
+                                                        </p>
                                                     </div>
                                                 ))}
                                             </div>
@@ -478,9 +569,11 @@ export default function JobAsssignForm({ id }) {
                                 {/* Action Buttons */}
                                 <div className="mt-8 flex justify-end gap-4 pt-4 border-t border-gray-200">
                                     <Link
-                                        to={(orderById.status === 'Completed' || orderById.status === "Invoice Generated") ? `/generate-invoice-form/${orderById._id}` : '#'}
-                                        onClick={(e) => { if (loading || (orderById.status !== 'Completed' && orderById.status !== "Invoice Generated")) e.preventDefault(); }}
-                                        className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 ${(orderById.status === 'Completed' || orderById.status === "Invoice Generated") && !loading
+                                        to={(orderById.status === 'Work Completed' || orderById.status === 'Invoice Generated') ? `/generate-invoice-form/${orderById._id}` : '#'}
+                                        onClick={(e) => {
+                                            if (loading || (orderById.status !== 'Work Completed' && orderById.status !== 'Invoice Generated')) e.preventDefault();
+                                        }}
+                                        className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 ${(orderById.status === 'Work Completed' || orderById.status === 'Invoice Generated') && !loading
                                             ? 'bg-amber-500 hover:bg-amber-600 text-white'
                                             : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                             }`}
@@ -488,33 +581,21 @@ export default function JobAsssignForm({ id }) {
                                         <FileText size={18} /> Generate Invoice
                                     </Link>
 
-                                    {/* View Invoice button - only active when paid */}
-                                    <div className="relative group">
-                                        <Link
-                                            to={orderById.status === 'Invoice Generated' && orderById.paymentStatus === 'paid' ? `/order/invoice/${orderById._id}` : '#'}
-                                            onClick={(e) => {
-                                                if (!(orderById.status === 'Invoice Generated' && orderById.paymentStatus === 'paid')) {
-                                                    e.preventDefault();
-                                                }
-                                            }}
-                                            className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 border-2 ${orderById.status === 'Invoice Generated' && orderById.paymentStatus === 'paid'
-                                                ? 'border-purple-500 text-purple-700 bg-purple-50 hover:bg-purple-100'
-                                                : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed opacity-60'
-                                                }`}
-                                            title={orderById.paymentStatus !== 'paid' ? "Customer payment pending" : ""}
-                                        >
-                                            View Invoice
-                                            {orderById.status === 'Invoice Generated' && orderById.paymentStatus !== 'paid' && (
-                                                <span className="ml-1 text-xs text-red-500">⚠️</span>
-                                            )}
-                                        </Link>
-                                        {/* Tooltip on hover */}
-                                        {orderById.status === 'Invoice Generated' && orderById.paymentStatus !== 'paid' && (
-                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
-                                                Customer hasn't paid yet
-                                            </div>
-                                        )}
-                                    </div>
+                                    {/* View Invoice button - active if invoice exists */}
+                                    <Link
+                                        to={orderById.status === 'Invoice Generated' || orderById.status === 'Completed' ? `/order/invoice/${orderById._id}` : '#'}
+                                        onClick={(e) => {
+                                            if (!(orderById.status === 'Invoice Generated' || orderById.status === 'Completed')) {
+                                                e.preventDefault();
+                                            }
+                                        }}
+                                        className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 border-2 ${orderById.status === 'Invoice Generated' || orderById.status === 'Completed'
+                                            ? 'border-purple-500 text-purple-700 bg-purple-50 hover:bg-purple-100'
+                                            : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed opacity-60'
+                                            }`}
+                                    >
+                                        View Invoice
+                                    </Link>
                                 </div>
                             </div>
                         </div>
