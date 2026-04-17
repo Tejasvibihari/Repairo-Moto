@@ -981,7 +981,7 @@ export const confirmWorkCompletion = async (req, res) => {
             attempts: workCompleteOtp.attempts,
             pendingPhotoPath: null,
         };
-        order.status = 'Completed';
+        order.status = 'Work Completed';
         order.afterPhotos = [...(order.afterPhotos || []), confirmedPhotoPath];
         await order.save();
 
