@@ -100,7 +100,7 @@ export default function App() {
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
           <Route path='/user-signup' element={<UserSignUp />} />
           <Route path="/user-signup/:referralType/:referralId" element={<UserSignUp />} />
-          <Route path="/user-signin" element={<UserSigin />} />
+          {/* <Route path="/user-signin" element={<UserSigin />} /> */}
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:userType/:token" element={<ResetPassword />} />
 
@@ -108,7 +108,7 @@ export default function App() {
 
 
           {/* User Private Routes Started  */}
-          <Route path="/user/dashboard" element={
+          {/* <Route path="/user/dashboard" element={
             <UserPrivateRoute>
               <UserDashboard />
             </UserPrivateRoute>
@@ -136,7 +136,7 @@ export default function App() {
           </UserPrivateRoute>} />
           <Route path="/user/add-bike-profile" element={<UserPrivateRoute>
             <AddBikeProfile />
-          </UserPrivateRoute>} />
+          </UserPrivateRoute>} /> */}
 
 
 
