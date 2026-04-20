@@ -647,3 +647,43 @@ export const rateEmployee = async (req, res) => {
         });
     }
 };
+
+export const getRatingStatus = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { orderId } = req.query;
+
+        if (!orderId) {
+            return res.status(400).json({ success: false, message: "orderId is required" });
+        }
+
+        // Find order
+        const order = await Order.findOne({ _id: orderId, userId });
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+
+        // For each mechanicId on the order, check if this user already rated them
+        const mechanicIds = order.mechanicIds ?? [];
+        const ratingMap = {};
+
+        for (const mechId of mechanicIds) {
+            const employee = await Employee.findById(mechId).select("ratings averageRating");
+            if (!employee) continue;
+            const existing = employee.ratings.find(
+                (r) =>
+                    r.reviewer?.toString() === userId.toString() &&
+                    r.orderId?.toString() === orderId
+            );
+            ratingMap[mechId.toString()] = existing
+                ? { rated: true, rating: existing.rating, comment: existing.comment ?? "" }
+                : { rated: false };
+        }
+
+        return res.status(200).json({ success: true, data: ratingMap });
+    } catch (error) {
+        console.error("Error in getRatingStatus:", error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
