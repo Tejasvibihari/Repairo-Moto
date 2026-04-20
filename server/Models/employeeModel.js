@@ -39,8 +39,13 @@ const empleyeeSchema = new mongoose.Schema({
                 max: 5,
             },
             reviewer: {
-                type: mongoose.Schema.Types.ObjectId, // optional
-                ref: "User", // or "Customer" if you have that model
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+            },
+            orderId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Order",
+                required: true,
             },
             comment: String,
             date: {

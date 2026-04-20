@@ -4,6 +4,7 @@ import { generateReferralCode } from "../Utils/generateReferralCode.js";
 import jwt from "jsonwebtoken";
 import Order from '../Models/orderModel.js';
 import BikeProfile from '../Models/bikeProfile.js';
+import Employee from "../Models/employeeModel.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -543,3 +544,106 @@ export const updateUserStatus = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
+
+
+export const rateEmployee = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { orderId, employeeId, rating, comment } = req.body;
+
+        // Validation
+        if (!orderId || !employeeId || !rating) {
+            return res.status(400).json({
+                success: false,
+                message: "orderId, employeeId and rating are required",
+            });
+        }
+
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({
+                success: false,
+                message: "Rating must be between 1 and 5",
+            });
+        }
+
+        // Find order and verify it belongs to the user and is completed
+        const order = await Order.findOne({
+            _id: orderId,
+            userId: userId,
+            status: "Completed",
+        });
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found, not completed, or does not belong to you",
+            });
+        }
+
+        // Check if employee was assigned to this order (as mechanic or delivery)
+        const isMechanic = order.mechanicIds?.some(
+            (id) => id.toString() === employeeId
+        );
+        const isDelivery = order.deliveryId?.toString() === employeeId;
+
+        if (!isMechanic && !isDelivery) {
+            return res.status(400).json({
+                success: false,
+                message: "Employee was not assigned to this order",
+            });
+        }
+
+        // Find employee
+        const employee = await Employee.findById(employeeId);
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message: "Employee not found",
+            });
+        }
+
+        // Check if user already rated this employee for this order
+        const alreadyRated = employee.ratings.some(
+            (r) =>
+                r.reviewer?.toString() === userId.toString() &&
+                r.orderId?.toString() === orderId
+        );
+
+        if (alreadyRated) {
+            return res.status(400).json({
+                success: false,
+                message: "You have already rated this employee for this order",
+            });
+        }
+
+        // Add new rating
+        employee.ratings.push({
+            rating,
+            reviewer: userId,
+            orderId: orderId,
+            comment: comment || "",
+        });
+
+        // Recalculate average rating
+        const total = employee.ratings.reduce((sum, r) => sum + r.rating, 0);
+        employee.averageRating = total / employee.ratings.length;
+
+        await employee.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Rating submitted successfully",
+            data: {
+                averageRating: employee.averageRating,
+                totalRatings: employee.ratings.length,
+            },
+        });
+    } catch (error) {
+        console.error("Error in rateEmployee:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};

@@ -90,7 +90,7 @@ const userSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['pending', 'approved', 'suspended'],
-        default: 'pending'
+        default: 'approved'
     },
 
     // 💰 Referral amounts
