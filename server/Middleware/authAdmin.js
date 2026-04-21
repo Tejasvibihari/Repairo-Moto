@@ -46,11 +46,12 @@ const authAdmin = async (req, res, next) => {
         const employee = await Employee.findById(decoded.id).select('-password');
 
         if (employee) {
-            if (employee.position === 'telecaller' || employee.position === 'operational manager') {
+            if (employee.position === 'telecaller' || employee.position === 'operational manager' || employee.position === 'manager') {
                 req.user = {
                     _id: employee._id,
                     role: 'Employee',
-                    model: 'Employee'
+                    model: 'Employee',
+                    position: employee.position
                 };
                 return next();
             } else {

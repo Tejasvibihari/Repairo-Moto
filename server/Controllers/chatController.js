@@ -1,5 +1,6 @@
 import ChatMessage from "../Models/chatModel.js";
 import Order from "../Models/orderModel.js";
+import { handleChatPushNotification } from "../services/chatNotification.js";
 
 // ------------------- User Helpers -------------------
 export const getUserMessages = async (req, res) => {
@@ -60,6 +61,9 @@ export const sendUserMessage = async (req, res) => {
         // Emit real-time event to all clients in the order room
         const io = req.app.get("io");
         io.of("/chat").to(orderId.toString()).emit("new-message", chatMessage);
+        io.of("/chat").to("admin-global").emit("admin-list-refresh", chatMessage.orderId);
+
+        handleChatPushNotification(io, chatMessage);
 
         res.status(201).json(chatMessage);
     } catch (error) {
@@ -160,6 +164,9 @@ export const sendAdminMessage = async (req, res) => {
         // Emit real-time event
         const io = req.app.get("io");
         io.of("/chat").to(orderId.toString()).emit("new-message", chatMessage);
+        io.of("/chat").to("admin-global").emit("admin-list-refresh", chatMessage.orderId);
+
+        handleChatPushNotification(io, chatMessage);
 
         res.status(201).json(chatMessage);
     } catch (error) {

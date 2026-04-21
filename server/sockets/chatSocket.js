@@ -4,6 +4,7 @@ import User from "../Models/userModel.js";
 import Admin from "../Models/adminModel.js";
 import Employee from "../Models/employeeModel.js";
 import jwt from "jsonwebtoken";
+import { handleChatPushNotification } from "../services/chatNotification.js";
 
 // Helper: authenticate socket connection using JWT
 const authenticateSocket = async (token) => {
@@ -45,6 +46,11 @@ export const setupChatSockets = (io) => {
 
     chatNamespace.on("connection", (socket) => {
         console.log(`✅ ${socket.user.type} ${socket.user.id} connected`);
+
+        // Auto join global channel for live list updates
+        if (socket.user.type === "admin" || socket.user.type === "employee") {
+            socket.join("admin-global");
+        }
 
         // Join a specific order room
         socket.on("join-order", async (orderId, callback) => {
@@ -111,6 +117,10 @@ export const setupChatSockets = (io) => {
 
             // Broadcast to everyone in the room (including sender)
             chatNamespace.to(orderId).emit("new-message", chatMessage);
+            chatNamespace.to("admin-global").emit("admin-list-refresh", chatMessage.orderId);
+
+            // Handle Push Notification based on occupancy
+            handleChatPushNotification(io, chatMessage);
 
             if (callback) callback({ success: true, message: chatMessage });
         });

@@ -21,7 +21,7 @@ async function getTokensForRecipients(recipients) {
 
     if (grouped['User']?.length) {
         const users = await User.find(
-            { _id: { $in: grouped['User'] }, expoPushToken: { $exists: true, $ne: null } },
+            { _id: { $in: grouped['User'] }, expoPushToken: { $exists: true, $ne: null, $ne: "" } },
             'expoPushToken'
         ).lean();
         tokens.push(...users.map(u => u.expoPushToken));
@@ -29,7 +29,7 @@ async function getTokensForRecipients(recipients) {
 
     if (grouped['Employee']?.length) {
         const employees = await Employee.find(
-            { _id: { $in: grouped['Employee'] }, expoPushToken: { $exists: true, $ne: null } },
+            { _id: { $in: grouped['Employee'] }, expoPushToken: { $exists: true, $ne: null, $ne: "" } },
             'expoPushToken'
         ).lean();
         tokens.push(...employees.map(e => e.expoPushToken));
@@ -37,7 +37,7 @@ async function getTokensForRecipients(recipients) {
 
     if (grouped['Admin']?.length) {
         const admins = await Admin.find(
-            { _id: { $in: grouped['Admin'] }, expoPushToken: { $exists: true, $ne: null } },
+            { _id: { $in: grouped['Admin'] }, expoPushToken: { $exists: true, $ne: null, $ne: "" } },
             'expoPushToken'
         ).lean();
         tokens.push(...admins.map(a => a.expoPushToken));
@@ -45,7 +45,7 @@ async function getTokensForRecipients(recipients) {
 
     if (grouped['Vendor']?.length) {
         const vendors = await Vendor.find(
-            { _id: { $in: grouped['Vendor'] }, expoPushToken: { $exists: true, $ne: null } },
+            { _id: { $in: grouped['Vendor'] }, expoPushToken: { $exists: true, $ne: null, $ne: "" } },
             'expoPushToken'
         ).lean();
         tokens.push(...vendors.map(v => v.expoPushToken));
