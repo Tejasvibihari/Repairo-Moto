@@ -117,7 +117,7 @@ export const setupChatSockets = (io) => {
 
             // Broadcast to everyone in the room (including sender)
             chatNamespace.to(orderId).emit("new-message", chatMessage);
-            chatNamespace.to("admin-global").emit("admin-list-refresh", chatMessage.orderId);
+            chatNamespace.to("admin-global").emit("admin-list-refresh", chatMessage.orderId.toString());
 
             // Handle Push Notification based on occupancy
             handleChatPushNotification(io, chatMessage);

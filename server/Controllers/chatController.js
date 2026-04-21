@@ -61,7 +61,7 @@ export const sendUserMessage = async (req, res) => {
         // Emit real-time event to all clients in the order room
         const io = req.app.get("io");
         io.of("/chat").to(orderId.toString()).emit("new-message", chatMessage);
-        io.of("/chat").to("admin-global").emit("admin-list-refresh", chatMessage.orderId);
+        io.of("/chat").to("admin-global").emit("admin-list-refresh", chatMessage.orderId.toString());
 
         handleChatPushNotification(io, chatMessage);
 
@@ -164,7 +164,7 @@ export const sendAdminMessage = async (req, res) => {
         // Emit real-time event
         const io = req.app.get("io");
         io.of("/chat").to(orderId.toString()).emit("new-message", chatMessage);
-        io.of("/chat").to("admin-global").emit("admin-list-refresh", chatMessage.orderId);
+        io.of("/chat").to("admin-global").emit("admin-list-refresh", chatMessage.orderId.toString());
 
         handleChatPushNotification(io, chatMessage);
 
