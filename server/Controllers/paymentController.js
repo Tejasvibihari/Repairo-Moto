@@ -133,7 +133,16 @@ const createInvoiceFromOrder = async (order, paymentInfo) => {
     // amountPaid = what Razorpay actually charged (already reduced by wallet).
     // totalAmountPaid = Razorpay charge + wallet used = full settled amount.
     const totalAmountPaid = amountPaid + walletAmountUsed;
-
+    let businessDetails = null;
+    if (order.gstInvoice?.requested) {
+        const bd = order.gstInvoice.businessDetails || {};
+        const requiredFields = ['gstin', 'businessName', 'businessAddress', 'businessCity', 'businessState', 'businessPincode'];
+        const missing = requiredFields.filter(f => !bd[f]);
+        if (missing.length > 0) {
+            throw new Error(`GST invoice requested but missing business details: ${missing.join(', ')}`);
+        }
+        businessDetails = { ...bd };
+    }
     return await Invoice.create({
         invoiceNumber,
         orderId: order._id,
@@ -147,7 +156,7 @@ const createInvoiceFromOrder = async (order, paymentInfo) => {
             address: order.address,
             city: order.city,
         },
-
+        businessDetails,
         vehicleDetails: {
             brand: order.selectedBrand,
             model: order.selectedModel,

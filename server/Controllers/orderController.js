@@ -61,11 +61,105 @@ const generateInvoiceNumber = async () => {
  */
 const buildInvoiceData = async (order, paymentInfo) => {
     const invoiceNumber = await generateInvoiceNumber();
+
+    const {
+        method,
+        razorpayPaymentId = null,
+        razorpayOrderId = null,
+        amountPaid = 0,
+        referralApplied = 0,
+        isCod = false,
+    } = paymentInfo;
+
+    // --- Parts & Services with effective pricing ---
+    const partsUsed = (order.partsUsed || []).map(p => {
+        const effectivePrice = (p.discountPrice > 0 && p.discountPrice < p.price)
+            ? p.discountPrice
+            : p.price;
+        return {
+            partName: p.partName,
+            quantity: p.quantity,
+            price: p.price,
+            discountPrice: p.discountPrice ?? 0,
+            discountType: p.discountType ?? '',
+            effectivePrice,
+        };
+    });
+
+    const serviceProvided = (order.serviceProvided || []).map(s => {
+        const effectivePrice = (s.discountPrice > 0 && s.discountPrice < s.price)
+            ? s.discountPrice
+            : s.price;
+        return {
+            serviceName: s.serviceName,
+            quantity: s.quantity,
+            price: s.price,
+            discountPrice: s.discountPrice ?? 0,
+            effectivePrice,
+        };
+    });
+
+    // --- Business Details (GST Invoice) ---
+    let businessDetails = null;
+    if (order.gstInvoice?.requested) {
+        const bd = order.gstInvoice.businessDetails || {};
+        const requiredFields = ['gstin', 'businessName', 'businessAddress', 'businessCity', 'businessState', 'businessPincode'];
+        const missing = requiredFields.filter(f => !bd[f]);
+        if (missing.length > 0) {
+            throw new Error(`GST invoice requested but missing business details: ${missing.join(', ')}`);
+        }
+        businessDetails = {
+            gstin: bd.gstin.toUpperCase(),
+            businessName: bd.businessName,
+            businessAddress: bd.businessAddress,
+            businessCity: bd.businessCity,
+            businessState: bd.businessState,
+            businessPincode: bd.businessPincode,
+        };
+    }
+
+    // --- Financial totals ---
+    const subTotal = order.total?.subTotal ?? 0;
+    const discount = order.total?.discount ?? 0;
+    const discountType = order.total?.discountType ?? '';
+    const referralDiscount = isCod ? 0 : (order.total?.referralDiscount ?? 0);
+    const sgst = order.total?.sgst ?? 0;
+    const cgst = order.total?.cgst ?? 0;
+    const sgstRate = order.total?.sgstRate ?? 0;
+    const cgstRate = order.total?.cgstRate ?? 0;
+    const baseAmount = order.total?.baseAmount ?? 0;
+
+    // Pre‑wallet total (after admin discounts + taxes)
+    const totalBeforeWallet = order.total?.total ?? 0;
+
+    // Post‑wallet payable (what the customer owes after wallet deduction)
+    const finalPayable = isCod
+        ? totalBeforeWallet
+        : (order.total?.finalPayable ?? totalBeforeWallet);
+
+    // Wallet amount used (only for online payments, 0 for COD)
+    const walletAmountUsed = isCod ? 0 : referralApplied;
+
+    // Actual settled amount = gateway/cash + wallet
+    const totalAmountPaid = amountPaid + walletAmountUsed;
+
+    // Payment details
+    const paymentDetails = {
+        method,
+        razorpayPaymentId,
+        razorpayOrderId,
+        amountPaid,
+        walletAmountUsed,
+        totalSettled: totalAmountPaid,
+        paymentDate: new Date(),
+    };
+
     return {
         invoiceNumber,
         orderId: order._id,
         userId: order.userId || null,
         invoiceDate: new Date(),
+
         customerDetails: {
             name: order.name,
             email: order.email,
@@ -73,6 +167,9 @@ const buildInvoiceData = async (order, paymentInfo) => {
             address: order.address,
             city: order.city,
         },
+
+        businessDetails, // added
+
         vehicleDetails: {
             brand: order.selectedBrand,
             model: order.selectedModel,
@@ -80,41 +177,28 @@ const buildInvoiceData = async (order, paymentInfo) => {
             cc: order.cc,
             bs: order.bs,
         },
-        partsUsed: (order.partsUsed || []).map(p => ({
-            partName: p.partName,
-            quantity: p.quantity,
-            price: p.price,
-            discountPrice: p.discountPrice,
-            discountType: p.discountType,
-        })),
-        serviceProvided: (order.serviceProvided || []).map(s => ({
-            serviceName: s.serviceName,
-            quantity: s.quantity,
-            price: s.price,
-            discountPrice: s.discountPrice,
-        })),
+
+        partsUsed,
+        serviceProvided,
+
         total: {
-            subTotal: order.total?.subTotal || 0,
-            discount: order.total?.discount || 0,
-            discountType: order.total?.discountType || '',
-            referralDiscount: paymentInfo.isCod ? 0 : (order.total?.referralDiscount || 0),
-            sgst: order.total?.sgst || 0,
-            cgst: order.total?.cgst || 0,
-            sgstRate: order.total?.sgstRate || 0,
-            cgstRate: order.total?.cgstRate || 0,
-            baseAmount: order.total?.baseAmount || 0,
-            total: order.total?.total || 0,
-            finalPayable: paymentInfo.isCod
-                ? (order.total?.total || 0)
-                : (order.total?.finalPayable || order.total?.total || 0),
+            subTotal,
+            discount,
+            discountType,
+            referralDiscount,
+            walletAmountUsed,
+            sgst,
+            cgst,
+            sgstRate,
+            cgstRate,
+            baseAmount,
+            total: totalBeforeWallet,
+            finalPayable,
+            totalAmountPaid,
         },
-        paymentDetails: {
-            method: paymentInfo.method,
-            razorpayPaymentId: paymentInfo.razorpayPaymentId || null,
-            razorpayOrderId: paymentInfo.razorpayOrderId || null,
-            amountPaid: paymentInfo.amountPaid,
-            paymentDate: new Date(),
-        },
+
+        paymentDetails,
+
         status: 'paid',
     };
 };

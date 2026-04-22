@@ -30,7 +30,14 @@ const invoiceSchema = new mongoose.Schema({
         address: { type: String, trim: true },
         city: { type: String, trim: true, uppercase: true },
     },
-
+    businessDetails: {
+        gstin: { type: String, trim: true, uppercase: true },
+        businessName: { type: String, trim: true },
+        businessAddress: { type: String, trim: true },
+        businessCity: { type: String, trim: true },
+        businessState: { type: String, trim: true },
+        businessPincode: { type: String, trim: true },
+    },
     // ─── Vehicle Details ──────────────────────────────────────────────────
     vehicleDetails: {
         brand: { type: String, trim: true },

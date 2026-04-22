@@ -143,7 +143,17 @@ const orderSchema = new mongoose.Schema({
     },
 
     coupon: { type: String },
-
+    gstInvoice: {
+        requested: { type: Boolean, default: false },
+        businessDetails: {
+            gstin: { type: String, trim: true, uppercase: true },
+            businessName: { type: String, trim: true },
+            businessAddress: { type: String, trim: true },
+            businessCity: { type: String, trim: true },
+            businessState: { type: String, trim: true },
+            businessPincode: { type: String, trim: true },
+        },
+    },
     paymentStatus: {
         type: String,
         enum: ['unpaid', 'partial', 'paid'],
