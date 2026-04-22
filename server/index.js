@@ -25,7 +25,7 @@ import paymentRouter from "./Routes/paymentRoutes.js";
 import webhookRouter from "./Routes/webhookRoutes.js";
 import chatRoutes from "./Routes/chatRoutes.js";
 import "./Utils/photoCleanCron.js";
-import './jobs/upcomingBookingReminder.js';
+import './Utils/upcomingBookingReminder.js';
 // Socket setup
 import { setupChatSockets } from "./sockets/chatSocket.js";
 
