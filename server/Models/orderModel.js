@@ -45,7 +45,7 @@ const orderSchema = new mongoose.Schema({
     preferredTime: { type: String, required: true },
     estimatedBudget: { type: String, trim: true },
     issues: { type: String, default: '', trim: true },
-
+    reminderSent: { type: Boolean, default: false },
     // ─── Status Flow ──────────────────────────────────────────────────────────
     status: {
         type: String,

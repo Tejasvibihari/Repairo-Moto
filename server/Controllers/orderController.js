@@ -1266,7 +1266,7 @@ export const markPaidCod = async (req, res) => {
         order.paymentDate = new Date();
         // Schedule repair photos for deletion 7 days after payment
         order.photosScheduledDeleteAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
+        order.photosDeleted = false;
         await order.save();
 
         // ── Generate invoice ──────────────────────────────────────────────────
