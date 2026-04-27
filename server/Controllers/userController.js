@@ -327,6 +327,7 @@ export const editUser = async (req, res) => {
             city,
             state,
             pincode,
+            gstin,
             currentPassword,
             newPassword,
             confirmPassword,
@@ -374,6 +375,7 @@ export const editUser = async (req, res) => {
         user.city = city || user.city;
         user.state = state || user.state;
         user.pincode = pincode || user.pincode;
+        user.gstin = gstin || user.gstin;
 
         // Handle password update
         if (currentPassword || newPassword || confirmPassword) {

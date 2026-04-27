@@ -62,6 +62,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    gstin: {
+        type: String,
+        default: null,
+        trim: true,
+        uppercase: true,
+    },
     address: String,
     city: String,
     state: String,

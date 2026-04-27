@@ -1127,7 +1127,7 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             });
         }
 
-        const { partsAndServices, total, invoiceDetails } = data;
+        const { partsAndServices, total, invoiceDetails, gstInvoice } = data;
 
         if (!Array.isArray(partsAndServices)) {
             return res.status(400).json({
@@ -1151,6 +1151,19 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                 success: false,
                 message: `Missing required total fields: ${missingFields.join(', ')}.`,
             });
+        }
+
+        // 4b. Validate GST invoice business details if requested
+        if (gstInvoice?.requested) {
+            const bd = gstInvoice.businessDetails || {};
+            const requiredGstFields = ['gstin', 'businessName', 'businessAddress', 'businessCity', 'businessState', 'businessPincode'];
+            const missingGstFields = requiredGstFields.filter(f => !bd[f]);
+            if (missingGstFields.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: `GST invoice requested but missing business details: ${missingGstFields.join(', ')}.`,
+                });
+            }
         }
 
         // 5. Process parts and services
@@ -1204,6 +1217,24 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             },
             paymentStatus: 'unpaid',
         };
+
+        // 6b. Include GST invoice details if requested
+        if (gstInvoice?.requested) {
+            const bd = gstInvoice.businessDetails;
+            updatedFields.gstInvoice = {
+                requested: true,
+                businessDetails: {
+                    gstin: bd.gstin.trim().toUpperCase(),
+                    businessName: bd.businessName.trim(),
+                    businessAddress: bd.businessAddress.trim(),
+                    businessCity: bd.businessCity.trim(),
+                    businessState: bd.businessState.trim(),
+                    businessPincode: bd.businessPincode.trim(),
+                },
+            };
+        } else {
+            updatedFields.gstInvoice = { requested: false };
+        }
 
         // 7. Update the order
         const updatedOrder = await Order.findByIdAndUpdate(
