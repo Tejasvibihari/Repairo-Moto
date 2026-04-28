@@ -52,23 +52,48 @@ export const createManualInvoice = async (req, res) => {
     try {
         const invoiceData = req.body;
 
-        // Ensure invoiceNumber is provided
-        if (!invoiceData.invoiceNumber) {
-            return res.status(400).json({ message: 'invoiceNumber is required' });
+        // 1. Required field validations
+        if (!invoiceData.invoiceNumber || typeof invoiceData.invoiceNumber !== 'string') {
+            return res.status(400).json({ message: 'Valid invoiceNumber is required' });
+        }
+        if (!invoiceData.customerDetails?.name || !invoiceData.customerDetails?.contactNo) {
+            return res.status(400).json({ message: 'Customer name and contact number are required' });
+        }
+        const hasParts = invoiceData.partsUsed?.length > 0;
+        const hasServices = invoiceData.serviceProvided?.length > 0;
+        if (!hasParts && !hasServices) {
+            return res.status(400).json({ message: 'At least one part or service must be provided' });
+        }
+        if (invoiceData.total?.subTotal <= 0) {
+            return res.status(400).json({ message: 'Subtotal must be greater than zero' });
         }
 
+        // 2. Payment method validation
+        const validMethods = ['razorpay', 'upi', 'card', 'bank_transfer', 'referral', 'cash'];
+        if (!validMethods.includes(invoiceData.paymentDetails?.method)) {
+            return res.status(400).json({ message: 'Invalid payment method' });
+        }
+
+        // 3. GST rate range validation
+        if (invoiceData.total?.sgstRate !== undefined && (invoiceData.total.sgstRate < 0 || invoiceData.total.sgstRate > 100)) {
+            return res.status(400).json({ message: 'SGST rate must be between 0 and 100' });
+        }
+        if (invoiceData.total?.cgstRate !== undefined && (invoiceData.total.cgstRate < 0 || invoiceData.total.cgstRate > 100)) {
+            return res.status(400).json({ message: 'CGST rate must be between 0 and 100' });
+        }
+
+        // 4. Create invoice
         const invoice = new ManualInvoice(invoiceData);
         await invoice.save();
         res.status(201).json({ success: true, data: invoice });
     } catch (error) {
-        // Handle duplicate key error (invoiceNumber unique)
         if (error.code === 11000) {
             return res.status(409).json({ message: 'Invoice number already exists' });
         }
+        console.error('Invoice creation error:', error);
         res.status(500).json({ message: error.message });
     }
 };
-
 // ─────────────────────────────────────────────────────────────────
 // UPDATE invoice by ID
 export const updateManualInvoice = async (req, res) => {
