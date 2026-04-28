@@ -546,17 +546,23 @@ export const razorpayWebhook = async (req, res) => {
         return res.status(500).send('Webhook secret not configured.');
     }
 
+    // req.body is a raw Buffer (via express.raw() middleware in index.js)
+    // Use the raw bytes for HMAC to guarantee byte-for-byte signature match
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
+
     const expectedSignature = crypto
         .createHmac('sha256', webhookSecret)
-        .update(JSON.stringify(req.body))
+        .update(rawBody)
         .digest('hex');
 
     if (expectedSignature !== webhookSignature) {
         return res.status(401).send('Invalid webhook signature.');
     }
 
-    const event = req.body.event;
-    const payload = req.body.payload;
+    // Parse the verified raw body into JSON
+    const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
+    const event = body.event;
+    const payload = body.payload;
 
     if (event !== 'payment.captured') {
         return res.status(200).send('Event ignored.');

@@ -24,6 +24,7 @@ import dashboardRouter from "./Routes/dashboardRoutes.js";
 import paymentRouter from "./Routes/paymentRoutes.js";
 import webhookRouter from "./Routes/webhookRoutes.js";
 import chatRoutes from "./Routes/chatRoutes.js";
+import manualInvoiceRouter from "./Routes/manualInvoiceRoutes.js";
 import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
 // Socket setup
@@ -34,6 +35,10 @@ dotenv.config();
 
 // Middleware
 app.use(cors());
+
+// Razorpay webhook needs raw body for signature verification — must be before bodyParser.json()
+app.use("/api/webhooks/razorpay", express.raw({ type: "application/json" }));
+
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 app.use("/uploads", express.static("uploads"));
@@ -56,7 +61,8 @@ app.use("/api/notifications", notificationRouter);
 app.use("/api/admin/dashboard", dashboardRouter);
 app.use("/api/orders", paymentRouter);
 app.use("/api/webhooks", webhookRouter);
-app.use("/api/chat", chatRoutes);          // <-- chat routes
+app.use("/api/chat", chatRoutes);
+app.use('/api/manual-invoices', manualInvoiceRouter);
 
 app.get("/", (req, res) => {
     res.send("Welcome to the Admin API");

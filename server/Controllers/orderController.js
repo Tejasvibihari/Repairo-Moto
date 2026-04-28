@@ -1153,16 +1153,35 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             });
         }
 
-        // 4b. Validate GST invoice business details if requested
-        if (gstInvoice?.requested) {
-            const bd = gstInvoice.businessDetails || {};
-            const requiredGstFields = ['gstin', 'businessName', 'businessAddress', 'businessCity', 'businessState', 'businessPincode'];
-            const missingGstFields = requiredGstFields.filter(f => !bd[f]);
-            if (missingGstFields.length > 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: `GST invoice requested but missing business details: ${missingGstFields.join(', ')}.`,
-                });
+        // ──────────────────────────────────────────────────────────────
+        // 4b. AUTO‑POPULATE BUSINESS DETAILS FOR BUSINESS ACCOUNTS
+        // ──────────────────────────────────────────────────────────────
+        let autoBusinessDetails = null;
+
+        if (order.userId) {
+            const orderUser = await User.findById(order.userId)
+                .select('accountType businessName gstin address city state pincode');
+
+            if (orderUser?.accountType === 'business') {
+                const requiredBusinessFields = [
+                    'businessName', 'gstin', 'address', 'city', 'state', 'pincode'
+                ];
+                const missing = requiredBusinessFields.filter(f => !orderUser[f]);
+                if (missing.length > 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Business account incomplete. Missing fields: ${missing.join(', ')}. Please update profile.`,
+                    });
+                }
+
+                autoBusinessDetails = {
+                    gstin: orderUser.gstin.trim().toUpperCase(),
+                    businessName: orderUser.businessName.trim(),
+                    businessAddress: orderUser.address.trim(),
+                    businessCity: orderUser.city.trim(),
+                    businessState: orderUser.state.trim(),
+                    businessPincode: orderUser.pincode.trim(),
+                };
             }
         }
 
@@ -1206,7 +1225,7 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                 subTotal: Number(total.subTotal),
                 discount: Number(total.discount) || 0,
                 discountType: total.discountType || '',
-                referralDiscount: 0, // referral discount not applicable at invoice stage
+                referralDiscount: 0,
                 sgst: Number(total.sgst) || 0,
                 cgst: Number(total.cgst) || 0,
                 sgstRate: Number(total.sgstRate) || 0,
@@ -1218,9 +1237,23 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             paymentStatus: 'unpaid',
         };
 
-        // 6b. Include GST invoice details if requested
-        if (gstInvoice?.requested) {
-            const bd = gstInvoice.businessDetails;
+        // 6b. Set GST invoice details – prefer auto‑populated business details
+        if (autoBusinessDetails) {
+            updatedFields.gstInvoice = {
+                requested: true,
+                businessDetails: autoBusinessDetails,
+            };
+        } else if (gstInvoice?.requested) {
+            // Existing manual validation for non‑business / guest orders
+            const bd = gstInvoice.businessDetails || {};
+            const requiredGstFields = ['gstin', 'businessName', 'businessAddress', 'businessCity', 'businessState', 'businessPincode'];
+            const missingGstFields = requiredGstFields.filter(f => !bd[f]);
+            if (missingGstFields.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: `GST invoice requested but missing business details: ${missingGstFields.join(', ')}.`,
+                });
+            }
             updatedFields.gstInvoice = {
                 requested: true,
                 businessDetails: {
@@ -1267,7 +1300,6 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                 });
             } catch (notifError) {
                 console.error('Notification failed:', notifError);
-                // Non-critical – still return success
             }
         }
 
@@ -1281,7 +1313,6 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
     } catch (error) {
         console.error('Error generating invoice:', error);
 
-        // Handle known validation errors from processing parts/services
         if (error.message && error.message.includes('Invalid')) {
             return res.status(400).json({
                 success: false,
@@ -1289,7 +1320,6 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             });
         }
 
-        // Handle Mongoose validation errors
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(e => e.message);
             return res.status(400).json({
@@ -1299,7 +1329,6 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             });
         }
 
-        // Generic server error
         return res.status(500).json({
             success: false,
             message: 'An unexpected error occurred while generating the invoice. Please try again later.',
