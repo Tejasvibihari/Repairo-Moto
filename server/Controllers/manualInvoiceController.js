@@ -51,7 +51,7 @@ const buildSort = (sortBy) => {
 export const createManualInvoice = async (req, res) => {
     try {
         const invoiceData = req.body;
-
+        console.log(invoiceData, "invoiceData")
         // 1. Required field validations
         if (!invoiceData.invoiceNumber || typeof invoiceData.invoiceNumber !== 'string') {
             return res.status(400).json({ message: 'Valid invoiceNumber is required' });
