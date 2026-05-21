@@ -82,21 +82,27 @@ export default function Footer() {
                         <ul className="space-y-4 text-gray-300">
                             <li><Link to="/" title="Go to Home" className="flex items-center hover:text-primary"><House className="mr-3" size={20} /> Home</Link></li>
                             <li><Link to="/services" title="Our Services" className="flex items-center hover:text-primary"><Wrench className="mr-3" size={20} /> Services</Link></li>
-                            <li><Link to="/terms" title="Terms & Conditions" className="flex items-center hover:text-primary"><ContactRound className="mr-3" size={20} /> Terms & Conditions</Link></li>
                             <li><Link to="/dashboard" title="Admin Panel" className="flex items-center hover:text-primary"><ShieldUser className="mr-3" size={20} /> Admin</Link></li>
                             <li><Link to="/employee/dashboard" title="Employee Dashboard" className="flex items-center hover:text-primary"><Wrench className="mr-3" size={20} /> Employee</Link></li>
                             <li><Link to="/vendor/dashboard" title="Vendor Panel" className="flex items-center hover:text-primary"><PersonStanding className="mr-3" size={20} /> Vendor</Link></li>
                         </ul>
                     </nav>
 
-                    {/* Services */}
-                    <nav aria-label="Our Services">
-                        <h2 className="text-xl font-bold text-primary mb-6 border-l-4 border-primary pl-3">Our Services</h2>
-                        <ul className="space-y-4 text-gray-300">
-                            <li className="flex items-center hover:text-primary"><House className="mr-3" size={20} /> Servicing</li>
-                            <li className="flex items-center hover:text-primary"><Store className="mr-3" size={20} /> Repairing</li>
-                            <li className="flex items-center hover:text-primary"><Wrench className="mr-3" size={20} /> Full Engine</li>
-                            <li className="flex items-center hover:text-primary"><ContactRound className="mr-3" size={20} /> Inspection</li>
+                    {/* Policies & Legal */}
+                    <nav aria-label="Legal Information">
+                        <h2 className="text-xl font-bold text-primary mb-6 border-l-4 border-primary pl-3">Policies & Legal</h2>
+                        <ul className="space-y-2 text-gray-300 text-sm">
+                            <li><Link to="/terms" title="Terms & Conditions" className="hover:text-primary">• Terms & Conditions</Link></li>
+                            <li><Link to="/privacy-policy" title="Privacy Policy" className="hover:text-primary">• Privacy Policy</Link></li>
+                            <li><Link to="/refund-policy" title="Refund Policy" className="hover:text-primary">• Refund Policy</Link></li>
+                            <li><Link to="/warranty-policy" title="Warranty Policy" className="hover:text-primary">• Warranty Policy</Link></li>
+                            <li><Link to="/service-fulfillment-policy" title="Service Fulfillment" className="hover:text-primary">• Service Fulfillment</Link></li>
+                            <li><Link to="/referral-rewards-policy" title="Referral Rewards" className="hover:text-primary">• Referral Rewards</Link></li>
+                            <li><Link to="/otp-verification-policy" title="OTP Verification" className="hover:text-primary">• OTP Verification</Link></li>
+                            <li><Link to="/vehicle-image-capture-policy" title="Image Capture Policy" className="hover:text-primary">• Image Capture Policy</Link></li>
+                            <li><Link to="/liability-damage-claims-policy" title="Liability & Claims" className="hover:text-primary">• Liability & Claims</Link></li>
+                            <li><Link to="/data-deletion-policy" title="Data Deletion Policy" className="hover:text-primary">• Data Deletion</Link></li>
+                            <li><Link to="/cookie-policy" title="Cookie Policy" className="hover:text-primary">• Cookie Policy</Link></li>
                         </ul>
                     </nav>
 

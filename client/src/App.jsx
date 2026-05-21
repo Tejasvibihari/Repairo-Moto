@@ -55,6 +55,16 @@ import GenerateInvoiceForm from './components/GenerateInvoiceForm';
 import InvoiceTemplate from './components/InvoiceTemplate';
 import Terms from './pages/landing/Terms';
 import ReferralEarning from './pages/landing/ReferralEarning';
+import PrivacyPolicy from './pages/landing/PrivacyPolicy';
+import RefundPolicy from './pages/landing/RefundPolicy';
+import WarrantyPolicy from './pages/landing/WarrantyPolicy';
+import ServiceFulfillmentPolicy from './pages/landing/ServiceFulfillmentPolicy';
+import ReferralRewardsPolicy from './pages/landing/ReferralRewardsPolicy';
+import OTPVerificationPolicy from './pages/landing/OTPVerificationPolicy';
+import VehicleImageCapturePolicy from './pages/landing/VehicleImageCapturePolicy';
+import LiabilityDamageClaimsPolicy from './pages/landing/LiabilityDamageClaimsPolicy';
+import DataDeletionPolicy from './pages/landing/DataDeletionPolicy';
+import CookiePolicy from './pages/landing/CookiePolicy';
 import UserDashboard from './pages/user/UserDashboard';
 import UserPrivateRoute from './components/routes/UserPrivateRoute';
 import UserQrCode from './pages/user/UserQrCode';
@@ -94,6 +104,16 @@ export default function App() {
           <Route path='/gallery' element={<Gallery />} />
           <Route path='/services' element={<Services />} />
           <Route path='/terms' element={<Terms />} />
+          <Route path='/privacy-policy' element={<PrivacyPolicy />} />
+          <Route path='/refund-policy' element={<RefundPolicy />} />
+          <Route path='/warranty-policy' element={<WarrantyPolicy />} />
+          <Route path='/service-fulfillment-policy' element={<ServiceFulfillmentPolicy />} />
+          <Route path='/referral-rewards-policy' element={<ReferralRewardsPolicy />} />
+          <Route path='/otp-verification-policy' element={<OTPVerificationPolicy />} />
+          <Route path='/vehicle-image-capture-policy' element={<VehicleImageCapturePolicy />} />
+          <Route path='/liability-damage-claims-policy' element={<LiabilityDamageClaimsPolicy />} />
+          <Route path='/data-deletion-policy' element={<DataDeletionPolicy />} />
+          <Route path='/cookie-policy' element={<CookiePolicy />} />
           <Route path='/referral' element={<ReferralEarning />} />
 
           {/* Auth Page (No Sidebar) */}
