@@ -34,11 +34,10 @@ const authAdmin = async (req, res, next) => {
         const admin = await Admin.findById(decoded.id).select('-password');
 
         if (admin) {
-            req.user = {
-                _id: admin._id,
-                role: 'Admin',
-                model: 'Admin'
-            };
+
+            req.user = admin.toObject();
+            req.user.role = 'Admin';
+            req.user.model = 'Admin';
             return next();
         }
 
@@ -47,12 +46,10 @@ const authAdmin = async (req, res, next) => {
 
         if (employee) {
             if (employee.position === 'telecaller' || employee.position === 'operational manager' || employee.position === 'manager') {
-                req.user = {
-                    _id: employee._id,
-                    role: 'Employee',
-                    model: 'Employee',
-                    position: employee.position
-                };
+
+                req.user = employee.toObject();
+                req.user.role = 'Employee';
+                req.user.model = 'Employee';
                 return next();
             } else {
                 return res.status(403).json({ message: 'Unauthorized employee role' });

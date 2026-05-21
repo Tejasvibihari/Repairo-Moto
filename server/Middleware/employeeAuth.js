@@ -3,7 +3,7 @@ import Employee from '../Models/employeeModel.js';
 import jwt from 'jsonwebtoken';
 export const authenticateEmployee = async (req, res, next) => {
     try {
-     
+
         // Get token from Authorization header (Bearer token)
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
