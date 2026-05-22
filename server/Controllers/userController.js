@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 import Order from '../Models/orderModel.js';
 import BikeProfile from '../Models/bikeProfile.js';
 import Employee from "../Models/employeeModel.js";
+import Invoice from '../Models/invoiceModel.js';
+import ManualInvoice from '../Models/manualInvoiceModel.js';
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -139,6 +141,11 @@ export const userSignIn = async (req, res) => {
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Block suspended users and provide reactivation hint
+        if (user.status === 'suspended') {
+            return res.status(403).json({ message: 'Account is suspended. Please reactivate your account via the website.', reactivationUrl: '/account-delete' });
         }
 
         // Generate a JWT token
@@ -686,6 +693,84 @@ export const getRatingStatus = async (req, res) => {
     } catch (error) {
         console.error("Error in getRatingStatus:", error);
         return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+// Find user by email (public) - returns minimal info for frontend verification flow
+export const findUserByEmail = async (req, res) => {
+    try {
+        // Defensive check: ensure req.body exists
+        if (!req.body || typeof req.body !== 'object') {
+            return res.status(400).json({ message: 'Invalid request format. Body is required.' });
+        }
+
+        const { email } = req.body;
+        if (!email || typeof email !== 'string') {
+            return res.status(400).json({ message: 'Email is required and must be a string' });
+        }
+
+        const user = await User.findOne({ email }).select('_id firstName lastName email status');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        res.status(200).json({ message: 'User found', user });
+    } catch (error) {
+        console.error('Error in findUserByEmail:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
+
+// Verify password and perform account action: 'deactivate' or 'delete'
+export const accountAction = async (req, res) => {
+    try {
+        // Defensive check: ensure req.body exists
+        if (!req.body || typeof req.body !== 'object') {
+            return res.status(400).json({ message: 'Invalid request format. Body is required.' });
+        }
+
+        const { userId, email, password, action } = req.body;
+        if (!userId || !email || !password || !action) {
+            return res.status(400).json({ message: 'userId, email, password and action are required' });
+        }
+
+        const user = await User.findOne({ _id: userId, email });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) return res.status(401).json({ message: 'Invalid password' });
+
+        if (action === 'deactivate') {
+            user.status = 'suspended';
+            await user.save();
+            return res.status(200).json({ message: 'Account deactivated (suspended)' });
+        }
+
+        if (action === 'delete') {
+            // Remove related data where appropriate
+            await BikeProfile.deleteMany({ user: user._id });
+            await Order.deleteMany({ userId: user._id });
+            await Invoice.deleteMany({ userId: user._id });
+            await ManualInvoice.deleteMany({ userId: user._id });
+
+            // Finally, delete the user
+            await User.deleteOne({ _id: user._id });
+
+            return res.status(200).json({ message: 'Account deleted successfully' });
+        }
+
+        if (action === 'reactivate') {
+            // Reactivate suspended account
+            if (user.status !== 'suspended') {
+                return res.status(400).json({ message: 'Account is not suspended' });
+            }
+            user.status = 'approved';
+            await user.save();
+            return res.status(200).json({ message: 'Account reactivated successfully' });
+        }
+
+        return res.status(400).json({ message: `Invalid action. Allowed: deactivate, delete, reactivate. Got: ${action}` });
+    } catch (error) {
+        console.error('Error in accountAction:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 

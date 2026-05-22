@@ -103,6 +103,7 @@ export default function Footer() {
                             <li><Link to="/liability-damage-claims-policy" title="Liability & Claims" className="hover:text-primary">• Liability & Claims</Link></li>
                             <li><Link to="/data-deletion-policy" title="Data Deletion Policy" className="hover:text-primary">• Data Deletion</Link></li>
                             <li><Link to="/cookie-policy" title="Cookie Policy" className="hover:text-primary">• Cookie Policy</Link></li>
+                            <li><Link to="/account-delete" title="Account Deletion" className="hover:text-primary">• Account Deletion</Link></li>
                         </ul>
                     </nav>
 

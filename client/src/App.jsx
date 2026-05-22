@@ -65,6 +65,7 @@ import VehicleImageCapturePolicy from './pages/landing/VehicleImageCapturePolicy
 import LiabilityDamageClaimsPolicy from './pages/landing/LiabilityDamageClaimsPolicy';
 import DataDeletionPolicy from './pages/landing/DataDeletionPolicy';
 import CookiePolicy from './pages/landing/CookiePolicy';
+import AccountDeletion from './pages/landing/AccountDeletion';
 import UserDashboard from './pages/user/UserDashboard';
 import UserPrivateRoute from './components/routes/UserPrivateRoute';
 import UserQrCode from './pages/user/UserQrCode';
@@ -114,6 +115,7 @@ export default function App() {
           <Route path='/liability-damage-claims-policy' element={<LiabilityDamageClaimsPolicy />} />
           <Route path='/data-deletion-policy' element={<DataDeletionPolicy />} />
           <Route path='/cookie-policy' element={<CookiePolicy />} />
+          <Route path='/account-delete' element={<AccountDeletion />} />
           <Route path='/referral' element={<ReferralEarning />} />
 
           {/* Auth Page (No Sidebar) */}
