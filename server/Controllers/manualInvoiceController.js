@@ -77,9 +77,19 @@ const buildFilter = (query) => {
 
 // Helper: build sort object
 const buildSort = (sortBy) => {
-    if (!sortBy) return { createdAt: -1 }; // default
-    const [field, order] = sortBy.split(':');
-    const sortOrder = order === 'asc' ? 1 : -1;
+    if (!sortBy) return { invoiceDate: -1 }; // default: newest first
+    
+    // Handle format: "-field" for descending or "field" for ascending
+    let field = sortBy;
+    let sortOrder = 1; // ascending by default
+    
+    if (sortBy.startsWith('-')) {
+        // Remove the '-' prefix and set to descending
+        field = sortBy.substring(1);
+        sortOrder = -1;
+    }
+    
+    console.log(`BuildSort: "${sortBy}" → { ${field}: ${sortOrder} }`);
     return { [field]: sortOrder };
 };
 
