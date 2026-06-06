@@ -34,8 +34,6 @@ export const createUser = async (req, res) => {
             businessType
         } = req.body;
 
-        const { accountType: referralType } = req.params;
-
         // Check for existing user
         const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
         if (existingUser) {
@@ -62,7 +60,7 @@ export const createUser = async (req, res) => {
             email,
             password: hashedPassword,
             referralCode,
-            referralType,
+            referralType: null,
             referredBy: referredBy || null,
             accountType,
             businessName,
@@ -96,6 +94,7 @@ export const createUser = async (req, res) => {
 
             // Save referredBy for record in the new user
             newUserData.referredBy = referredBy;
+            newUserData.referralType = referrer.accountType;
         }
         if (accountType === "personal") {
             newUserData.status = "approved"; // Set status to active for personal accounts

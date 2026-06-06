@@ -7,22 +7,58 @@ const buildFilter = (query) => {
     // Exact matches
     if (query.status) filter.status = query.status;
     if (query.invoiceNumber) filter.invoiceNumber = query.invoiceNumber;
-    if (query['customerDetails.name'])
+
+    // Customer name - accepts both customerName and customerDetails.name
+    if (query.customerName) {
+        filter['customerDetails.name'] = { $regex: query.customerName, $options: 'i' };
+    }
+    if (query['customerDetails.name']) {
         filter['customerDetails.name'] = query['customerDetails.name'];
-    if (query['customerDetails.email'])
+    }
+
+    // Customer email
+    if (query.customerEmail) {
+        filter['customerDetails.email'] = { $regex: query.customerEmail, $options: 'i' };
+    }
+    if (query['customerDetails.email']) {
         filter['customerDetails.email'] = query['customerDetails.email'];
-    if (query['customerDetails.contactNo'])
+    }
+
+    // Customer contact
+    if (query.customerContact) {
+        filter['customerDetails.contactNo'] = { $regex: query.customerContact, $options: 'i' };
+    }
+    if (query['customerDetails.contactNo']) {
         filter['customerDetails.contactNo'] = query['customerDetails.contactNo'];
-    if (query['vehicleDetails.brand'])
+    }
+
+    // Vehicle brand - accepts both vehicleBrand and vehicleDetails.brand
+    if (query.vehicleBrand) {
+        filter['vehicleDetails.brand'] = { $regex: query.vehicleBrand, $options: 'i' };
+    }
+    if (query['vehicleDetails.brand']) {
         filter['vehicleDetails.brand'] = query['vehicleDetails.brand'];
-    if (query['vehicleDetails.model'])
+    }
+
+    // Vehicle model - accepts both vehicleModel and vehicleDetails.model
+    if (query.vehicleModel) {
+        filter['vehicleDetails.model'] = { $regex: query.vehicleModel, $options: 'i' };
+    }
+    if (query['vehicleDetails.model']) {
         filter['vehicleDetails.model'] = query['vehicleDetails.model'];
+    }
 
     // Date range (invoiceDate)
     if (query.startDate || query.endDate) {
         filter.invoiceDate = {};
-        if (query.startDate) filter.invoiceDate.$gte = new Date(query.startDate);
-        if (query.endDate) filter.invoiceDate.$lte = new Date(query.endDate);
+        if (query.startDate) {
+            filter.invoiceDate.$gte = new Date(query.startDate);
+        }
+        if (query.endDate) {
+            const endDate = new Date(query.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            filter.invoiceDate.$lte = endDate;
+        }
     }
 
     // Partial text search on customer name / invoice number
@@ -35,6 +71,7 @@ const buildFilter = (query) => {
         ];
     }
 
+    console.log('Built filter:', JSON.stringify(filter));
     return filter;
 };
 
@@ -68,10 +105,34 @@ export const createManualInvoice = async (req, res) => {
             return res.status(400).json({ message: 'Subtotal must be greater than zero' });
         }
 
-        // 2. Payment method validation
+        // 2. Payment validation based on status
         const validMethods = ['razorpay', 'upi', 'card', 'bank_transfer', 'referral', 'cash'];
-        if (!validMethods.includes(invoiceData.paymentDetails?.method)) {
-            return res.status(400).json({ message: 'Invalid payment method' });
+        const status = invoiceData.status || 'paid';
+
+        if (status === 'paid') {
+            // For PAID invoices: payment method is required
+            if (!invoiceData.paymentDetails?.method) {
+                return res.status(400).json({ message: 'Payment method is required for paid invoices' });
+            }
+            if (!validMethods.includes(invoiceData.paymentDetails.method)) {
+                return res.status(400).json({ message: 'Invalid payment method. Valid methods are: ' + validMethods.join(', ') });
+            }
+            // Amount paid should be provided for paid invoices
+            if (!invoiceData.paymentDetails?.amountPaid || invoiceData.paymentDetails.amountPaid <= 0) {
+                return res.status(400).json({ message: 'Amount paid must be greater than zero for paid invoices' });
+            }
+        } else if (status === 'unpaid') {
+            // For UNPAID invoices: payment details should be minimal or empty
+            // This is optional and can be updated later
+            if (!invoiceData.paymentDetails) {
+                invoiceData.paymentDetails = {
+                    method: 'cash',
+                    amountPaid: 0,
+                    walletAmountUsed: 0,
+                    totalSettled: 0,
+                    paymentDate: null,
+                };
+            }
         }
 
         // 3. GST rate range validation
@@ -109,6 +170,27 @@ export const updateManualInvoice = async (req, res) => {
             });
             if (existing) {
                 return res.status(409).json({ message: 'Invoice number already in use' });
+            }
+        }
+
+        // Validate payment details if status is being changed or payment details are being updated
+        if (updates.status || updates.paymentDetails) {
+            const validMethods = ['razorpay', 'upi', 'card', 'bank_transfer', 'referral', 'cash'];
+            const status = updates.status || 'paid';
+
+            if (status === 'paid') {
+                // For PAID invoices: payment method is required
+                const paymentDetails = updates.paymentDetails || {};
+                if (!paymentDetails.method) {
+                    return res.status(400).json({ message: 'Payment method is required for paid invoices' });
+                }
+                if (!validMethods.includes(paymentDetails.method)) {
+                    return res.status(400).json({ message: 'Invalid payment method. Valid methods are: ' + validMethods.join(', ') });
+                }
+                // Amount paid should be provided for paid invoices
+                if (!paymentDetails.amountPaid || paymentDetails.amountPaid <= 0) {
+                    return res.status(400).json({ message: 'Amount paid must be greater than zero for paid invoices' });
+                }
             }
         }
 

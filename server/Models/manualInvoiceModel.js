@@ -99,7 +99,7 @@ const manualInvoiceSchema = new mongoose.Schema(
         // ─── Invoice Status ───────────────────────────────────────────────────
         status: {
             type: String,
-            enum: ['draft', 'paid', 'cancelled'],
+            enum: ['draft', 'paid', 'cancelled', 'unpaid'],
             default: 'paid',
         },
     },
