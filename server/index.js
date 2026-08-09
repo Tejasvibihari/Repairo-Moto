@@ -25,6 +25,7 @@ import paymentRouter from "./Routes/paymentRoutes.js";
 import webhookRouter from "./Routes/webhookRoutes.js";
 import chatRoutes from "./Routes/chatRoutes.js";
 import manualInvoiceRouter from "./Routes/manualInvoiceRoutes.js";
+import leadRouter from "./Routes/leadRoutes.js";
 import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
 // Socket setup
@@ -63,6 +64,8 @@ app.use("/api/orders", paymentRouter);
 app.use("/api/webhooks", webhookRouter);
 app.use("/api/chat", chatRoutes);
 app.use('/api/manual-invoices', manualInvoiceRouter);
+app.use('/api/lead/', leadRouter)
+
 
 app.get("/", (req, res) => {
     res.send("Welcome to the Admin API");

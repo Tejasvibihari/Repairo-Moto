@@ -17,6 +17,12 @@ const invoiceSchema = new mongoose.Schema({
         ref: 'User',
         required: true,
     },
+    leadId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Lead',
+        default: null,
+        index: true,
+    },
     invoiceDate: {
         type: Date,
         default: Date.now,
@@ -134,6 +140,7 @@ const invoiceSchema = new mongoose.Schema({
 
 invoiceSchema.index({ orderId: 1 });
 invoiceSchema.index({ userId: 1 });
+invoiceSchema.index({ leadId: 1 });
 
 const Invoice = mongoose.model('Invoice', invoiceSchema);
 export default Invoice;
