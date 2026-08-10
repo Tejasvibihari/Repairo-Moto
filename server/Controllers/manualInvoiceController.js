@@ -99,7 +99,7 @@ export const createManualInvoice = async (req, res) => {
     try {
         const invoiceData = req.body;
         const { leadId } = invoiceData;
-
+        console.log('CreateManualInvoice: Received invoice data:', JSON.stringify(invoiceData));
         // 1. Required field validations
         if (!invoiceData.invoiceNumber || typeof invoiceData.invoiceNumber !== 'string') {
             return res.status(400).json({ message: 'Valid invoiceNumber is required' });
