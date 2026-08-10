@@ -14,7 +14,7 @@ const router = express.Router();
 
 // Create lead
 router.post(
-    "/",
+    "/new",
     authAdmin,
     createLead
 );
