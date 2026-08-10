@@ -68,10 +68,12 @@ const leadSchema = new mongoose.Schema(
         },
 
         // Service the customer is interested in
-        serviceInterest: {
-            type: String,
-            trim: true,
-        },
+        serviceInterest: [
+            {
+                type: String,
+                trim: true,
+            },
+        ],
 
         // Lead status
         status: {

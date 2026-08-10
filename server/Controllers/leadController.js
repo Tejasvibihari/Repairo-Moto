@@ -286,10 +286,7 @@ export const getAllLeads = async (req, res) => {
         // Service filter
         // ─────────────────────────────────────────────
         if (serviceInterest?.trim()) {
-            filter.serviceInterest = new RegExp(
-                serviceInterest.trim(),
-                "i"
-            );
+            filter.serviceInterest = serviceInterest.trim();
         }
 
         // ─────────────────────────────────────────────
