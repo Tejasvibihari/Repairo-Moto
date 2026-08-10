@@ -196,6 +196,23 @@ export const createManualInvoice = async (req, res) => {
         // 4. Create invoice
         const invoice = new ManualInvoice(invoiceData);
         await invoice.save();
+
+        // 5. If invoice is linked to a lead, update lead record to reflect booking
+        if (lead) {
+            try {
+                lead.invoice = {
+                    linked: true,
+                    invoiceId: invoice._id,
+                    linkedAt: new Date(),
+                };
+                lead.status = 'booked';
+
+                await lead.save();
+            } catch (err) {
+                console.error('Warning: invoice created but failed to update lead:', err);
+            }
+        }
+
         res.status(201).json({ success: true, data: invoice });
     } catch (error) {
         if (error.code === 11000) {
@@ -453,7 +470,10 @@ export const updateManualInvoice = async (req, res) => {
                     linkedAt: new Date(),
                 };
 
-                newLead.status = 'booked';
+                // Only mark as 'booked' when the new lead was 'coming'
+                if (newLead.status === 'coming') {
+                    newLead.status = 'booked';
+                }
 
                 await newLead.save();
 
@@ -471,8 +491,31 @@ export const updateManualInvoice = async (req, res) => {
 
         await invoice.save();
 
+        // 6. If invoice is associated with a lead, ensure lead reflects invoice status
+        try {
+            const linkedLeadId = invoice.leadId;
+            if (linkedLeadId) {
+                const linkedLead = await Lead.findById(linkedLeadId);
+                if (linkedLead) {
+                    linkedLead.invoice = linkedLead.invoice || {};
+                    linkedLead.invoice.linked = true;
+                    linkedLead.invoice.invoiceId = invoice._id;
+                    linkedLead.invoice.linkedAt = linkedLead.invoice.linkedAt || new Date();
+
+                    // Only mark as 'booked' when the lead was explicitly 'coming'.
+                    if (linkedLead.status === 'coming') {
+                        linkedLead.status = 'booked';
+                    }
+
+                    await linkedLead.save();
+                }
+            }
+        } catch (err) {
+            console.error('Warning: failed to sync lead after invoice update', err);
+        }
+
         // ─────────────────────────────────────────────
-        // 6. Response
+        // 7. Response
         // ─────────────────────────────────────────────
 
         return res.status(200).json({
