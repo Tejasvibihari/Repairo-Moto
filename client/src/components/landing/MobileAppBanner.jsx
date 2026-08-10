@@ -64,7 +64,7 @@ export default function MobileAppBanner() {
                     {/* Download Buttons */}
                     <div className="flex flex-col sm:flex-row gap-4">
                         <motion.a
-                            href="https://play.google.com/store/apps/details?id=com.repairomoto"
+                            href="https://play.google.com/store/apps/details?id=com.roottechnology.repairoMotoApp"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-3 bg-white text-black px-6 py-3.5 rounded-xl shadow-xl hover:bg-gray-100 transition-all duration-200"

@@ -35,7 +35,7 @@ export default function Hero() {
                 >
                     {/* Google Play Button */}
                     <a
-                        href="https://play.google.com/store/apps/details?id=com.repairomoto"
+                        href="https://play.google.com/store/apps/details?id=com.roottechnology.repairoMotoApp"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 bg-white text-black px-5 py-3 rounded-xl shadow-lg hover:bg-gray-100 transition-all duration-200 hover:scale-105"

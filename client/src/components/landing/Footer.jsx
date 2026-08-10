@@ -20,7 +20,7 @@ export default function Footer() {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
                         <a
-                            href="https://play.google.com/store/apps/details?id=com.repairomoto"
+                            href="https://play.google.com/store/apps/details?id=com.roottechnology.repairoMotoApp"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2.5 bg-white text-black px-5 py-2.5 rounded-xl hover:bg-gray-100 transition-all duration-200 hover:scale-105"

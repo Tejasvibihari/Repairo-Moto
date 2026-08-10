@@ -40,7 +40,7 @@ export default function CTASection() {
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <motion.a
-                        href="https://play.google.com/store/apps/details?id=com.repairomoto"
+                        href="https://play.google.com/store/apps/details?id=com.roottechnology.repairoMotoApp"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-3 bg-gray-900 text-white px-7 py-3.5 rounded-full shadow-lg hover:bg-gray-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
