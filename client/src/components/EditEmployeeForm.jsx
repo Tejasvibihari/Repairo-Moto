@@ -189,6 +189,7 @@ export default function EditEmployeeForm({ initialData, onSuccess }) {
                                 <option value="delivery">Delivery</option>
                                 <option value="manager">Manager</option>
                                 <option value="hr">HR</option>
+                                <option value="telecaller">Telecaller</option>
                                 <option value="accountant">Accountant</option>
                             </select>
                         </div>
