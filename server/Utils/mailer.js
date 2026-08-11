@@ -26,13 +26,13 @@ export const sendMail = async ({ to, subject, body }) => {
             port: 465,
             secure: true, // Use true for 465, false for other ports
             auth: {
-                user: "librarysathi07@gmail.com", // GoDaddy email
-                pass: "xbkmzwaqbbrejcsd", // GoDaddy email password
+                user: "repairomoto@gmail.com", // GoDaddy email
+                pass: "xuqaoktutybusapa", // GoDaddy email password
             },
         });
 
         const emailFormat = {
-            from: '"Repairo Moto" <librarysathi07@gmail.com>', // Include a clear display name
+            from: '"Repairo Moto" <repairomoto@gmail.com>', // Include a clear display name
             to: to,
             subject: subject,
             text: "Repairo Moto", // Consider adding a plaintext version of the email
