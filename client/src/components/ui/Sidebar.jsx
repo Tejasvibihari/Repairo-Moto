@@ -31,6 +31,7 @@ const Sidebar = ({ children }) => {
         { id: 'manage-qr', path: '/manage-qr', label: 'Manage QR', icon: <QrCode size={18} /> },
         { id: 'all-user', path: '/all-user', label: 'All Users', icon: <User size={18} /> },
         { id: 'manage-referral', path: '/manage-referral', label: 'Manage Referral', icon: <DollarSign size={18} /> },
+        { id: 'app-ui', path: '/admin-app-ui', label: 'App UI', icon: <FileText size={18} /> },
         { id: 'add-blog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={18} /> },
         { id: 'manage-blog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={18} /> },
     ];

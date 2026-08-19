@@ -29,6 +29,7 @@ import webhookRouter from "./Routes/webhookRoutes.js";
 import chatRoutes from "./Routes/chatRoutes.js";
 import manualInvoiceRouter from "./Routes/manualInvoiceRoutes.js";
 import leadRouter from "./Routes/leadRoutes.js";
+import appContentRouter from "./Routes/appContentRoutes.js";
 import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
 // Socket setup
@@ -71,6 +72,7 @@ app.use("/api/webhooks", webhookRouter);
 app.use("/api/chat", chatRoutes);
 app.use('/api/manual-invoices', manualInvoiceRouter);
 app.use('/api/lead/', leadRouter)
+app.use("/api/app-content", appContentRouter);
 
 
 app.get("/", (req, res) => {

@@ -84,7 +84,7 @@ import Referral from './pages/dashboard/Referral';
 import DetailReferral from './pages/dashboard/DetailReferral';
 import OrderBooking from './pages/landing/OrderBooking';
 import ManageServiceArea from './pages/dashboard/ManageServiceArea';
-
+import AppUi from './pages/dashboard/AppUi'
 
 
 export default function App() {
@@ -438,6 +438,14 @@ export default function App() {
             }
           />
           <Route
+            path='/admin-app-ui'
+            element={
+              <PrivateRoute>
+                <Sidebar><AppUi /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
             path='/detail-manage-referral/:userId'
             element={
               <PrivateRoute>
@@ -475,6 +483,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><EmployeeDetail /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/admin-app-ui'
+            element={
+              <PrivateRoute>
+                <Sidebar><AppUi /></Sidebar>
               </PrivateRoute>
             }
           />
