@@ -5,6 +5,8 @@ import VendorOrder from "../Models/vendorOrderModel.js";
 import { sendBookingConfirmationEmail } from "../Utils/mailer.js";
 import User from "../Models/userModel.js";
 import Invoice from "../Models/invoiceModel.js";
+import Coupon from "../Models/couponModel.js";
+import { validateCoupon, computeCouponDiscount, finalizeCouponUsage } from "./couponController.js";
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -123,6 +125,8 @@ const buildInvoiceData = async (order, paymentInfo) => {
     const discount = order.total?.discount ?? 0;
     const discountType = order.total?.discountType ?? '';
     const referralDiscount = isCod ? 0 : (order.total?.referralDiscount ?? 0);
+    const couponCode = order.total?.couponCode ?? null;
+    const couponDiscount = order.total?.couponDiscount ?? 0;
     const sgst = order.total?.sgst ?? 0;
     const cgst = order.total?.cgst ?? 0;
     const sgstRate = order.total?.sgstRate ?? 0;
@@ -186,6 +190,8 @@ const buildInvoiceData = async (order, paymentInfo) => {
             discount,
             discountType,
             referralDiscount,
+            couponCode,
+            couponDiscount,
             walletAmountUsed,
             sgst,
             cgst,
@@ -250,7 +256,6 @@ export const createManualOrder = async (req, res) => {
             preferredDate: new Date(preferredDate),
             preferredTime,
             issues: issues || '',
-            coupon: coupon || '',
             referralProcessed: referralProcessed || false,
             status: status || 'Pending',
         };
@@ -259,6 +264,24 @@ export const createManualOrder = async (req, res) => {
             orderData.userLocation = userLocation;
             orderData.isWithinServiceArea = isWithinServiceArea ?? false;
             orderData.distanceFromCenter = distanceFromCenter || 0;
+        }
+
+        // ── Optional coupon at booking time ────────────────────────────────
+        // Only the intent is stored here; the actual discount amount is
+        // resolved once real pricing exists (invoice generation).
+        if (coupon) {
+            const couponDoc = await Coupon.findOne({ code: String(coupon).trim().toUpperCase() });
+            const { valid, message } = validateCoupon(couponDoc, { serviceType: orderData.serviceType });
+            if (!valid) {
+                return res.status(400).json({ message: `Coupon error: ${message}` });
+            }
+            orderData.coupon = {
+                code: couponDoc.code,
+                couponId: couponDoc._id,
+                discountType: couponDoc.discountType,
+                discountValue: couponDoc.discountValue,
+                appliedAt: new Date(),
+            };
         }
 
         const newOrder = new Order(orderData);
@@ -276,7 +299,7 @@ export const userOrder = async (req, res) => {
         const {
             name, contactNo, email, city, address, selectedBrand, selectedModel,
             modelName, cc, bs, services, serviceType, otherService,
-            preferredDate, preferredTime, issues,
+            preferredDate, preferredTime, issues, coupon,
             userLocation, isWithinServiceArea, distanceFromCenter,
             status, referralProcessed,
         } = req.body;
@@ -307,7 +330,7 @@ export const userOrder = async (req, res) => {
         }
         const orderId = `ORD-${todayFormatted}-${String(serial).padStart(3, '0')}`;
 
-        const newOrder = new Order({
+        const orderPayload = {
             orderId, userId, name, contactNo,
             email: email || user.email,
             city: city.toUpperCase(),
@@ -325,7 +348,27 @@ export const userOrder = async (req, res) => {
             issues: issues || '',
             status: status || 'Pending',
             referralProcessed: referralProcessed ?? false,
-        });
+        };
+
+        // ── Optional coupon at booking time ────────────────────────────────
+        // Only the intent is stored here; the actual discount amount is
+        // resolved once real pricing exists (invoice generation).
+        if (coupon) {
+            const couponDoc = await Coupon.findOne({ code: String(coupon).trim().toUpperCase() });
+            const { valid, message } = validateCoupon(couponDoc, { userId, serviceType: orderPayload.serviceType });
+            if (!valid) {
+                return res.status(400).json({ message: `Coupon error: ${message}` });
+            }
+            orderPayload.coupon = {
+                code: couponDoc.code,
+                couponId: couponDoc._id,
+                discountType: couponDoc.discountType,
+                discountValue: couponDoc.discountValue,
+                appliedAt: new Date(),
+            };
+        }
+
+        const newOrder = new Order(orderPayload);
 
         const savedOrder = await newOrder.save();
         await sendBookingConfirmationEmail(savedOrder, user.email);
@@ -932,7 +975,7 @@ export const markWorkComplete = async (req, res) => {
         const otp = generateOtp();
 
         // Status moves to Work Completed but photo is NOT committed yet
-        order.status = 'Work Completed';
+        // order.status = 'Work Completed';
         order.workCompletedAt = new Date();
         order.workCompleteOtp = {
             code: otp,
@@ -1018,7 +1061,7 @@ export const resendCompletionOtp = async (req, res) => {
 /**
  * @route   POST /api/admin/order/:id/confirm-completion
  * @desc    Customer submits the completion OTP. On success the temp after-photo
- *          is committed to afterPhotos[]. Status → Completed.
+ *          is committed to afterPhotos[]. Status → Work Completed.
  * @body    { otp: string }
  * @access  Private (authUser)
  */
@@ -1237,6 +1280,47 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
             paymentStatus: 'unpaid',
         };
 
+        // 6a. Resolve any coupon selected by the customer at booking time.
+        // The discount is computed here — server-side, against the real
+        // subtotal — never trusted from the client. It layers on top of the
+        // admin's manual `total.discount` above.
+        let couponToFinalize = null;
+        if (order.coupon?.code && !order.coupon?.finalized) {
+            const couponDoc = await Coupon.findById(order.coupon.couponId);
+            const { valid, message } = validateCoupon(couponDoc, {
+                orderAmount: Number(total.subTotal),
+                userId: order.userId,
+                serviceType: order.serviceType,
+            });
+
+            if (!valid) {
+                return res.status(400).json({
+                    success: false,
+                    couponInvalid: true,
+                    message: `Coupon "${order.coupon.code}" is no longer valid: ${message} Remove it from the order and try again.`,
+                });
+            }
+
+            const couponDiscount = computeCouponDiscount(couponDoc, Number(total.subTotal));
+
+            updatedFields.total.couponCode = couponDoc.code;
+            updatedFields.total.couponDiscount = couponDiscount;
+            updatedFields.total.total = Math.max(0, Number(updatedFields.total.total) - couponDiscount);
+            updatedFields.total.finalPayable = Math.max(0, Number(updatedFields.total.finalPayable) - couponDiscount);
+
+            updatedFields.coupon = {
+                code: couponDoc.code,
+                couponId: couponDoc._id,
+                discountType: couponDoc.discountType,
+                discountValue: couponDoc.discountValue,
+                discountAmount: couponDiscount,
+                appliedAt: order.coupon.appliedAt || new Date(),
+                finalized: true,
+            };
+
+            couponToFinalize = { couponId: couponDoc._id, userId: order.userId, orderId: order._id, discountAmount: couponDiscount };
+        }
+
         // 6b. Set GST invoice details – prefer auto‑populated business details
         if (autoBusinessDetails) {
             updatedFields.gstInvoice = {
@@ -1281,6 +1365,15 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                 success: false,
                 message: 'Failed to update the order. Please try again.',
             });
+        }
+
+        // 7b. Record coupon usage now that the invoice update has committed.
+        if (couponToFinalize) {
+            try {
+                await finalizeCouponUsage(couponToFinalize);
+            } catch (couponUsageError) {
+                console.error('Error finalizing coupon usage:', couponUsageError);
+            }
         }
 
         // 8. Send notification to customer
@@ -1402,7 +1495,13 @@ export const markPaidCod = async (req, res) => {
         order.status = 'Completed';
         order.total.referralDiscount = 0;       // no referral discount for COD
         order.total.finalPayable = codPayable;
-        order.coupon = null;                    // coupons don't apply to COD
+        // Note: any coupon discount was already baked into order.total.total
+        // (and total.couponDiscount) at invoice-generation time, so it's kept
+        // here — codPayable already reflects it. Only clear a stray,
+        // never-finalized coupon selection as a safety net.
+        if (!order.coupon?.finalized) {
+            order.coupon = undefined;
+        }
         order.paymentStatus = 'paid';
         order.paymentMethod = 'cash';
         order.amountPaid = collected;

@@ -87,6 +87,10 @@ const invoiceSchema = new mongoose.Schema({
         // Admin-applied referral discount on the bill (set at invoice-gen time)
         referralDiscount: { type: Number, default: 0 },
 
+        // Coupon discount applied on the bill (set at invoice-gen time)
+        couponCode: { type: String, default: null },
+        couponDiscount: { type: Number, default: 0 },
+
         // Wallet amount deducted by the customer at checkout
         walletAmountUsed: { type: Number, default: 0 },
 

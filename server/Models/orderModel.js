@@ -140,9 +140,25 @@ const orderSchema = new mongoose.Schema({
         cgstRate: { type: Number, default: 0 },
         baseAmount: { type: Number, default: 0 },
         finalPayable: { type: Number, default: 0 },
+
+        // Coupon discount, layered on top of any manual admin discount above.
+        // Populated at invoice-generation time once the coupon is finalized.
+        couponCode: { type: String, default: null },
+        couponDiscount: { type: Number, default: 0 },
     },
 
-    coupon: { type: String },
+    // Coupon selected by the customer. discountAmount/finalized are only
+    // resolved once a real bill amount exists (at invoice generation) —
+    // see updateOrderandGenerateInvoice in orderController.js.
+    coupon: {
+        code: { type: String, trim: true, uppercase: true, default: null },
+        couponId: { type: mongoose.Schema.Types.ObjectId, ref: 'Coupon', default: null },
+        discountType: { type: String, enum: ['percentage', 'flat', null], default: null },
+        discountValue: { type: Number, default: 0 },
+        discountAmount: { type: Number, default: 0 },
+        appliedAt: { type: Date, default: null },
+        finalized: { type: Boolean, default: false },
+    },
     gstInvoice: {
         requested: { type: Boolean, default: false },
         businessDetails: {

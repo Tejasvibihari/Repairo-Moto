@@ -178,6 +178,10 @@ const createInvoiceFromOrder = async (order, paymentInfo) => {
             // Admin referral discount applied at invoice-generation time
             referralDiscount: billReferralDiscount,
 
+            // Coupon discount applied at invoice-generation time
+            couponCode: order.total?.couponCode ?? null,
+            couponDiscount: order.total?.couponDiscount ?? 0,
+
             // Wallet balance used at checkout by the customer
             walletAmountUsed,
 
