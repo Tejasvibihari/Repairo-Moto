@@ -32,6 +32,7 @@ import leadRouter from "./Routes/leadRoutes.js";
 import appContentRouter from "./Routes/appContentRoutes.js";
 import { adminCouponRouter, userCouponRouter } from "./Routes/couponRoutes.js";
 import bannerRouter from "./Routes/bannerRoutes.js";
+import appVersionRoutes from "./Routes/appVersionRoutes.js";
 import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
 // Socket setup
@@ -78,7 +79,7 @@ app.use("/api/app-content", appContentRouter);
 app.use("/api/admin/coupons", adminCouponRouter);
 app.use("/api/coupons", userCouponRouter);
 app.use("/api/admin/banner", bannerRouter);
-
+app.use("/api/app-version", appVersionRoutes);
 app.get("/", (req, res) => {
     res.send("Welcome to the Admin API");
 });
