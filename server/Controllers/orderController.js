@@ -1063,7 +1063,7 @@ export const resendCompletionOtp = async (req, res) => {
 /**
  * @route   POST /api/admin/order/:id/confirm-completion
  * @desc    Customer submits the completion OTP. On success the temp after-photo
- *          is committed to afterPhotos[]. Status → Work Completed.
+ *          is committed to afterPhotos[]. Status → Completion Requested
  * @body    { otp: string }
  * @access  Private (authUser)
  */
@@ -1077,7 +1077,7 @@ export const confirmWorkCompletion = async (req, res) => {
         const order = await Order.findById(id);
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        if (order.status !== 'Work Completed') {
+        if (order.status !== 'Completion Requested') {
             return res.status(400).json({
                 message: `Cannot confirm completion. Current status is "${order.status}".`,
             });
