@@ -975,6 +975,7 @@ export const markWorkComplete = async (req, res) => {
         const otp = generateOtp();
 
         // Status moves to Work Completed but photo is NOT committed yet
+        order.status = 'Completion Requested';
         // order.status = 'Work Completed';
         order.workCompletedAt = new Date();
         order.workCompleteOtp = {
@@ -1017,7 +1018,7 @@ export const resendCompletionOtp = async (req, res) => {
         const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        if (order.status !== 'Work Completed') {
+        if (order.status !== 'In Progress' && order.status !== 'Completion Requested') {
             return res.status(400).json({ message: `Cannot resend OTP at status "${order.status}".` });
         }
 
@@ -1028,6 +1029,7 @@ export const resendCompletionOtp = async (req, res) => {
         }
 
         const otp = generateOtp();
+        order.status = 'Completion Requested';  // Ensure status remains correct
         order.workCompleteOtp = {
             ...order.workCompleteOtp.toObject?.() || order.workCompleteOtp,
             code: otp,

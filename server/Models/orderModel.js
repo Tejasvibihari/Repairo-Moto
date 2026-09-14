@@ -55,6 +55,7 @@ const orderSchema = new mongoose.Schema({
             'Mechanic Assigned',
             'Mechanic Arrived',
             'In Progress',
+            "Completion Requested",
             'Work Completed',
             'Invoice Generated',
             'Completed',
