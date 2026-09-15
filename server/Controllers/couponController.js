@@ -472,6 +472,44 @@ export const applyCouponToOrder = async (req, res) => {
     }
 };
 
+// ─── Admin: Remove a not-yet-finalized coupon from any order ─────────────────
+// Same rule as the customer-facing version below (can't touch a coupon that's
+// already been finalized on a generated invoice), but skips the "does this
+// order belong to me" ownership check since an admin can act on any order —
+// and orderId comes from the URL, not the body, to fit a DELETE route.
+
+export const adminRemoveCouponFromOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+
+        if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+            return res.status(400).json({ success: false, message: 'Valid orderId is required.' });
+        }
+
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found.' });
+        }
+        if (!order.coupon?.code) {
+            return res.status(400).json({ success: false, message: 'This order has no coupon applied.' });
+        }
+        if (order.coupon?.finalized) {
+            return res.status(400).json({
+                success: false,
+                message: 'This coupon has already been finalized on the invoice and cannot be removed.',
+            });
+        }
+
+        order.coupon = undefined;
+        await order.save();
+
+        return res.status(200).json({ success: true, message: 'Coupon removed from order.' });
+    } catch (error) {
+        console.error('Error removing coupon from order (admin):', error);
+        return res.status(500).json({ success: false, message: 'Server error while removing coupon.' });
+    }
+};
+
 // ─── User: Remove a not-yet-finalized coupon from an order ───────────────────
 
 export const removeCouponFromOrder = async (req, res) => {
