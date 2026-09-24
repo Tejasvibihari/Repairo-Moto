@@ -14,7 +14,7 @@ const router = express.Router();
 // telecaller / manager / operational manager (see Middleware/authAdmin.js).
 // It sets req.user.role to 'Admin' or 'Employee'.
 const adminOnly = (req, res, next) => {
-    if (req.user?.role === 'Admin') return next();
+    if (req.user?.role === 'Admin' || req.user?.role === 'Employee') return next();
     return res.status(403).json({
         success: false,
         message: 'Admin access required',
