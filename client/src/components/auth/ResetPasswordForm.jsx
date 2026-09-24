@@ -95,7 +95,7 @@ export default function ResetPassword({ userType, token }) {
                 confirmPassword: ''
             });
             if (userType === 'User') {
-                setTimeout(() => navigate('/user-signin'), 2000); // Redirect to sign-in after success
+                setTimeout(() => navigate('/'), 2000); // Redirect to sign-in after success
             } else if (userType === 'Admin') {
                 setTimeout(() => navigate('/admin/sign-in'), 2000); // Redirect to sign-in after success
             } else if (userType === 'Employee') {
@@ -219,7 +219,7 @@ export default function ResetPassword({ userType, token }) {
                     <div className="text-center">
                         <p className="text-sm" style={{ fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#292929' }}>
                             Back to{' '}
-                            <Link to="/user-signin" className="font-medium hover:underline" style={{ color: '#e2a731' }}>
+                            <Link to="/" className="font-medium hover:underline" style={{ color: '#e2a731' }}>
                                 Sign In
                             </Link>
                         </p>

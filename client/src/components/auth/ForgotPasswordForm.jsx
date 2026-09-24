@@ -52,7 +52,7 @@ export default function ForgotPasswordForm() {
                 email: '',
                 userType: 'User'
             });
-            setTimeout(() => navigate('/user-signin'), 2000); // Redirect to sign-in after success
+            setTimeout(() => navigate('/'), 2000); // Redirect to sign-in after success
         } catch (err) {
             console.error(err);
             setSnackBarMessage(err.response?.data?.message || 'Failed to send password reset link.');
@@ -141,7 +141,7 @@ export default function ForgotPasswordForm() {
                     <div className="text-center">
                         <p className="text-sm" style={{ fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#292929' }}>
                             Remembered your password?{' '}
-                            <Link to="/user-signin" className="font-medium hover:underline" style={{ color: '#e2a731' }}>
+                            <Link to="/" className="font-medium hover:underline" style={{ color: '#e2a731' }}>
                                 Sign In
                             </Link>
                         </p>

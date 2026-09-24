@@ -25,7 +25,6 @@ const EmployeeSidebar = ({ children }) => {
         { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
         // { id: 'invoice', path: '/employee/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
         { id: 'model', path: '/employee/model', label: 'Bike Model', icon: <Bike size={20} /> },
-        { id: 'admin-order-form', path: '/employee/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={20} /> },
         { id: 'manage-order', path: '/employee/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
         { id: 'manage-vendor', path: '/employee/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
         { id: 'manage-qr', path: '/employee/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },

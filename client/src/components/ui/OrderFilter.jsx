@@ -119,10 +119,13 @@ const OrderFilter = ({ initialFilters, onApply, onClear }) => {
                         />
                         <datalist id="statusOptions">
                             <option>Pending</option>
-                            <option>In Progress</option>
                             <option>Mechanic Assigned</option>
-                            <option>Completed</option>
+                            <option>Mechanic Arrived</option>
+                            <option>In Progress</option>
+                            <option>Completion Requested</option>
+                            <option>Work Completed</option>
                             <option>Invoice Generated</option>
+                            <option>Completed</option>
                             <option>Cancelled</option>
                         </datalist>
                     </div>
@@ -200,8 +203,8 @@ const OrderFilter = ({ initialFilters, onApply, onClear }) => {
                             <option value="createdAt:asc">Oldest First</option>
                             <option value="preferredDate:asc">Preferred Date (Earliest)</option>
                             <option value="preferredDate:desc">Preferred Date (Latest)</option>
-                            <option value="total.total:desc">Highest Total</option>
-                            <option value="total.total:asc">Lowest Total</option>
+                            <option value="total.finalPayable:desc">Highest Total</option>
+                            <option value="total.finalPayable:asc">Lowest Total</option>
                         </select>
                     </div>
                 </div>

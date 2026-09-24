@@ -163,7 +163,7 @@ export default function ManageOrder() {
                 ) : (
                     <>
                         {/* Orders Table */}
-                        <OrderTable orders={orders} />
+                        <OrderTable orders={orders} onRefresh={fetchOrders} />
 
                         {/* Pagination */}
                         <div className="mt-6">

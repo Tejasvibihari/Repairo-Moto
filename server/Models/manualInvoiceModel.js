@@ -15,6 +15,16 @@ const manualInvoiceSchema = new mongoose.Schema(
             default: Date.now,
         },
 
+        // ─── Linked Lead ──────────────────────────────────────────────────────
+        // Must exist in the schema, otherwise Mongoose (strict mode) silently
+        // drops `leadId` when the invoice is saved.
+        leadId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Lead',
+            default: null,
+            index: true,
+        },
+
         // ─── Customer Details ─────────────────────────────────────────────────
         customerDetails: {
             name: { type: String, trim: true },

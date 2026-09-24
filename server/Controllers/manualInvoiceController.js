@@ -1,5 +1,12 @@
 import ManualInvoice from '../Models/manualInvoiceModel.js';
 import Lead from '../Models/leadModel.js';
+
+// Statuses that must not be downgraded back to 'booked' when an invoice is linked
+const FINAL_LEAD_STATUSES = ['completed', 'direct_booking'];
+const markLeadBooked = (lead) => {
+    if (!FINAL_LEAD_STATUSES.includes(lead.status)) lead.status = 'booked';
+};
+const UNLINKED = { linked: false, invoiceId: null, linkedAt: null };
 // Helper: build filter object from query string
 const buildFilter = (query) => {
     const filter = {};
@@ -205,7 +212,7 @@ export const createManualInvoice = async (req, res) => {
                     invoiceId: invoice._id,
                     linkedAt: new Date(),
                 };
-                lead.status = 'booked';
+                markLeadBooked(lead);
 
                 await lead.save();
             } catch (err) {
@@ -360,31 +367,21 @@ export const updateManualInvoice = async (req, res) => {
             // ─────────────────────────────────────────
 
             if (!newLeadId) {
-                if (oldLeadId) {
-                    const oldLead =
-                        await Lead.findById(oldLeadId);
+                // Legacy invoices may not store leadId, so also look the
+                // lead up through its own invoice reference.
+                const oldLead = oldLeadId
+                    ? await Lead.findById(oldLeadId)
+                    : await Lead.findOne({ 'invoice.invoiceId': invoice._id });
 
-                    if (oldLead) {
-                        oldLead.invoice = {
-                            linked: false,
-                            invoiceId: null,
-                            linkedAt: null,
-                        };
+                if (oldLead) {
+                    oldLead.invoice = { ...UNLINKED };
 
-                        /*
-                         * The invoice is no longer associated
-                         * with this lead.
-                         *
-                         * Don't mark it as booked anymore.
-                         */
-                        if (
-                            oldLead.status === 'booked'
-                        ) {
-                            oldLead.status = 'interested';
-                        }
-
-                        await oldLead.save();
+                    // No longer associated → don't keep it as booked
+                    if (oldLead.status === 'booked') {
+                        oldLead.status = 'interested';
                     }
+
+                    await oldLead.save();
                 }
 
                 updates.leadId = null;
@@ -410,10 +407,21 @@ export const updateManualInvoice = async (req, res) => {
                     });
                 }
 
-                /*
-                 * Don't allow two invoices to point
-                 * to the same lead.
-                 */
+                // The lead may already point at a different invoice
+                if (
+                    newLead.invoice?.linked &&
+                    newLead.invoice?.invoiceId &&
+                    String(newLead.invoice.invoiceId) !== String(invoice._id)
+                ) {
+                    return res.status(409).json({
+                        success: false,
+                        message:
+                            'This lead is already linked with another invoice',
+                        invoiceId: newLead.invoice.invoiceId,
+                    });
+                }
+
+                // Don't allow two invoices to point to the same lead.
                 const existingInvoice =
                     await ManualInvoice.findOne({
                         leadId: newLead._id,
@@ -432,49 +440,31 @@ export const updateManualInvoice = async (req, res) => {
                     });
                 }
 
-                // ─────────────────────────────────────
-                // Remove old lead association
-                // ─────────────────────────────────────
+                // Release whichever lead pointed at this invoice before
+                // (by leadId, or by the lead's own reference for legacy data)
+                const previousLeads = await Lead.find({
+                    _id: { $ne: newLead._id },
+                    $or: [
+                        ...(oldLeadId ? [{ _id: oldLeadId }] : []),
+                        { 'invoice.invoiceId': invoice._id },
+                    ],
+                });
 
-                if (
-                    oldLeadId &&
-                    oldLeadId !== newLeadId
-                ) {
-                    const oldLead =
-                        await Lead.findById(oldLeadId);
-
-                    if (oldLead) {
-                        oldLead.invoice = {
-                            linked: false,
-                            invoiceId: null,
-                            linkedAt: null,
-                        };
-
-                        if (
-                            oldLead.status === 'booked'
-                        ) {
-                            oldLead.status = 'interested';
-                        }
-
-                        await oldLead.save();
+                for (const previous of previousLeads) {
+                    previous.invoice = { ...UNLINKED };
+                    if (previous.status === 'booked') {
+                        previous.status = 'interested';
                     }
+                    await previous.save();
                 }
 
-                // ─────────────────────────────────────
                 // Associate new lead
-                // ─────────────────────────────────────
-
                 newLead.invoice = {
                     linked: true,
                     invoiceId: invoice._id,
-                    linkedAt: new Date(),
+                    linkedAt: newLead.invoice?.linkedAt || new Date(),
                 };
-
-                // Only mark as 'booked' when the new lead was 'coming'
-                if (newLead.status === 'coming') {
-                    newLead.status = 'booked';
-                }
-
+                markLeadBooked(newLead);
                 await newLead.save();
 
                 updates.leadId = newLead._id;
@@ -502,10 +492,7 @@ export const updateManualInvoice = async (req, res) => {
                     linkedLead.invoice.invoiceId = invoice._id;
                     linkedLead.invoice.linkedAt = linkedLead.invoice.linkedAt || new Date();
 
-                    // Only mark as 'booked' when the lead was explicitly 'coming'.
-                    if (linkedLead.status === 'coming') {
-                        linkedLead.status = 'booked';
-                    }
+                    markLeadBooked(linkedLead);
 
                     await linkedLead.save();
                 }
@@ -565,20 +552,16 @@ export const deleteManualInvoice = async (req, res) => {
             });
         }
 
-        // 2. Remove invoice association from lead
-        if (invoice.leadId) {
-            const lead = await Lead.findById(invoice.leadId);
-
-            if (lead) {
-                lead.invoice = {
-                    linked: false,
-                    invoiceId: null,
-                    linkedAt: null,
-                };
-
-                await lead.save();
-            }
-        }
+        // 2. Remove invoice association from every lead pointing at it
+        await Lead.updateMany(
+            {
+                $or: [
+                    ...(invoice.leadId ? [{ _id: invoice.leadId }] : []),
+                    { 'invoice.invoiceId': invoice._id },
+                ],
+            },
+            { $set: { invoice: { ...UNLINKED } } }
+        );
 
         // 3. Delete invoice
         await ManualInvoice.findByIdAndDelete(id);
@@ -606,7 +589,7 @@ export const deleteManualInvoice = async (req, res) => {
 export const getManualInvoiceById = async (req, res) => {
     try {
         const { id } = req.params;
-        const invoice = await ManualInvoice.findById(id);
+        const invoice = await ManualInvoice.findById(id).populate('leadId', 'customer status');
         if (!invoice) {
             return res.status(404).json({ message: 'Invoice not found' });
         }

@@ -5,7 +5,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Home, Bike, FileText, NotebookPen, User2, Briefcase,
     ShoppingCart, QrCode, Menu, ChevronLeft, ChevronRight,
-    User, DollarSign, X
+    User, DollarSign, X, Receipt, Smartphone
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -20,11 +20,16 @@ const Sidebar = ({ children }) => {
 
     const currentPath = location.pathname === '/' ? 'dashboard' : location.pathname.substring(1);
 
+    // Nested routes (e.g. /manual-invoice/create) should still highlight and
+    // title their parent nav item, so match on the first path segment too.
+    const rootSegment = currentPath.split('/')[0];
+
     const menuItems = [
         { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <Home size={18} /> },
         { id: 'model', path: '/model', label: 'Bike Model', icon: <Bike size={18} /> },
-        { id: 'admin-order-form', path: '/admin-order-form', label: 'Order Booking', icon: <ShoppingCart size={18} /> },
         { id: 'manage-order', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={18} /> },
+        { id: 'manual-invoice', path: '/manual-invoice', label: 'Manual Invoice', icon: <Receipt size={18} /> },
+        { id: 'app-version', path: '/app-version', label: 'App Version', icon: <Smartphone size={18} /> },
         { id: 'manage-employee', path: '/manage-employee', label: 'Manage Employee', icon: <User2 size={18} /> },
         { id: 'manage-vendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={18} /> },
         { id: 'manage-service-area', path: '/manage-service-area', label: 'Manage Service Area', icon: <Briefcase size={18} /> },
@@ -115,7 +120,7 @@ const Sidebar = ({ children }) => {
                 <nav className="flex-1 overflow-y-auto py-2">
                     <ul className="space-y-1 px-2">
                         {menuItems.map((item) => {
-                            const isActive = currentPath === item.id;
+                            const isActive = currentPath === item.id || rootSegment === item.id;
                             const isHovered = hoveredItem === item.id;
 
                             return (
@@ -212,7 +217,7 @@ const Sidebar = ({ children }) => {
                             )}
 
                             <h2 className="text-lg font-semibold text-gray-800">
-                                {menuItems.find(item => item.id === currentPath)?.label || 'Dashboard'}
+                                {menuItems.find(item => item.id === currentPath || item.id === rootSegment)?.label || 'Dashboard'}
                             </h2>
                         </div>
 

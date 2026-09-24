@@ -176,6 +176,7 @@ export default function JobAsssignForm({ id }) {
             case 'Mechanic Assigned': return { color: 'indigo', icon: UserCheck, label: 'Mechanic Assigned' };
             case 'Mechanic Arrived': return { color: 'purple', icon: Navigation, label: 'Mechanic Arrived' };
             case 'In Progress': return { color: 'blue', icon: RefreshCw, label: 'In Progress' };
+            case 'Completion Requested': return { color: 'cyan', icon: AlertCircle, label: 'Completion Requested' };
             case 'Work Completed': return { color: 'emerald', icon: CheckCircle, label: 'Work Completed' };
             case 'Invoice Generated': return { color: 'orange', icon: FileText, label: 'Invoice Generated' };
             case 'Completed': return { color: 'green', icon: CheckCircle, label: 'Completed' };
@@ -187,6 +188,7 @@ export default function JobAsssignForm({ id }) {
     const getPaymentBadgeClasses = (status) => {
         switch (status?.toLowerCase()) {
             case 'paid': return 'bg-green-100 text-green-700 border-green-200';
+            case 'partial': return 'bg-amber-100 text-amber-700 border-amber-200';
             case 'unpaid': return 'bg-red-100 text-red-700 border-red-200';
             default: return 'bg-gray-100 text-gray-700 border-gray-200';
         }
@@ -217,13 +219,14 @@ export default function JobAsssignForm({ id }) {
             'Mechanic Assigned': 2,
             'Mechanic Arrived': 3,
             'In Progress': 4,
-            'Work Completed': 5,
-            'Invoice Generated': 6,
-            'Completed': 7,
+            'Completion Requested': 5,
+            'Work Completed': 6,
+            'Invoice Generated': 7,
+            'Completed': 8,
             'Cancelled': 0,
         };
         const step = stepMap[orderById.status] || 0;
-        return step === 0 ? '0%' : `${(step / 7) * 100}%`;
+        return step === 0 ? '0%' : `${(step / 8) * 100}%`;
     };
 
     return (
@@ -484,6 +487,7 @@ export default function JobAsssignForm({ id }) {
                                                         <option value="Mechanic Assigned">Mechanic Assigned</option>
                                                         <option value="Mechanic Arrived">Mechanic Arrived</option>
                                                         <option value="In Progress">In Progress</option>
+                                                        <option value="Completion Requested">Completion Requested</option>
                                                         <option value="Work Completed">Work Completed</option>
                                                         <option value="Invoice Generated">Invoice Generated</option>
                                                         <option value="Completed">Completed</option>
@@ -514,6 +518,7 @@ export default function JobAsssignForm({ id }) {
                                                                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500"
                                                             >
                                                                 <option value="unpaid">Unpaid</option>
+                                                                <option value="partial">Partially Paid</option>
                                                                 <option value="paid">Paid</option>
                                                             </select>
                                                             <button
@@ -570,11 +575,12 @@ export default function JobAsssignForm({ id }) {
                                 {/* Action Buttons */}
                                 <div className="mt-8 flex justify-end gap-4 pt-4 border-t border-gray-200">
                                     <Link
-                                        to={(orderById.status === 'Work Completed' || orderById.status === 'Invoice Generated') ? `/generate-invoice-form/${orderById._id}` : '#'}
+                                        to={orderById.status === 'Work Completed' ? `/generate-invoice-form/${orderById._id}` : '#'}
                                         onClick={(e) => {
-                                            if (loading || (orderById.status !== 'Work Completed' && orderById.status !== 'Invoice Generated')) e.preventDefault();
+                                            if (loading || orderById.status !== 'Work Completed') e.preventDefault();
                                         }}
-                                        className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 ${(orderById.status === 'Work Completed' || orderById.status === 'Invoice Generated') && !loading
+                                        title={orderById.status !== 'Work Completed' ? 'Available once the order reaches Work Completed' : ''}
+                                        className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 ${orderById.status === 'Work Completed' && !loading
                                             ? 'bg-amber-500 hover:bg-amber-600 text-white'
                                             : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                             }`}

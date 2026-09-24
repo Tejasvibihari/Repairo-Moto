@@ -1,6 +1,7 @@
 import { QrCode } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import axiosClient from '../service/axiosClient';
+import { buildReferralUrl } from '../utils/referral';
 
 export default function QrTable({ onGenerateQR }) {
     const [data, setData] = useState([]);
@@ -69,7 +70,7 @@ export default function QrTable({ onGenerateQR }) {
                                 </td> */}
                                 <td className="px-3 py-2 flex gap-2 flex-wrap justify-center">
                                     <button
-                                        onClick={() => onGenerateQR(`${import.meta.env.VITE_FRONTEND_URL}/user-signup/${item.accountType}/${item.referralCode}`)}
+                                        onClick={() => onGenerateQR(buildReferralUrl(item.referralCode, item.accountType))}
                                         className="flex items-center justify-center bg-transparent text-green-600 py-2 rounded-md px-3 cursor-pointer hover:bg-green-600 hover:text-white border border-green-600">
                                         <QrCode size={18} className="mr-0 md:mr-2" />
                                         <span className="hidden md:inline">Generate Qr</span>

@@ -148,7 +148,7 @@ const leadSchema = new mongoose.Schema(
 
             invoiceId: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: "Invoice",
+                ref: "ManualInvoice",
                 default: null,
             },
 

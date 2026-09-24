@@ -13,7 +13,7 @@ export default function VendorOrder() {
         const getAllBookingByVendorId = async () => {
             try {
                 setLoading(true); // Set loading state to true
-                const response = await axiosClient.get(`/api/admin/order/getorder/${vendor._id}`); // Use the vendor's _id
+                const response = await axiosClient.get(`/api/admin/order/vendor/${vendor._id}`); // Use the vendor's _id
                 if (response.status === 200) {
                     console.log("Bookings fetched successfully:", response);
                     const sortedOrders = response.data.data.sort(

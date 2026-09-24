@@ -6,7 +6,6 @@ import Home from './pages/landing/Home';
 import Dashboard from './pages/dashboard/Dashboard';
 import Sidebar from './components/ui/Sidebar';
 import BikeModel from './pages/dashboard/BikeModel';
-import AdminBookingForm from './pages/dashboard/AdminBookingForm';
 import ManageEmployee from './pages/dashboard/ManageEmployee';
 
 import AddBlog from './pages/dashboard/AddBlog';
@@ -14,16 +13,15 @@ import ManageBlog from './pages/dashboard/ManageBlog';
 import ManageVendor from './pages/dashboard/ManageVendor';
 import AdminSignIn from './pages/auth/AdminSignIn';
 import PrivateRoute from './components/routes/PrivateRoute';
-import UserAuth from './pages/auth/UserSignUp';
-import UserSignUp from './pages/auth/UserSignUp';
-import UserSigin from './pages/auth/UserSignIn';
 import ManageQr from './pages/dashboard/ManageQr';
 
-import UserOrderBooking from './pages/landing/UserOrderBooking';
 import ManageOrder from './pages/dashboard/ManageOrder';
+import ManualInvoice from './pages/dashboard/ManualInvoice';
+import CreateManualInvoice from './pages/dashboard/CreateManualInvoice';
+import ManualInvoiceDetail from './pages/dashboard/ManualInvoiceDetail';
+import AppVersion from './pages/dashboard/AppVersion';
 import ContactUs from './pages/landing/ContactUs';
 import Profile from './pages/dashboard/Profile';
-import Invoice from './pages/dashboard/Invoice';
 import EmployeeSignIn from './pages/auth/EmployeeSignIn';
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
 import EmployeePrivateRoute from './components/routes/EmployeeRoute';
@@ -39,7 +37,6 @@ import VendorSignIn from './pages/auth/VendorSignIn';
 import EmployeeSidebar from './components/ui/EmployeeSidebar';
 import VendorSidebar from './components/ui/VendorSidebar';
 import EmployeeBikeModel from './pages/employee/EmployeeBikeModel';
-import EmployeeAdminBookingForm from './pages/employee/EmployeeAdminBookingForm';
 import EmployeeManageOrder from './pages/employee/EmployeeManageOrder';
 import EmployeeManageVendor from './pages/employee/EmployeeManageVendor';
 import EmployeeAddBlog from './pages/employee/EmployeeAddBlog';
@@ -66,23 +63,14 @@ import LiabilityDamageClaimsPolicy from './pages/landing/LiabilityDamageClaimsPo
 import DataDeletionPolicy from './pages/landing/DataDeletionPolicy';
 import CookiePolicy from './pages/landing/CookiePolicy';
 import AccountDeletion from './pages/landing/AccountDeletion';
-import UserDashboard from './pages/user/UserDashboard';
-import UserPrivateRoute from './components/routes/UserPrivateRoute';
-import UserQrCode from './pages/user/UserQrCode';
-import UserAllBooking from './pages/user/UserAllBooking';
-import UserBookingDetail from './pages/user/UserBookingDetail';
-import MyReferral from './pages/user/MyReferral';
-import UserProfile from './pages/user/UserProfile';
 import AllUser from './pages/dashboard/AllUser';
 import EmployeeAllUser from './pages/employee/EmployeeAllUser';
 import EmployeeEditBlog from './pages/employee/EmployeeEditBlog';
 import EmployeeDetail from './pages/dashboard/EmployeeDetail';
-import AddBikeProfile from './pages/user/AddBikeProfile';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import Referral from './pages/dashboard/Referral';
 import DetailReferral from './pages/dashboard/DetailReferral';
-import OrderBooking from './pages/landing/OrderBooking';
 import ManageServiceArea from './pages/dashboard/ManageServiceArea';
 import AppUi from './pages/dashboard/AppUi'
 
@@ -96,7 +84,6 @@ export default function App() {
         <Routes>
           {/* Landing Route without Sidebar */}
 
-          <Route path='/booking/:cpn' element={<OrderBooking />} />
           <Route path='/' element={<Home />} />
           <Route path='/contact' element={<ContactUs />} />
           <Route path='/about' element={<AboutUs />} />
@@ -120,48 +107,12 @@ export default function App() {
 
           {/* Auth Page (No Sidebar) */}
           <Route path='/admin-sign-in' element={<AdminSignIn />} />
-          <Route path='/user-signup' element={<UserSignUp />} />
-          <Route path="/user-signup/:referralType/:referralId" element={<UserSignUp />} />
-          {/* <Route path="/user-signin" element={<UserSigin />} /> */}
+          {/* Users book and sign in from the mobile app now. The only user-facing
+              web flow left is updating a password via the emailed reset link. */}
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:userType/:token" element={<ResetPassword />} />
 
           <Route path="/order/invoice/:id" element={<InvoiceTemplate />} />
-
-
-          {/* User Private Routes Started  */}
-          {/* <Route path="/user/dashboard" element={
-            <UserPrivateRoute>
-              <UserDashboard />
-            </UserPrivateRoute>
-          }
-          />
-          <Route path="/user-order-booking" element={<UserPrivateRoute>
-            <UserOrderBooking />
-          </UserPrivateRoute>} />
-
-          <Route path="/user-qrcode" element={<UserPrivateRoute>
-            <UserQrCode />
-          </UserPrivateRoute>} />
-          <Route path="/user-allbooking" element={
-            <UserPrivateRoute>
-              <UserAllBooking />
-            </UserPrivateRoute>} />
-          <Route path="/user-booking/:id" element={<UserPrivateRoute>
-            <UserBookingDetail />
-          </UserPrivateRoute>} />
-          <Route path="/user-referral" element={<UserPrivateRoute>
-            <MyReferral />
-          </UserPrivateRoute>} />
-          <Route path="/user/profile" element={<UserPrivateRoute>
-            <UserProfile />
-          </UserPrivateRoute>} />
-          <Route path="/user/add-bike-profile" element={<UserPrivateRoute>
-            <AddBikeProfile />
-          </UserPrivateRoute>} /> */}
-
-
-
 
 
           {/* Employee Route */}
@@ -213,14 +164,6 @@ export default function App() {
             element={
               <EmployeePrivateRoute>
                 <EmployeeSidebar><EmployeeBikeModel /></EmployeeSidebar>
-              </EmployeePrivateRoute>
-            }
-          />
-          <Route
-            path='/employee/admin-order-form'
-            element={
-              <EmployeePrivateRoute>
-                <EmployeeSidebar><EmployeeAdminBookingForm /></EmployeeSidebar>
               </EmployeePrivateRoute>
             }
           />
@@ -358,14 +301,6 @@ export default function App() {
             }
           />
           <Route
-            path='/admin-order-form'
-            element={
-              <PrivateRoute>
-                <Sidebar><AdminBookingForm /></Sidebar>
-              </PrivateRoute>
-            }
-          />
-          <Route
             path='/manage-order'
             element={
               <PrivateRoute>
@@ -454,10 +389,44 @@ export default function App() {
             }
           />
           <Route
-            path='/invoice'
+            path='/app-version'
             element={
               <PrivateRoute>
-                <Sidebar><Invoice /></Sidebar>
+                <Sidebar><AppVersion /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+
+          {/* Manual invoicing — replaces the old manual order booking flow */}
+          <Route
+            path='/manual-invoice'
+            element={
+              <PrivateRoute>
+                <Sidebar><ManualInvoice /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manual-invoice/create'
+            element={
+              <PrivateRoute>
+                <Sidebar><CreateManualInvoice /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manual-invoice/:id'
+            element={
+              <PrivateRoute>
+                <Sidebar><ManualInvoiceDetail /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manual-invoice/:id/edit'
+            element={
+              <PrivateRoute>
+                <Sidebar><CreateManualInvoice /></Sidebar>
               </PrivateRoute>
             }
           />

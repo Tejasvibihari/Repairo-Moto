@@ -216,6 +216,7 @@ export const getAllLeads = async (req, res) => {
             source,
             serviceInterest,
             leadBy,
+            hasInvoice,
             startDate,
             endDate,
             sortBy = "createdAt",
@@ -287,6 +288,16 @@ export const getAllLeads = async (req, res) => {
         // ─────────────────────────────────────────────
         if (serviceInterest?.trim()) {
             filter.serviceInterest = serviceInterest.trim();
+        }
+
+        // ─────────────────────────────────────────────
+        // Invoice filter (hasInvoice=false → only leads that can still
+        // be linked to an invoice, true → only already-linked leads)
+        // ─────────────────────────────────────────────
+        if (hasInvoice === "false") {
+            filter["invoice.linked"] = { $ne: true };
+        } else if (hasInvoice === "true") {
+            filter["invoice.linked"] = true;
         }
 
         // ─────────────────────────────────────────────

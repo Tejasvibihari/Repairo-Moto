@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Copy, CheckCheck, Share2 } from 'lucide-react';
 import { useSelector } from "react-redux";
 import QRGenerator from './QRGenerator';
+import { buildReferralUrl } from '../utils/referral';
 export default function ReferralEarnings() {
     const [copied, setCopied] = useState(false);
     const [showQR, setShowQR] = useState(false);
@@ -20,10 +21,10 @@ export default function ReferralEarnings() {
     };
     useEffect(() => {
         if (employee) {
-            const referralUrl = `${import.meta.env.VITE_FRONTEND_URL}/user-signup/${employee.referralCode}`
+            const referralUrl = buildReferralUrl(employee.referralCode, employee.accountType)
             setReferralUrl(referralUrl);
         } else {
-            const referralUrl = `${import.meta.env.VITE_FRONTEND_URL}/user-signup/${vendor.referralCode}`
+            const referralUrl = buildReferralUrl(vendor.referralCode, vendor.accountType)
             setReferralUrl(referralUrl);
         }
 

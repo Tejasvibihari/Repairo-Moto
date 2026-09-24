@@ -1,7 +1,6 @@
 import { UserPen, Plus } from 'lucide-react';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
-import axiosClient from '../service/axiosClient';
 import Slide from '@mui/material/Slide';
 import React, { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
@@ -10,44 +9,46 @@ import AlertSnackBar from './ui/AlertSnackBar';
 import CircularLoading from './ui/CircularLoading';
 import JobAsssignForm from './JobAsssignForm';
 
+// Mirrors the status enum on the order schema, including the OTP-driven
+// steps the mobile app added (Mechanic Arrived / Completion Requested /
+// Work Completed). Anything unknown falls back to grey.
+const STATUS_CLASSES = {
+    "Pending": "bg-yellow-50 text-yellow-700",
+    "Mechanic Assigned": "bg-indigo-50 text-indigo-700",
+    "Mechanic Arrived": "bg-purple-50 text-purple-700",
+    "In Progress": "bg-blue-50 text-blue-700",
+    "Completion Requested": "bg-cyan-50 text-cyan-700",
+    "Work Completed": "bg-emerald-50 text-emerald-700",
+    "Invoice Generated": "bg-orange-50 text-orange-700",
+    "Completed": "bg-green-50 text-green-700",
+    "Cancelled": "bg-red-50 text-red-700",
+};
+
 const Transition = React.forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
 });
 
-export default function OrderTable({ orders: initialOrders }) {
+export default function OrderTable({ orders: initialOrders, onRefresh }) {
     const [open, setOpen] = useState(false);
     const [orderId, setOrderId] = useState(null);
     const [orders, setOrders] = useState(initialOrders);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const handleClickOpen = (id) => {
         setOrderId(id);
         setOpen(true);
     };
 
+    // Closing the manage dialog asks the parent to refetch with its current
+    // filters and page. The old code hit a bare `/orders` endpoint that the
+    // server never exposed, so the table silently went stale after every edit.
     const handleClose = () => {
         setOpen(false);
-        setRefreshTrigger(prev => prev + 1);
-    };
-
-    const fetchUpdatedOrders = async () => {
-        try {
-            const response = await axiosClient.get('/orders');
-            setOrders(response.data);
-        } catch (error) {
-            console.error('Error fetching updated orders:', error);
-        }
+        if (typeof onRefresh === 'function') onRefresh();
     };
 
     useEffect(() => {
         setOrders(initialOrders);
     }, [initialOrders]);
-
-    useEffect(() => {
-        if (refreshTrigger > 0) {
-            fetchUpdatedOrders();
-        }
-    }, [refreshTrigger]);
 
     const exportToExcel = () => {
         const excelData = orders.map((order, index) => ({
@@ -63,12 +64,13 @@ export default function OrderTable({ orders: initialOrders }) {
             "Latitude": order.userLocation?.coordinates?.[1] || "-",
             "Longitude": order.userLocation?.coordinates?.[0] || "-",
             "Services": order.services?.join(", ") || "-",
+            "Service Type": order.serviceType || "-",
             "Other Service": order.otherService || "-",
             "Preferred Date": order.preferredDate ? new Date(order.preferredDate).toLocaleDateString() : "-",
             "Preferred Time": order.preferredTime || "-",
             "Issues": order.issues || "-",
             "Status": order.status,
-            "Assigned Mechanic": order.assignedMechanic || "-",
+            "Assigned Mechanic": order.assignedMechanics?.join(", ") || "-",
             "Assigned Vendor": order.assignedVendor || "-",
             "Assigned Delivery": order.assignedDelivery || "-",
             "Parts Used": order.partsUsed?.map(p => p.partName).join(", ") || "-",
@@ -78,6 +80,9 @@ export default function OrderTable({ orders: initialOrders }) {
             "Discount": order.total?.discount || "-",
             "Discount Type": order.total?.discountType || "-",
             "Total": order.total?.total || "-",
+            "Final Payable": order.total?.finalPayable || "-",
+            "Amount Paid": order.amountPaid ?? "-",
+            "Balance Due": order.balanceDue ?? "-",
             "Created At": order.createdAt ? new Date(order.createdAt).toLocaleString() : "-",
             "Updated At": order.updatedAt ? new Date(order.updatedAt).toLocaleString() : "-"
         }));
@@ -142,7 +147,11 @@ export default function OrderTable({ orders: initialOrders }) {
                                         }) : "-"}
                                     </td>
                                     <td className="px-3 py-2">{order.preferredTime || "-"}</td>
-                                    <td className="px-3 py-2">{order.assignedMechanic || "Unassigned"}</td>
+                                    <td className="px-3 py-2">
+                                        {order.assignedMechanics?.length
+                                            ? order.assignedMechanics.join(", ")
+                                            : "Unassigned"}
+                                    </td>
                                     <td className="px-3 py-2">
                                         {order.partsUsed?.length > 0 ? (
                                             <div className="flex flex-wrap gap-1">
@@ -157,29 +166,18 @@ export default function OrderTable({ orders: initialOrders }) {
                                     <td className="px-3 py-2">
                                         <span className={`px-2 py-1 rounded text-xs font-medium ${order.paymentStatus === "paid"
                                             ? "bg-green-50 text-green-700"
-                                            : order.paymentStatus === "unpaid"
-                                                ? "bg-red-50 text-red-700"
-                                                : "bg-gray-100 text-gray-700"
+                                            : order.paymentStatus === "partial"
+                                                ? "bg-amber-50 text-amber-700"
+                                                : order.paymentStatus === "unpaid"
+                                                    ? "bg-red-50 text-red-700"
+                                                    : "bg-gray-100 text-gray-700"
                                             }`}>
                                             {order.paymentStatus || "unpaid"}
                                         </span>
                                     </td>
                                     <td className="px-3 py-2" style={{ minWidth: "120px" }}>
                                         <span
-                                            className={`px-2 py-1 rounded text-xs font-medium ${order.status === "Pending"
-                                                ? "bg-yellow-50 text-yellow-700"
-                                                : order.status === "In Progress"
-                                                    ? "bg-blue-50 text-blue-700"
-                                                    : order.status === "Mechanic Assigned"
-                                                        ? "bg-indigo-50 text-indigo-700"
-                                                        : order.status === "Completed"
-                                                            ? "bg-green-50 text-green-700"
-                                                            : order.status === "Cancelled"
-                                                                ? "bg-red-50 text-red-700"
-                                                                : order.status === "Invoice Generated"
-                                                                    ? "bg-purple-50 text-purple-700"
-                                                                    : "bg-gray-100 text-gray-700"
-                                                }`}
+                                            className={`px-2 py-1 rounded text-xs font-medium ${STATUS_CLASSES[order.status] || "bg-gray-100 text-gray-700"}`}
                                         >
                                             {order.status}
                                         </span>

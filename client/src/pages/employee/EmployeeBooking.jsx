@@ -17,7 +17,7 @@ export default function EmployeeBooking() {
     const handleSaveParts = async (bookingId, updatedParts) => {
         try {
             // Send API request to update the parts in backend
-            await axiosClient.put(`/api/bookings/${bookingId}/update-parts`, {
+            await axiosClient.put(`/api/admin/order/bookings/${bookingId}/update-parts`, {
                 partsUsed: updatedParts,
             });
 
