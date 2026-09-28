@@ -35,11 +35,14 @@ import { adminCouponRouter, userCouponRouter } from "./Routes/couponRoutes.js";
 import bannerRouter from "./Routes/bannerRoutes.js";
 import appVersionRoutes from "./Routes/appVersionRoutes.js";
 import adminSettingsRoutes from "./Routes/adminSettingsRoutes.js";
+import trackingAdminRouter from "./Routes/trackingAdminRoutes.js";
 import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
 import './Utils/notificationScheduler.js';
+import './Utils/mechanicStaleCron.js';
 // Socket setup
 import { setupChatSockets } from "./sockets/chatSocket.js";
+import { setupTrackingSockets } from "./sockets/trackingSocket.js";
 
 const app = express();
 dotenv.config();
@@ -85,6 +88,7 @@ app.use("/api/coupons", userCouponRouter);
 app.use("/api/admin/banner", bannerRouter);
 app.use("/api/app-version", appVersionRoutes);
 app.use("/api/admin-settings", adminSettingsRoutes);
+app.use("/api/admin/tracking", trackingAdminRouter);
 app.get("/", (req, res) => {
     res.send("Welcome to the Admin API");
 });
@@ -113,6 +117,9 @@ app.set("io", io);
 
 // Initialize chat sockets
 setupChatSockets(io);
+
+// Initialize live mechanic tracking (server → admin)
+setupTrackingSockets(io);
 
 // Start server
 const PORT = process.env.PORT || 5000;

@@ -74,6 +74,19 @@ const empleyeeSchema = new mongoose.Schema({
     },
     dlImage: { type: String },
     profileImage: { type: String },
+    // ─── Live duty status + tracking (mechanic on/off switch) ───────────────
+    isOnline: { type: Boolean, default: false, index: true },
+    lastOnlineAt: { type: Date, default: null },
+    lastOfflineAt: { type: Date, default: null },
+    lastSeenAt: { type: Date, default: null },   // last location ping, used to detect dead connections
+    currentLocation: {
+        lat: { type: Number },
+        lng: { type: Number },
+        speed: { type: Number },      // m/s
+        heading: { type: Number },    // degrees
+        accuracy: { type: Number },   // metres
+        updatedAt: { type: Date },
+    },
     expoPushToken: {
         type: String,
         default: null,
