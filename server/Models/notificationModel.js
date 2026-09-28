@@ -36,6 +36,8 @@ const notificationSchema = new mongoose.Schema({
             'invoice_generated',// → user gets invoice
             'payment_received', // → admin, mechanic: payment received + invoice generated
             'delivery_update',  // → delivery agent
+            'promotion',        // → users: admin-created offer / announcement
+            'service_reminder', // → user: "time for your next service" follow-up
             'general',          // → any role, generic message
         ],
         default: 'general',

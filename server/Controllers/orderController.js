@@ -2137,55 +2137,29 @@ const applyReschedule = async (req, res, actorRole) => {
         }
 
         // ── Notifications (best-effort: the reschedule is already saved) ──
-        try {
-            const oldLabel = formatScheduleLabel(order.preferredDate, order.preferredTime);
-            const newLabel = formatScheduleLabel(updated.preferredDate, updated.preferredTime);
-            const data = {
-                orderId: updated._id.toString(),
-                screenOrderId: updated.orderId,
-                previousSchedule: oldLabel,
-                newSchedule: newLabel,
-            };
-            const triggeredBy = { userId: actor.id, userModel: isUser ? 'User' : (actor.role === 'employee' ? 'Employee' : 'Admin') };
+        // Customer reschedules → admins/managers + assigned mechanic (+ delivery/vendor if any).
+        // Admin/staff reschedules → the customer + assigned mechanic (+ delivery/vendor); other
+        // admins are skipped so they are not pinged about a colleague's routine action.
+        // notifyOrderParties never throws and never notifies the person who did it.
+        const oldLabel = formatScheduleLabel(order.preferredDate, order.preferredTime);
+        const newLabel = formatScheduleLabel(updated.preferredDate, updated.preferredTime);
+        const actorModel = isUser ? 'User' : (actor.role === 'employee' ? 'Employee' : 'Admin');
+        const byLabel = isUser ? 'the customer' : (actor.name || 'staff');
 
-            if (isUser) {
-                const adminRecipients = await getAdminRecipients();
-                await createNotification({
-                    type: 'order_rescheduled',
-                    title: '📅 Booking Rescheduled by Customer',
-                    body: `#${updated.orderId} · ${updated.name} moved from ${oldLabel} to ${newLabel}`,
-                    recipients: adminRecipients,
-                    orderId: updated._id,
-                    data,
-                    triggeredBy,
-                });
-            } else if (updated.userId) {
-                await createNotification({
-                    type: 'order_rescheduled',
-                    title: '📅 Booking Rescheduled',
-                    body: `Your order #${updated.orderId} has been rescheduled to ${newLabel}.${reason ? ` Reason: ${reason}` : ''}`,
-                    recipients: getUserRecipient(updated.userId),
-                    orderId: updated._id,
-                    data,
-                    triggeredBy,
-                });
-            }
-
-            // Assigned mechanics need to know their job moved
-            for (const mechanicId of updated.mechanicIds || []) {
-                await createNotification({
-                    type: 'order_rescheduled',
-                    title: '📅 Assigned Order Rescheduled',
-                    body: `#${updated.orderId} is now scheduled for ${newLabel} (was ${oldLabel}).`,
-                    recipients: getEmployeeRecipient(mechanicId, 'mechanic'),
-                    orderId: updated._id,
-                    data,
-                    triggeredBy,
-                });
-            }
-        } catch (notifyErr) {
-            console.error('Reschedule notification error:', notifyErr);
-        }
+        await notifyOrderParties(updated, {
+            type: 'order_rescheduled',
+            actor: { userId: actor.id, userModel: actorModel },
+            user: isUser ? null : {
+                title: '📅 Booking Rescheduled',
+                body: `Your order #${updated.orderId} has been rescheduled to ${newLabel}.${reason ? ` Reason: ${reason}` : ''}`,
+            },
+            staff: {
+                title: isUser ? '📅 Booking Rescheduled by Customer' : '📅 Assigned Order Rescheduled',
+                body: `#${updated.orderId} · ${updated.name} moved from ${oldLabel} to ${newLabel} by ${byLabel}.${reason ? ` Reason: ${reason}` : ''}`,
+            },
+            skipRoles: isUser ? [] : ['admin', 'employee', 'ops_manager'],
+            data: { previousSchedule: oldLabel, newSchedule: newLabel },
+        });
 
         return res.status(200).json({ message: 'Booking rescheduled successfully.', order: updated });
     } catch (error) {

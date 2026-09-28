@@ -20,6 +20,7 @@ import vendorOrderRouter from "./Routes/vendorOrderRoutes.js";
 import bikeProfileRoutes from "./Routes/bikeProfileRoutes.js";
 import serviceAreaRoutes from "./Routes/serviceAreRoutes.js";
 import notificationRouter from "./Routes/notificationsRoutes.js";
+import adminNotificationRouter from "./Routes/adminNotificationRoutes.js";
 import dashboardRouter from "./Routes/dashboardRoutes.js";
 import telecallerDashboardRouter from "./Routes/telecallerDashboardRoutes.js";
 import mechanicDashboardRouter from "./Routes/mechanicDashboardRoutes.js";
@@ -36,6 +37,7 @@ import appVersionRoutes from "./Routes/appVersionRoutes.js";
 import adminSettingsRoutes from "./Routes/adminSettingsRoutes.js";
 import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
+import './Utils/notificationScheduler.js';
 // Socket setup
 import { setupChatSockets } from "./sockets/chatSocket.js";
 
@@ -67,6 +69,7 @@ app.use("/api/vendor/vendororder", vendorOrderRouter);
 app.use("/api/bike-profiles", bikeProfileRoutes);
 app.use("/api/service-areas", serviceAreaRoutes);
 app.use("/api/notifications", notificationRouter);
+app.use("/api/admin/notifications", adminNotificationRouter);
 app.use("/api/admin/dashboard", dashboardRouter);
 app.use('/api/employee/dashboard', telecallerDashboardRouter);
 app.use('/api/employee/dashboard/mechanic', mechanicDashboardRouter);

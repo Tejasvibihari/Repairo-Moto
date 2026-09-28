@@ -64,6 +64,22 @@ const orderSchema = new mongoose.Schema({
         },
         at: { type: Date, default: Date.now },
     }],
+    // ─── Service follow-up reminder ───────────────────────────────────────────
+    // Scheduled push telling the customer it is time for their next service.
+    // Created automatically by the scheduler after an order is Completed
+    // (delay comes from ServiceReminderConfig) and can be changed per order by
+    // an admin. `title`/`body` are optional per-order overrides of the template.
+    followUp: {
+        status: { type: String, enum: ['pending', 'sent', 'skipped', null], default: null },
+        remindAfterDays: { type: Number, default: null, min: 1, max: 730 },
+        remindAt: { type: Date, default: null },
+        disabled: { type: Boolean, default: false },
+        title: { type: String, trim: true, default: '' },
+        body: { type: String, trim: true, default: '' },
+        setBy: { type: String, enum: ['auto', 'admin', null], default: null },
+        sentAt: { type: Date, default: null },
+        skipReason: { type: String, default: '' },
+    },
     // ─── Status Flow ──────────────────────────────────────────────────────────
     status: {
         type: String,
@@ -234,6 +250,8 @@ const orderSchema = new mongoose.Schema({
 });
 
 orderSchema.index({ userLocation: '2dsphere' });
+// Reminder scheduler lookups
+orderSchema.index({ 'followUp.status': 1, 'followUp.remindAt': 1 });
 
 orderSchema.pre('save', function (next) {
     if (this.total?.total != null) {
