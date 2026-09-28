@@ -1,6 +1,6 @@
 import ChatMessage from "../Models/chatModel.js";
 import Order from "../Models/orderModel.js";
-import { handleChatPushNotification } from "../services/chatNotification.js";
+import { handleChatPushNotification, markChatNotificationsRead } from "../services/chatNotification.js";
 
 // ------------------- User Helpers -------------------
 export const getUserMessages = async (req, res) => {
@@ -22,6 +22,9 @@ export const getUserMessages = async (req, res) => {
             .skip(skip)
             .limit(limit);
         const total = await ChatMessage.countDocuments({ orderId });
+
+        // Customer opened the conversation → their "reply" notifications are seen
+        if (page === 1) markChatNotificationsRead(order._id, userId);
 
         res.json({
             messages,
@@ -126,6 +129,9 @@ export const getAdminMessages = async (req, res) => {
             { orderId, senderType: "user", isRead: false },
             { $set: { isRead: true, readAt: new Date() } }
         );
+
+        // Staff opened the conversation → their "new message" notifications are seen
+        if (page === 1) markChatNotificationsRead(order._id, req.user._id);
 
         res.json({
             messages,

@@ -6,24 +6,33 @@ import Employee from "../Models/employeeModel.js";
 import jwt from "jsonwebtoken";
 import { handleChatPushNotification } from "../services/chatNotification.js";
 
-// Helper: authenticate socket connection using JWT
+// Helper: authenticate socket connection using JWT.
+// Each secret is tried on its own — a token signed with the admin/employee secret
+// throws on the user secret, and that used to abort the whole lookup (returning null).
+const verifyWith = (token, secret) => {
+    if (!secret) return null;
+    try {
+        return jwt.verify(token, secret);
+    } catch {
+        return null;
+    }
+};
+
 const authenticateSocket = async (token) => {
     try {
-        // Try user token first
-        let decoded = jwt.verify(token, process.env.USER_JWT_SECRET);
-        let user = await User.findById(decoded.id).select("-password");
-        if (user) return { id: user._id, type: "user", model: user };
+        const userDecoded = verifyWith(token, process.env.USER_JWT_SECRET);
+        if (userDecoded?.id) {
+            const user = await User.findById(userDecoded.id).select("-password");
+            if (user) return { id: user._id, type: "user", model: user };
+        }
 
-        // Then admin/employee tokens
-        const secrets = [process.env.ADMIN_JWT_SECRET, process.env.EMPLOYEE_JWT_SECRET];
-        for (const secret of secrets) {
-            try {
-                decoded = jwt.verify(token, secret);
-                let admin = await Admin.findById(decoded.id).select("-password");
-                if (admin) return { id: admin._id, type: "admin", model: admin };
-                let employee = await Employee.findById(decoded.id).select("-password");
-                if (employee) return { id: employee._id, type: "employee", model: employee };
-            } catch (err) { }
+        for (const secret of [process.env.ADMIN_JWT_SECRET, process.env.EMPLOYEE_JWT_SECRET]) {
+            const decoded = verifyWith(token, secret);
+            if (!decoded?.id) continue;
+            const admin = await Admin.findById(decoded.id).select("-password");
+            if (admin) return { id: admin._id, type: "admin", model: admin };
+            const employee = await Employee.findById(decoded.id).select("-password");
+            if (employee) return { id: employee._id, type: "employee", model: employee };
         }
         return null;
     } catch (error) {
@@ -77,6 +86,10 @@ export const setupChatSockets = (io) => {
 
                 socket.join(orderId);
                 socket.currentOrderId = orderId;
+                // Moving to another room ends any "viewing" state for the old one
+                if (socket.viewingOrderId && socket.viewingOrderId !== String(orderId)) {
+                    socket.viewingOrderId = null;
+                }
 
                 if (callback) callback({ success: true, orderId });
                 console.log(`${socket.user.type} joined room ${orderId}`);
@@ -123,6 +136,17 @@ export const setupChatSockets = (io) => {
             handleChatPushNotification(io, chatMessage);
 
             if (callback) callback({ success: true, message: chatMessage });
+        });
+
+        // The chat screen tells us when it is actually on screen (foreground) or not.
+        // Push notifications are skipped only for people who are really looking at the chat.
+        socket.on("chat-visibility", ({ orderId, visible } = {}, callback) => {
+            if (orderId && socket.rooms.has(String(orderId))) {
+                socket.viewingOrderId = visible ? String(orderId) : null;
+                if (callback) callback({ success: true });
+            } else if (callback) {
+                callback({ error: "Join the order room first" });
+            }
         });
 
         // Typing indicator (optional)
