@@ -1,4 +1,5 @@
 import Order from '../Models/orderModel.js';
+import ManualInvoice from '../Models/manualInvoiceModel.js';
 import User from '../Models/userModel.js';
 import Employee from '../Models/employeeModel.js';
 import Vendor from '../Models/vendorModel.js';
@@ -26,7 +27,7 @@ const parseISTDate = (str) => {
     return Number.isNaN(d.getTime()) ? null : d;
 };
 
-const PERIODS = ['today', 'yesterday', 'week', 'last30', 'month', 'year', 'custom'];
+const PERIODS = ['today', 'yesterday', 'week', 'last7', 'last30', 'month', 'year', 'custom'];
 
 /**
  * Resolve a period key into a half-open range [start, end).
@@ -35,7 +36,8 @@ const PERIODS = ['today', 'yesterday', 'week', 'last30', 'month', 'year', 'custo
  *
  *  today      – since midnight IST
  *  yesterday  – yesterday midnight → today midnight
- *  week       – last 7 days (incl. today)
+ *  week       – calendar week to date (Monday 00:00 IST → now)
+ *  last7      – last 7 days (incl. today)
  *  last30     – last 30 days (incl. today)
  *  month      – calendar month to date
  *  year       – calendar year to date
@@ -56,7 +58,14 @@ const resolveRange = ({ period, from, to }) => {
             start = new Date(todayStart.getTime() - DAY_MS);
             end = todayStart;
             break;
-        case 'week':
+        case 'week': {
+            // todayStart shifted by the IST offset reads as 00:00 UTC of the IST day,
+            // so getUTCDay() is the IST weekday. Monday = 0.
+            const dow = (new Date(todayStart.getTime() + IST_OFFSET_MS).getUTCDay() + 6) % 7;
+            start = new Date(todayStart.getTime() - dow * DAY_MS);
+            break;
+        }
+        case 'last7':
             start = new Date(todayStart.getTime() - 6 * DAY_MS);
             break;
         case 'last30':
@@ -161,9 +170,14 @@ const COLLECTED_EXPR = {
     },
 };
 
+// Orders that are booked but work has not started yet.
+const UPCOMING_STATUSES = ['Pending', 'Mechanic Assigned'];
+// Manual invoices that count as "issued" (drafts / cancelled are reported separately).
+const ISSUED_INVOICE_STATUSES = ['paid', 'unpaid'];
+
 // ── GET /api/admin/dashboard ─────────────────────────────────────────────────
 // Query params:
-//   period       today | yesterday | week | last30 | month | year | custom   (default: month)
+//   period       today | yesterday | week | last7 | last30 | month | year | custom   (default: month)
 //   from, to     YYYY-MM-DD (IST, inclusive) — required when period=custom
 //   city         exact city (case-insensitive)
 //   serviceType  'Schedule Repair' | 'Emergency Repair'
@@ -204,6 +218,27 @@ export const getAdminDashboard = async (req, res) => {
 
         const granularity = getGranularity(start, end);
 
+        // Upcoming = scheduled from today onwards, work not started. Ignores the
+        // period filter on purpose (it is a look-ahead) but honours city / service /
+        // mechanic scope.
+        const todayStart = startOfDayIST(new Date());
+        const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
+        const in7Days = new Date(todayStart.getTime() + 7 * DAY_MS);
+        const upcomingMatch = {
+            ...scope,
+            status: { $in: UPCOMING_STATUSES },
+            preferredDate: { $gte: todayStart },
+        };
+
+        // Manual invoices only carry a city (service type / mechanic don't apply).
+        const invoiceScope = city ? { 'customerDetails.city': new RegExp(`^${escapeRegex(city)}$`, 'i') } : {};
+        const invoiceMatch = { ...invoiceScope, invoiceDate: { $gte: start, $lt: end } };
+        const prevInvoiceMatch = {
+            ...invoiceScope,
+            invoiceDate: { $gte: prevStart, $lt: prevEnd },
+            status: { $in: ISSUED_INVOICE_STATUSES },
+        };
+
         const mechanicFilter = { position: 'mechanic' };
         if (city) mechanicFilter.city = new RegExp(`^${escapeRegex(city)}$`, 'i');
 
@@ -221,6 +256,13 @@ export const getAdminDashboard = async (req, res) => {
             newUsers,
             totalMechanics,
             totalVendors,
+            allTimeOrders,
+            invoiceAgg,
+            prevInvoiceCount,
+            upcomingTotal,
+            upcomingToday,
+            upcomingNext7,
+            upcomingList,
         ] = await Promise.all([
             Order.countDocuments(periodMatch),
             Order.countDocuments(prevMatch),
@@ -287,6 +329,31 @@ export const getAdminDashboard = async (req, res) => {
             User.countDocuments({ createdAt: { $gte: start, $lt: end } }),
             Employee.countDocuments(mechanicFilter),
             Vendor.countDocuments(),
+
+            // All-time orders within the current scope filters
+            Order.countDocuments(scope),
+
+            // Manual invoices in range, grouped by status
+            ManualInvoice.aggregate([
+                { $match: invoiceMatch },
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 },
+                        amount: { $sum: { $ifNull: ['$total.finalPayable', 0] } },
+                    },
+                },
+            ]),
+            ManualInvoice.countDocuments(prevInvoiceMatch),
+
+            Order.countDocuments(upcomingMatch),
+            Order.countDocuments({ ...upcomingMatch, preferredDate: { $gte: todayStart, $lt: tomorrowStart } }),
+            Order.countDocuments({ ...upcomingMatch, preferredDate: { $gte: todayStart, $lt: in7Days } }),
+            Order.find(upcomingMatch)
+                .sort({ preferredDate: 1, createdAt: 1 })
+                .limit(8)
+                .select('orderId name city status serviceType services preferredDate preferredTime assignedMechanics')
+                .lean(),
         ]);
 
         // ── Shape results ─────────────────────────────────────────────────
@@ -311,6 +378,22 @@ export const getAdminDashboard = async (req, res) => {
         };
         const outstandingAmount = (pay.unpaid?.outstanding || 0) + (pay.partial?.outstanding || 0);
 
+        const inv = Object.fromEntries(invoiceAgg.map((r) => [r._id, r]));
+        const invPaid = inv.paid?.count || 0;
+        const invUnpaid = inv.unpaid?.count || 0;
+        const invIssued = invPaid + invUnpaid;
+        const manualInvoices = {
+            total: invIssued,
+            change: pctChange(invIssued, prevInvoiceCount),
+            paid: invPaid,
+            unpaid: invUnpaid,
+            draft: inv.draft?.count || 0,
+            cancelled: inv.cancelled?.count || 0,
+            billedAmount: (inv.paid?.amount || 0) + (inv.unpaid?.amount || 0),
+            paidAmount: inv.paid?.amount || 0,
+            unpaidAmount: inv.unpaid?.amount || 0,
+        };
+
         const periodRevenue = revenueAgg[0]?.total || 0;
         const prevRevenue = prevRevenueAgg[0]?.total || 0;
 
@@ -325,6 +408,7 @@ export const getAdminDashboard = async (req, res) => {
                     revenueChange: pctChange(periodRevenue, prevRevenue),
                     periodOrders,
                     ordersChange: pctChange(periodOrders, prevOrders),
+                    totalOrders: allTimeOrders,
                     outstandingAmount,
                     avgOrderValue: payments.paid ? Math.round(periodRevenue / payments.paid) : 0,
                     totalUsers,
@@ -334,6 +418,13 @@ export const getAdminDashboard = async (req, res) => {
                 },
                 orderStatus,
                 payments,
+                manualInvoices,
+                upcoming: {
+                    total: upcomingTotal,
+                    today: upcomingToday,
+                    next7Days: upcomingNext7,
+                    orders: upcomingList,
+                },
                 revenueChart: {
                     granularity,
                     points: fillBuckets(chartAgg, start, end, granularity),

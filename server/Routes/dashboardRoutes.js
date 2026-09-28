@@ -6,7 +6,7 @@ import { authenticateEmployee } from '../Middleware/employeeAuth.js';
 
 const router = express.Router();
 
-// GET /api/admin/dashboard?period=today|yesterday|week|last30|month|year|custom&from=&to=&city=&serviceType=&mechanicId=
+// GET /api/admin/dashboard?period=today|yesterday|week|last7|last30|month|year|custom&from=&to=&city=&serviceType=&mechanicId=
 router.get('/', authAdmin, getAdminDashboard);
 // GET /api/admin/dashboard/filters  → cities, service types, mechanics for the filter sheet
 router.get('/filters', authAdmin, getDashboardFilterOptions);
