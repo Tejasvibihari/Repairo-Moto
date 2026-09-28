@@ -32,6 +32,7 @@ import {
     markPaidCod,
 } from "../Controllers/orderController.js";
 import authAdmin from "../Middleware/authAdmin.js";
+import shopGate from "../Middleware/shopGate.js";
 import authUser from "../Middleware/authUser.js";
 import authGeneric from "../Middleware/authGeneric.js";
 import { uploadSingle } from "../Middleware/photoUpload.js";
@@ -42,7 +43,7 @@ const router = express.Router();
 // ORDER CREATION
 // -------------------------------------------------------------------
 router.post("/manualorder", createManualOrder);
-router.post("/userorder", authUser, userOrder);
+router.post("/userorder", authUser, shopGate, userOrder);
 
 // -------------------------------------------------------------------
 // ORDER RETRIEVAL

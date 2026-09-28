@@ -64,6 +64,35 @@ const adminSettingsSchema = new mongoose.Schema({
         type: String,
         default: "",
     },
+
+    // ── Shop status (customer app kill-switch) ──────────────────────────────
+    // When `isClosed` is true the customer app shows a full-screen closed
+    // message and the API refuses new user bookings. The copy is fully
+    // admin-editable so it can be tailored per occasion (Diwali, Holi, ...).
+    shopStatus: {
+        isClosed: { type: Boolean, default: false },
+        title: { type: String, default: "We'll be back soon", trim: true, maxlength: 80 },
+        message: {
+            type: String,
+            default: "Sorry for the inconvenience. We are currently closed and will be back shortly. Thank you for your patience and understanding.",
+            trim: true,
+            maxlength: 500,
+        },
+        emoji: { type: String, default: "🛠️", trim: true, maxlength: 8 },
+        // Optional: the closure lifts itself at this moment (no need to remember to flip the switch back).
+        reopenAt: { type: Date, default: null },
+        updatedAt: { type: Date, default: null },
+    },
+
+    // ── Daily service hours (IST) ───────────────────────────────────────────
+    // Outside these hours the shop is still "open" for the app, but Emergency
+    // Repair bookings are refused - only Schedule Repair can be booked.
+    // Disabled by default so existing behaviour is unchanged until the admin opts in.
+    serviceHours: {
+        enabled: { type: Boolean, default: false },
+        openTime: { type: String, default: "10:00" },   // "HH:mm", 24h, IST
+        closeTime: { type: String, default: "17:00" },  // "HH:mm", 24h, IST
+    },
 })
 
 const AdminSettings = mongoose.model('AdminSettings', adminSettingsSchema);
