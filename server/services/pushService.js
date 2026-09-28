@@ -5,54 +5,42 @@ import Admin from '../Models/adminModel.js';
 import Vendor from '../Models/vendorModel.js';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+const EXPO_RECEIPTS_URL = 'https://exp.host/--/api/v2/push/getReceipts';
+const isExpoToken = (t) => /^Expo(nent)?PushToken\[.+\]$/.test(t);
 
 /**
  * Fetch expoPushToken from the correct model based on role.
  */
 async function getTokensForRecipients(recipients) {
-    // Group by model to do bulk queries
     const grouped = {};
     for (const r of recipients) {
         if (!grouped[r.userModel]) grouped[r.userModel] = [];
         grouped[r.userModel].push(r.userId);
     }
 
+    const models = { User, Employee, Admin, Vendor };
     const tokens = [];
 
-    if (grouped['User']?.length) {
-        const users = await User.find(
-            { _id: { $in: grouped['User'] }, expoPushToken: { $exists: true, $nin: [null, ''] } },
+    for (const [modelName, ids] of Object.entries(grouped)) {
+        const Model = models[modelName];
+        if (!Model || !ids.length) continue;
+        const docs = await Model.find(
+            { _id: { $in: ids }, expoPushToken: { $exists: true, $nin: [null, ''] } },
             'expoPushToken'
         ).lean();
-        tokens.push(...users.map(u => u.expoPushToken));
-    }
-
-    if (grouped['Employee']?.length) {
-        const employees = await Employee.find(
-            { _id: { $in: grouped['Employee'] }, expoPushToken: { $exists: true, $nin: [null, ''] } },
-            'expoPushToken'
-        ).lean();
-        tokens.push(...employees.map(e => e.expoPushToken));
-    }
-
-    if (grouped['Admin']?.length) {
-        const admins = await Admin.find(
-            { _id: { $in: grouped['Admin'] }, expoPushToken: { $exists: true, $nin: [null, ''] } },
-            'expoPushToken'
-        ).lean();
-        tokens.push(...admins.map(a => a.expoPushToken));
-    }
-
-    if (grouped['Vendor']?.length) {
-        const vendors = await Vendor.find(
-            { _id: { $in: grouped['Vendor'] }, expoPushToken: { $exists: true, $nin: [null, ''] } },
-            'expoPushToken'
-        ).lean();
-        tokens.push(...vendors.map(v => v.expoPushToken));
+        console.log(`[push] ${modelName}: ${docs.length}/${ids.length} recipients have a token`);
+        tokens.push(...docs.map(d => d.expoPushToken));
     }
 
     // Same phone can be logged in under more than one account → avoid double pushes
-    return [...new Set(tokens.filter(Boolean))];
+    return [...new Set(tokens.filter(t => {
+        if (!t) return false;
+        if (!isExpoToken(t)) {
+            console.warn('[push] invalid token format, skipping:', t);
+            return false;
+        }
+        return true;
+    }))];
 }
 
 /** Remove a token Expo says is dead so we stop pushing to it. */
@@ -62,7 +50,31 @@ async function clearDeadToken(token) {
             M.updateMany({ expoPushToken: token }, { $unset: { expoPushToken: 1 } })
         ));
     } catch (e) {
-        console.error('Failed clearing dead push token:', e.message);
+        console.error('[push] failed clearing dead token:', e.message);
+    }
+}
+
+/**
+ * Receipts are where FCM-side failures show up
+ * (InvalidCredentials, MismatchSenderId, DeviceNotRegistered...).
+ */
+async function checkReceipts(ticketMap) {
+    const ids = Object.keys(ticketMap);
+    if (!ids.length) return;
+    try {
+        const { data } = await axios.post(EXPO_RECEIPTS_URL, { ids }, {
+            headers: { 'Content-Type': 'application/json' },
+        });
+        for (const [id, receipt] of Object.entries(data?.data || {})) {
+            if (receipt.status === 'ok') {
+                console.log(`[push] receipt ok for ${ticketMap[id]}`);
+                continue;
+            }
+            console.error(`[push] receipt ERROR for ${ticketMap[id]}:`, receipt.message, JSON.stringify(receipt.details));
+            if (receipt.details?.error === 'DeviceNotRegistered') clearDeadToken(ticketMap[id]);
+        }
+    } catch (e) {
+        console.error('[push] receipt check failed:', e.message);
     }
 }
 
@@ -73,7 +85,10 @@ async function clearDeadToken(token) {
  */
 export async function sendPushToRecipients(recipients, { title, body, data = {} }) {
     const tokens = await getTokensForRecipients(recipients);
-    if (!tokens.length) return;
+    if (!tokens.length) {
+        console.warn('[push] no valid Expo tokens for recipients — nothing sent');
+        return;
+    }
     const messages = tokens.map(token => ({
         to: token,
         sound: 'default',
@@ -92,15 +107,22 @@ export async function sendPushToRecipients(recipients, { title, body, data = {} 
             const { data: result } = await axios.post(EXPO_PUSH_URL, chunk, {
                 headers: { 'Content-Type': 'application/json' },
             });
-            // Log any per-token errors from Expo
+
+            const ticketMap = {};
             result?.data?.forEach((ticket, idx) => {
-                if (ticket.status === 'error') {
-                    console.error(`Push error for token ${chunk[idx].to}:`, ticket.message);
-                    if (ticket.details?.error === 'DeviceNotRegistered') clearDeadToken(chunk[idx].to);
+                const token = chunk[idx].to;
+                if (ticket.status === 'ok') {
+                    ticketMap[ticket.id] = token;
+                } else {
+                    console.error(`[push] ticket ERROR for ${token}:`, ticket.message, JSON.stringify(ticket.details));
+                    if (ticket.details?.error === 'DeviceNotRegistered') clearDeadToken(token);
                 }
             });
+
+            // Expo needs a little time before receipts exist
+            setTimeout(() => checkReceipts(ticketMap), 30 * 1000);
         } catch (err) {
-            console.error('Expo push batch error:', err.message);
+            console.error('[push] Expo batch error:', err.response?.data || err.message);
         }
     }
 }
