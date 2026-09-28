@@ -1846,6 +1846,218 @@ export const cancelOrder = async (req, res) => {
     }
 };
 
+// ─── Reschedule ───────────────────────────────────────────────────────────────
+
+// Statuses in which a booking may still be moved. Once the mechanic has arrived
+// (or work has started) the customer can no longer reschedule.
+const USER_RESCHEDULABLE_STATUSES = ['Pending', 'Mechanic Assigned'];
+// Admin uses its own list so it can be widened later without touching the user rule.
+const ADMIN_RESCHEDULABLE_STATUSES = ['Pending', 'Mechanic Assigned'];
+
+// Booking times are entered in Indian Standard Time.
+const IST_OFFSET = '+05:30';
+
+/**
+ * Parse "10:00 AM" / "9:30 pm" → { label: '09:30 PM', hours24, minutes }.
+ * The label is zero-padded so it matches the format used at booking time.
+ */
+const normalizeTimeSlot = (raw) => {
+    const m = String(raw || '').trim().toUpperCase().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+    if (!m) return null;
+    const h12 = parseInt(m[1], 10);
+    const minutes = parseInt(m[2], 10);
+    if (h12 < 1 || h12 > 12 || minutes > 59) return null;
+    return {
+        label: `${String(h12).padStart(2, '0')}:${m[2]} ${m[3]}`,
+        hours24: (h12 % 12) + (m[3] === 'PM' ? 12 : 0),
+        minutes,
+    };
+};
+
+/**
+ * Validate the new schedule from a request body. Returns { error } or
+ * { ymd, slot, at } where `at` is the absolute appointment instant.
+ */
+const parseRescheduleInput = (body = {}) => {
+    const { preferredDate, preferredTime } = body;
+    if (!preferredDate || !preferredTime) {
+        return { error: 'New date and time are required.' };
+    }
+
+    const ymd = String(preferredDate).slice(0, 10);
+    // Round-trip check: V8 silently rolls "2026-02-31" over to March 3rd.
+    const parsedDate = new Date(ymd);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd) || isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== ymd) {
+        return { error: 'Invalid date. Use the format YYYY-MM-DD.' };
+    }
+
+    const slot = normalizeTimeSlot(preferredTime);
+    if (!slot) {
+        return { error: 'Invalid time. Use a format like "10:00 AM".' };
+    }
+
+    const hh = String(slot.hours24).padStart(2, '0');
+    const mm = String(slot.minutes).padStart(2, '0');
+    const at = new Date(`${ymd}T${hh}:${mm}:00${IST_OFFSET}`);
+    if (isNaN(at.getTime())) return { error: 'Invalid date or time.' };
+    if (at.getTime() <= Date.now()) {
+        return { error: 'The new schedule must be in the future.' };
+    }
+    return { ymd, slot, at };
+};
+
+const formatScheduleLabel = (date, time) => {
+    const d = new Date(date).toLocaleDateString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC',
+    });
+    return `${d}, ${time}`;
+};
+
+/**
+ * Shared reschedule logic.
+ * actorRole: 'user' (customer, must own the order) | 'admin' (admin/employee via authAdmin)
+ */
+const applyReschedule = async (req, res, actorRole) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: 'Invalid order id.' });
+        }
+
+        const parsed = parseRescheduleInput(req.body);
+        if (parsed.error) return res.status(400).json({ message: parsed.error });
+
+        const reason = String(req.body?.reason || '').trim().slice(0, 300);
+        const isUser = actorRole === 'user';
+        const allowedStatuses = isUser ? USER_RESCHEDULABLE_STATUSES : ADMIN_RESCHEDULABLE_STATUSES;
+
+        const order = await Order.findById(id);
+        if (!order) return res.status(404).json({ message: 'Order not found.' });
+
+        if (isUser && String(order.userId) !== String(req.user._id)) {
+            return res.status(403).json({ message: 'You can only reschedule your own bookings.' });
+        }
+
+        if (!allowedStatuses.includes(order.status)) {
+            return res.status(400).json({
+                message: isUser
+                    ? `This booking can no longer be rescheduled (status: ${order.status}). Rescheduling is only possible before the mechanic arrives.`
+                    : `Cannot reschedule an order with status "${order.status}".`,
+            });
+        }
+
+        const currentSlot = normalizeTimeSlot(order.preferredTime);
+        const currentYmd = order.preferredDate ? new Date(order.preferredDate).toISOString().slice(0, 10) : null;
+        if (currentYmd === parsed.ymd && currentSlot?.label === parsed.slot.label) {
+            return res.status(400).json({ message: 'The booking is already scheduled for this date and time.' });
+        }
+
+        const actor = isUser
+            ? {
+                role: 'user',
+                id: req.user._id,
+                name: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || order.name,
+            }
+            : {
+                role: req.user?.role === 'Employee' ? 'employee' : 'admin',
+                id: req.user._id,
+                name: req.user.leadBy || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim(),
+            };
+
+        // Atomic write: the status condition is re-checked inside the update, so a
+        // mechanic tapping "arrived" between the read above and this write cannot
+        // slip past the rule.
+        const updated = await Order.findOneAndUpdate(
+            { _id: id, status: { $in: allowedStatuses } },
+            {
+                $set: {
+                    preferredDate: new Date(parsed.ymd),
+                    preferredTime: parsed.slot.label,
+                    reminderSent: false, // let the 2-hour reminder cron fire for the new slot
+                },
+                $inc: { rescheduleCount: 1 },
+                $push: {
+                    rescheduleHistory: {
+                        fromDate: order.preferredDate,
+                        fromTime: order.preferredTime,
+                        toDate: new Date(parsed.ymd),
+                        toTime: parsed.slot.label,
+                        reason,
+                        rescheduledBy: actor,
+                        at: new Date(),
+                    },
+                },
+            },
+            { new: true }
+        );
+
+        if (!updated) {
+            return res.status(409).json({
+                message: 'The order status changed just now, so it can no longer be rescheduled. Please refresh.',
+            });
+        }
+
+        // ── Notifications (best-effort: the reschedule is already saved) ──
+        try {
+            const oldLabel = formatScheduleLabel(order.preferredDate, order.preferredTime);
+            const newLabel = formatScheduleLabel(updated.preferredDate, updated.preferredTime);
+            const data = {
+                orderId: updated._id.toString(),
+                screenOrderId: updated.orderId,
+                previousSchedule: oldLabel,
+                newSchedule: newLabel,
+            };
+            const triggeredBy = { userId: actor.id, userModel: isUser ? 'User' : (actor.role === 'employee' ? 'Employee' : 'Admin') };
+
+            if (isUser) {
+                const adminRecipients = await getAdminRecipients();
+                await createNotification({
+                    type: 'order_rescheduled',
+                    title: '📅 Booking Rescheduled by Customer',
+                    body: `#${updated.orderId} · ${updated.name} moved from ${oldLabel} to ${newLabel}`,
+                    recipients: adminRecipients,
+                    orderId: updated._id,
+                    data,
+                    triggeredBy,
+                });
+            } else if (updated.userId) {
+                await createNotification({
+                    type: 'order_rescheduled',
+                    title: '📅 Booking Rescheduled',
+                    body: `Your order #${updated.orderId} has been rescheduled to ${newLabel}.${reason ? ` Reason: ${reason}` : ''}`,
+                    recipients: getUserRecipient(updated.userId),
+                    orderId: updated._id,
+                    data,
+                    triggeredBy,
+                });
+            }
+
+            // Assigned mechanics need to know their job moved
+            for (const mechanicId of updated.mechanicIds || []) {
+                await createNotification({
+                    type: 'order_rescheduled',
+                    title: '📅 Assigned Order Rescheduled',
+                    body: `#${updated.orderId} is now scheduled for ${newLabel} (was ${oldLabel}).`,
+                    recipients: getEmployeeRecipient(mechanicId, 'mechanic'),
+                    orderId: updated._id,
+                    data,
+                    triggeredBy,
+                });
+            }
+        } catch (notifyErr) {
+            console.error('Reschedule notification error:', notifyErr);
+        }
+
+        return res.status(200).json({ message: 'Booking rescheduled successfully.', order: updated });
+    } catch (error) {
+        console.error('Reschedule order error:', error);
+        return res.status(500).json({ message: 'Server error while rescheduling order.' });
+    }
+};
+
+export const rescheduleOrderByAdmin = (req, res) => applyReschedule(req, res, 'admin');
+export const rescheduleOrderByUser = (req, res) => applyReschedule(req, res, 'user');
+
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
 export const completedOrders = async (req, res) => {

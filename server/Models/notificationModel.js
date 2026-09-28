@@ -32,6 +32,7 @@ const notificationSchema = new mongoose.Schema({
             'delivery_assigned',// → delivery agent assigned specific
             'order_update',     // → user: status changed
             'order_cancelled',  // → admin, mechanic, user
+            'order_rescheduled',// → admin/user/mechanic: booking moved to a new date/time
             'invoice_generated',// → user gets invoice
             'payment_received', // → admin, mechanic: payment received + invoice generated
             'delivery_update',  // → delivery agent

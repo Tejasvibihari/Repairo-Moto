@@ -46,6 +46,24 @@ const orderSchema = new mongoose.Schema({
     estimatedBudget: { type: String, trim: true },
     issues: { type: String, default: '', trim: true },
     reminderSent: { type: Boolean, default: false },
+
+    // ─── Reschedule tracking ──────────────────────────────────────────────────
+    // Every reschedule (by the customer or by an admin) appends one entry so
+    // there is a full audit trail of who moved the booking and when.
+    rescheduleCount: { type: Number, default: 0 },
+    rescheduleHistory: [{
+        fromDate: { type: Date },
+        fromTime: { type: String },
+        toDate: { type: Date },
+        toTime: { type: String },
+        reason: { type: String, default: '', trim: true },
+        rescheduledBy: {
+            role: { type: String, enum: ['user', 'admin', 'employee'] },
+            id: { type: mongoose.Schema.Types.ObjectId },
+            name: { type: String, trim: true },
+        },
+        at: { type: Date, default: Date.now },
+    }],
     // ─── Status Flow ──────────────────────────────────────────────────────────
     status: {
         type: String,

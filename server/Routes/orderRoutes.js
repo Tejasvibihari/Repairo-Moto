@@ -14,6 +14,8 @@ import {
     updateOrderandGenerateInvoice,
     userOrder,
     cancelOrder,
+    rescheduleOrderByAdmin,
+    rescheduleOrderByUser,
     getOrdersByPosition,
     completedOrders,
     completeRevenue,
@@ -144,6 +146,28 @@ router.get('/:id/invoice', getInvoice);
 // CANCELLATION
 // -------------------------------------------------------------------
 router.put('/cancel/:id', cancelOrder);
+
+// -------------------------------------------------------------------
+// RESCHEDULE
+// -------------------------------------------------------------------
+
+/**
+ * @route   PUT /reschedule/:id
+ * @desc    Admin / manager / telecaller moves a booking to a new date + time.
+ *          Allowed only while status is Pending or Mechanic Assigned.
+ * @body    { preferredDate: 'YYYY-MM-DD', preferredTime: '10:00 AM', reason?: string }
+ * @access  Private (authAdmin)
+ */
+router.put('/reschedule/:id', authAdmin, rescheduleOrderByAdmin);
+
+/**
+ * @route   PUT /user-reschedule/:id
+ * @desc    Customer reschedules their own booking. Allowed only while status is
+ *          Pending or Mechanic Assigned (i.e. until the mechanic has arrived).
+ * @body    { preferredDate: 'YYYY-MM-DD', preferredTime: '10:00 AM', reason?: string }
+ * @access  Private (authUser)
+ */
+router.put('/user-reschedule/:id', authUser, rescheduleOrderByUser);
 
 // -------------------------------------------------------------------
 // ROLE-BASED ORDER FETCH
