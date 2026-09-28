@@ -87,3 +87,90 @@ export function getEmployeeRecipient(userId, role = 'employee') {
 export function getVendorRecipient(userId) {
     return [{ userId, userModel: 'Vendor', role: 'vendor' }];
 }
+
+// ─── Order-level fan-out ───────────────────────────────────────────────────────
+
+const idOf = (v) => (v && v._id ? v._id : v);
+const sameId = (a, b) => a && b && String(idOf(a)) === String(idOf(b));
+
+/** Managers / operational managers see every order event alongside admins. */
+export async function getManagerRecipients() {
+    const managers = await Employee.find(
+        { position: { $in: ['manager', 'operational manager'] } },
+        '_id position'
+    ).lean();
+    return managers.map(m => ({
+        userId: m._id,
+        userModel: 'Employee',
+        role: m.position === 'manager' ? 'employee' : 'ops_manager',
+    }));
+}
+
+/** Staff = admins + managers + everyone attached to this order. */
+export async function getOrderStaffRecipients(order) {
+    const list = [
+        ...(await getAdminRecipients()),
+        ...(await getManagerRecipients()),
+        ...(order.mechanicIds || []).map(id => ({ userId: idOf(id), userModel: 'Employee', role: 'mechanic' })),
+    ];
+    if (order.deliveryId) list.push({ userId: idOf(order.deliveryId), userModel: 'Employee', role: 'delivery' });
+    if (order.vendorId) list.push({ userId: idOf(order.vendorId), userModel: 'Vendor', role: 'vendor' });
+    return list;
+}
+
+function dedupe(recipients, actor) {
+    const seen = new Set();
+    return recipients.filter(r => {
+        const key = String(r.userId);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        // never notify the person who just performed the action
+        return !(actor && sameId(r.userId, actor.userId));
+    });
+}
+
+/**
+ * One call = every party on the order hears about the event.
+ *
+ * @param {object} order                Mongoose order (userId may be populated)
+ * @param {object} opts
+ * @param {string} opts.type            Notification type (see notificationModel)
+ * @param {{title,body}|null} opts.user   Message for the customer (null = skip customer)
+ * @param {{title,body}|null} opts.staff  Message for admin/manager/mechanic/delivery/vendor (null = skip)
+ * @param {{userId, userModel}|null} opts.actor  Who did it — excluded from recipients, saved as triggeredBy
+ * @param {object} opts.data            Extra deep-link data (never put secrets like OTPs here — staff copies share it)
+ * @param {string[]} opts.skipRoles     Recipient roles to leave out (e.g. ['mechanic'] when the mechanic did it)
+ *
+ * Never throws: a failed notification must not fail the order update that triggered it.
+ */
+export async function notifyOrderParties(order, { type, user = null, staff = null, actor = null, data = {}, skipRoles = [] }) {
+    const payload = {
+        orderId: String(order._id),
+        screenOrderId: order.orderId,
+        ...data,
+    };
+    const base = { type, orderId: order._id, data: payload, triggeredBy: actor };
+
+    try {
+        if (user && order.userId) {
+            const recipients = dedupe(getUserRecipient(idOf(order.userId)), actor);
+            if (recipients.length) await createNotification({ ...base, ...user, recipients });
+        }
+        if (staff) {
+            const recipients = dedupe(await getOrderStaffRecipients(order), actor)
+                .filter(r => !skipRoles.includes(r.role));
+            if (recipients.length) await createNotification({ ...base, ...staff, recipients });
+        }
+    } catch (err) {
+        console.error(`[notifyOrderParties:${type}] failed:`, err);
+    }
+}
+
+/** Build the `actor` / `cancelledBy` info from whatever the auth middleware put on req.user. */
+export function actorFromReq(req) {
+    const u = req.user || {};
+    const model = u.model || (u.position ? 'Employee' : 'User');
+    const role = model === 'User' ? 'user' : model === 'Admin' ? 'admin' : 'employee';
+    const name = [u.firstName, u.lastName].filter(Boolean).join(' ').trim() || u.name || u.email || role;
+    return { userId: u._id, userModel: model, role, name };
+}

@@ -44,7 +44,9 @@ const authGeneric = async (req, res, next) => {
             req.user = {
                 _id: user._id,
                 role: 'user',
-                model: 'User'
+                model: 'User',
+                firstName: user.firstName,
+                lastName: user.lastName
             };
             return next();
         }
@@ -55,7 +57,10 @@ const authGeneric = async (req, res, next) => {
             req.user = {
                 _id: employee._id,
                 role: employee.position || 'employee',
-                model: 'Employee'
+                model: 'Employee',
+                position: employee.position,
+                firstName: employee.firstName,
+                lastName: employee.lastName
             };
             return next();
         }
@@ -66,7 +71,11 @@ const authGeneric = async (req, res, next) => {
             req.user = {
                 _id: admin._id,
                 role: 'admin',
-                model: 'Admin'
+                model: 'Admin',
+                name: admin.name,
+                firstName: admin.firstName,
+                lastName: admin.lastName,
+                email: admin.email
             };
             return next();
         }

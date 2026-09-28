@@ -15,6 +15,8 @@ import {
     getAdminRecipients,
     getEmployeeRecipient,
     getUserRecipient,
+    notifyOrderParties,
+    actorFromReq,
 } from "../services/notificationService.js";
 import mongoose from "mongoose";
 
@@ -211,6 +213,89 @@ const buildInvoiceData = async (order, paymentInfo) => {
 
 // ─── Order Creation ───────────────────────────────────────────────────────────
 
+// ─── Cancellation + status-change helpers ─────────────────────────────────────
+
+const MIN_CANCEL_REASON = 5;
+const MAX_CANCEL_REASON = 300;
+
+/**
+ * Mutates `order` into the cancelled state. Returns an error string (and leaves
+ * the order untouched) when the cancellation is not allowed / reason is bad.
+ */
+const applyCancellation = (order, { reason, actor, force = false }) => {
+    const cleaned = String(reason || '').trim();
+    if (cleaned.length < MIN_CANCEL_REASON) {
+        return `Please provide a cancellation reason (at least ${MIN_CANCEL_REASON} characters).`;
+    }
+    if (cleaned.length > MAX_CANCEL_REASON) {
+        return `Cancellation reason must be ${MAX_CANCEL_REASON} characters or fewer.`;
+    }
+    if (order.status === 'Cancelled') return 'Order is already cancelled';
+    if (!force) {
+        const nonCancellable = ['Mechanic Arrived', 'In Progress', 'Completion Requested', 'Work Completed', 'Invoice Generated', 'Completed'];
+        if (nonCancellable.includes(order.status)) {
+            return `Cannot cancel order with status "${order.status}"`;
+        }
+    }
+    order.status = 'Cancelled';
+    order.cancellationReason = cleaned;
+    order.cancelledAt = new Date();
+    order.cancelledBy = { role: actor.role, id: actor.userId, name: actor.name };
+    return null;
+};
+
+/** Moving an order OUT of Cancelled (force update) must not keep a stale reason. */
+const clearCancellation = (order) => {
+    if (order.status !== 'Cancelled') {
+        order.cancellationReason = null;
+        order.cancelledAt = null;
+        order.cancelledBy = undefined;
+    }
+};
+
+const cancelledByLabel = (order) => {
+    const by = order.cancelledBy;
+    if (!by?.role) return null;
+    if (by.role === 'user') return 'the customer';
+    return by.name || (by.role === 'admin' ? 'admin' : 'staff');
+};
+
+/** Same message set for cancel / status update / force update so nobody gets a different story. */
+const notifyStatusChange = async (order, { actor, status }) => {
+    const ref = { userId: actor.userId, userModel: actor.userModel };
+
+    if (status === 'Cancelled') {
+        const who = cancelledByLabel(order);
+        const reasonText = order.cancellationReason ? ` Reason: ${order.cancellationReason}` : '';
+        return notifyOrderParties(order, {
+            type: 'order_cancelled',
+            actor: ref,
+            data: { cancellationReason: order.cancellationReason },
+            user: {
+                title: '❌ Order Cancelled',
+                body: `Your order #${order.orderId} has been cancelled${actor.role === 'user' ? '' : ' by Repairo Moto'}.${reasonText}`,
+            },
+            staff: {
+                title: '❌ Order Cancelled',
+                body: `Order #${order.orderId} was cancelled${who ? ` by ${who}` : ''}.${reasonText}`,
+            },
+        });
+    }
+
+    return notifyOrderParties(order, {
+        type: 'order_update',
+        actor: ref,
+        user: {
+            title: '🛵 Order Status Updated',
+            body: `Your order #${order.orderId} status has changed to ${status}.`,
+        },
+        staff: {
+            title: '🛵 Order Status Updated',
+            body: `Order #${order.orderId} moved to ${status}.`,
+        },
+    });
+};
+
 export const createManualOrder = async (req, res) => {
     try {
         const {
@@ -373,15 +458,17 @@ export const userOrder = async (req, res) => {
         const savedOrder = await newOrder.save();
         await sendBookingConfirmationEmail(savedOrder, user.email);
 
-        const adminRecipients = await getAdminRecipients();
-        await createNotification({
+        await notifyOrderParties(savedOrder, {
             type: 'new_order',
-            title: '🛵 New Order Received',
-            body: `#${savedOrder.orderId} · ${savedOrder.selectedBrand} ${savedOrder.selectedModel} · ${savedOrder.serviceType}`,
-            recipients: adminRecipients,
-            orderId: savedOrder._id,
-            data: { orderId: savedOrder._id.toString(), screenOrderId: savedOrder.orderId },
-            triggeredBy: { userId, userModel: 'User' },
+            actor: { userId, userModel: 'User' },
+            user: {
+                title: '✅ Booking Received',
+                body: `Your booking #${savedOrder.orderId} is confirmed. We'll assign a mechanic shortly.`,
+            },
+            staff: {
+                title: '🛵 New Order Received',
+                body: `#${savedOrder.orderId} · ${savedOrder.selectedBrand} ${savedOrder.selectedModel} · ${savedOrder.serviceType}`,
+            },
         });
 
         return res.status(201).json({ message: 'Order Confirmed!', data: savedOrder });
@@ -522,37 +609,58 @@ export const updateMechanic = async (req, res) => {
             });
         }
 
+        const previousMechanicIds = (order.mechanicIds || []).map(String);
         order.mechanicIds = mechanics.map(m => m._id);
         order.assignedMechanics = mechanics.map(m => `${m.firstName} ${m.lastName}`);
         order.status = "Mechanic Assigned";
         await order.save();
 
-        for (const mechanic of mechanics) {
-            const mechanicRecipients = getEmployeeRecipient(mechanic._id, 'mechanic');
+        const actor = actorFromReq(req);
+        const actorRef = { userId: actor.userId, userModel: actor.userModel };
+        const newIds = mechanics.map(m => String(m._id));
+
+        // Newly assigned mechanics
+        for (const mechanic of mechanics.filter(m => !previousMechanicIds.includes(String(m._id)))) {
             await createNotification({
                 type: 'mechanic_assigned',
                 title: '🛵 New Order Assigned',
                 body: `#${order.orderId} · ${order.selectedBrand} ${order.selectedModel} · ${order.serviceType}`,
-                recipients: mechanicRecipients,
+                recipients: getEmployeeRecipient(mechanic._id, 'mechanic'),
                 orderId: order._id,
                 data: { orderId: order._id.toString(), screenOrderId: order.orderId },
-                triggeredBy: { userId: mechanic._id, userModel: 'Employee' },
-            });
+                triggeredBy: actorRef,
+            }).catch(e => console.error('mechanic_assigned notify failed:', e));
         }
 
-        if (order.userId) {
-            const userRecipient = getUserRecipient(order.userId);
-            const mechanicNames = mechanics.map(m => `${m.firstName} ${m.lastName}`).join(', ');
+        // Mechanics who were taken off this order
+        for (const removedId of previousMechanicIds.filter(id => !newIds.includes(id))) {
             await createNotification({
-                type: 'mechanic_assigned',
-                title: '🛵 Mechanic(s) Assigned',
-                body: `${mechanicNames} ${mechanics.length === 1 ? 'has' : 'have'} been assigned to your order #${order.orderId}.`,
-                recipients: userRecipient,
+                type: 'order_update',
+                title: '📋 Order Unassigned',
+                body: `You are no longer assigned to order #${order.orderId}.`,
+                recipients: getEmployeeRecipient(removedId, 'mechanic'),
                 orderId: order._id,
                 data: { orderId: order._id.toString(), screenOrderId: order.orderId },
-                triggeredBy: { userId: order.userId._id, userModel: 'User' },
-            });
+                triggeredBy: actorRef,
+            }).catch(e => console.error('unassign notify failed:', e));
         }
+
+        // Customer
+        const mechanicNames = mechanics.map(m => `${m.firstName} ${m.lastName}`).join(', ');
+        await notifyOrderParties(order, {
+            type: 'mechanic_assigned',
+            actor: actorRef,
+            user: {
+                title: '🛵 Mechanic(s) Assigned',
+                body: `${mechanicNames} ${mechanics.length === 1 ? 'has' : 'have'} been assigned to your order #${order.orderId}.`,
+            },
+            // Admins / managers / vendor / delivery get an FYI (mechanics already got their own message above)
+            staff: {
+                title: '👨‍🔧 Mechanic Assigned',
+                body: `${mechanicNames} assigned to order #${order.orderId}.`,
+            },
+            skipRoles: ['mechanic'],
+        });
 
         return res.status(200).json({
             message: `${mechanics.length} mechanic(s) assigned successfully.`,
@@ -623,6 +731,17 @@ export const updateVendor = async (req, res) => {
         );
         if (!updatedOrder) return res.status(404).json({ message: "Order not found" });
 
+        const actor = req.user ? actorFromReq(req) : null;
+        await createNotification({
+            type: 'order_assigned',
+            title: '📦 New Order Assigned',
+            body: `#${updatedOrder.orderId} · ${updatedOrder.selectedBrand} ${updatedOrder.selectedModel} · ${updatedOrder.serviceType}`,
+            recipients: [{ userId: vendor._id, userModel: 'Vendor', role: 'vendor' }],
+            orderId: updatedOrder._id,
+            data: { orderId: updatedOrder._id.toString(), screenOrderId: updatedOrder.orderId },
+            triggeredBy: actor ? { userId: actor.userId, userModel: actor.userModel } : null,
+        }).catch(e => console.error('vendor assign notify failed:', e));
+
         res.status(200).json({ message: "Vendor updated successfully", data: updatedOrder });
     } catch (error) {
         console.error("Error updating vendor:", error);
@@ -633,7 +752,7 @@ export const updateVendor = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
+        const { status, reason } = req.body;
 
         if (!status) return res.status(400).json({ message: "Status is required" });
 
@@ -647,24 +766,23 @@ export const updateOrderStatus = async (req, res) => {
             });
         }
 
-        const updatedOrder = await Order.findByIdAndUpdate(
-            id, { status }, { new: true, runValidators: true }
-        );
-        if (!updatedOrder) return res.status(404).json({ message: "Order not found" });
+        const order = await Order.findById(id);
+        if (!order) return res.status(404).json({ message: "Order not found" });
 
-        if (updatedOrder.userId) {
-            const userRecipient = getUserRecipient(updatedOrder.userId);
-            await createNotification({
-                type: 'order_update',
-                title: status === 'Cancelled' ? '❌ Order Cancelled' : '🛵 Order Status Updated',
-                body: `Your order #${updatedOrder.orderId} status has changed to ${status}.`,
-                recipients: userRecipient,
-                orderId: updatedOrder._id,
-                data: { orderId: updatedOrder._id.toString(), screenOrderId: updatedOrder.orderId },
-            });
+        const actor = actorFromReq(req);
+
+        if (status === 'Cancelled') {
+            const err = applyCancellation(order, { reason, actor });
+            if (err) return res.status(400).json({ message: err });
+        } else {
+            order.status = status;
+            clearCancellation(order);
         }
+        await order.save();
 
-        return res.status(200).json({ message: "Order status updated successfully", data: updatedOrder });
+        await notifyStatusChange(order, { actor, status });
+
+        return res.status(200).json({ message: "Order status updated successfully", data: order });
     } catch (error) {
         console.error("Error updating order status:", error);
         return res.status(500).json({ message: "Server error while updating order status" });
@@ -700,6 +818,12 @@ export const confirmMechanicArrival = async (req, res) => {
                 data: { orderId: order._id.toString(), screenOrderId: order.orderId },
             });
         }
+
+        await notifyOrderParties(order, {
+            type: 'mechanic_arrived',
+            staff: { title: '📍 Mechanic Arrived', body: `Mechanic has arrived for order #${order.orderId}.` },
+            skipRoles: ['mechanic'],
+        });
 
         return res.status(200).json({ message: 'Arrival confirmed.', data: order });
     } catch (error) {
@@ -929,6 +1053,12 @@ export const verifyWorkStart = async (req, res) => {
             });
         }
 
+        await notifyOrderParties(order, {
+            type: 'work_started',
+            staff: { title: '⚙️ Work Started', body: `Work has started on order #${order.orderId}.` },
+            skipRoles: ['mechanic'],
+        });
+
         return res.status(200).json({ message: 'Work started successfully.', data: order });
     } catch (error) {
         console.error('Error verifying work start OTP:', error);
@@ -998,6 +1128,12 @@ export const markWorkComplete = async (req, res) => {
                 data: { orderId: order._id.toString(), screenOrderId: order.orderId, otp },
             });
         }
+
+        await notifyOrderParties(order, {
+            type: 'general',
+            staff: { title: '🔧 Work Marked Complete', body: `Mechanic finished order #${order.orderId}. Waiting for customer confirmation.` },
+            skipRoles: ['mechanic'],
+        });
 
         return res.status(200).json({ message: 'Work marked as complete. OTP sent to customer.', data: order });
     } catch (error) {
@@ -1122,14 +1258,11 @@ export const confirmWorkCompletion = async (req, res) => {
         order.afterPhoto = confirmedPhotoPath;
         await order.save();
 
-        const adminRecipients = await getAdminRecipients();
-        await createNotification({
+        await notifyOrderParties(order, {
             type: 'order_confirmed_complete',
-            title: '✅ Customer Confirmed Completion',
-            body: `Customer confirmed completion for order #${order.orderId}.`,
-            recipients: adminRecipients,
-            orderId: order._id,
-            data: { orderId: order._id.toString(), screenOrderId: order.orderId },
+            actor: { userId: order.userId, userModel: 'User' },
+            user: { title: '✅ Work Confirmed', body: `Thanks for confirming order #${order.orderId}. Your bill will be ready shortly.` },
+            staff: { title: '✅ Customer Confirmed Completion', body: `Customer confirmed completion for order #${order.orderId}.` },
         });
 
         return res.status(200).json({ message: 'Completion confirmed by customer.', data: order });
@@ -1392,6 +1525,11 @@ export const updateOrderandGenerateInvoice = async (req, res) => {
                         orderId: updatedOrder._id.toString(),
                         screenOrderId: updatedOrder.orderId,
                     },
+                });
+                await notifyOrderParties(updatedOrder, {
+                    type: 'invoice_generated',
+                    actor: req.user ? { userId: req.user._id, userModel: req.user.model } : null,
+                    staff: { title: '🧾 Invoice Generated', body: `Invoice generated for order #${updatedOrder.orderId}. Awaiting payment.` },
                 });
             } catch (notifError) {
                 console.error('Notification failed:', notifError);
@@ -1805,6 +1943,12 @@ export const getOrdersByPosition = async (req, res) => {
 
 // ─── Cancellation ─────────────────────────────────────────────────────────────
 
+/**
+ * @route   PUT /api/admin/order/cancel/:id
+ * @body    { reason: string }   (required, 5–300 chars)
+ * @access  Private (authGeneric) —
+ *          user: own orders only · admin: any · employee: manager / operational manager / telecaller
+ */
 export const cancelOrder = async (req, res) => {
     const { id } = req.params;
     const { reason } = req.body;
@@ -1813,31 +1957,26 @@ export const cancelOrder = async (req, res) => {
         const order = await Order.findById(id);
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        if (order.status === 'Cancelled') {
-            return res.status(400).json({ message: 'Order is already cancelled' });
+        const actor = actorFromReq(req);
+
+        if (actor.role === 'user') {
+            if (String(order.userId) !== String(actor.userId)) {
+                return res.status(403).json({ message: 'You can only cancel your own orders' });
+            }
+        } else if (actor.role === 'employee') {
+            const allowed = ['manager', 'operational manager', 'telecaller'];
+            if (!allowed.includes(req.user?.position)) {
+                return res.status(403).json({ message: 'You are not allowed to cancel orders' });
+            }
+        } else if (actor.role !== 'admin') {
+            return res.status(403).json({ message: 'Not allowed to cancel orders' });
         }
 
-        const nonCancellable = ['In Progress', 'Work Completed', 'Invoice Generated', 'Completed', 'Mechanic Arrived'];
-        if (nonCancellable.includes(order.status)) {
-            return res.status(400).json({ message: `Cannot cancel order with status "${order.status}"` });
-        }
-
-        order.status = 'Cancelled';
-        order.cancellationReason = reason || null;
-        order.cancelledAt = new Date();
+        const err = applyCancellation(order, { reason, actor });
+        if (err) return res.status(400).json({ message: err });
         await order.save();
 
-        if (order.userId) {
-            const userRecipient = getUserRecipient(order.userId);
-            await createNotification({
-                type: 'order_cancelled',
-                title: '❌ Order Cancelled',
-                body: `Your order #${order.orderId} has been cancelled.`,
-                recipients: userRecipient,
-                orderId: order._id,
-                data: { orderId: order._id.toString(), screenOrderId: order.orderId },
-            });
-        }
+        await notifyStatusChange(order, { actor, status: 'Cancelled' });
 
         res.status(200).json({ message: 'Order cancelled successfully', order });
     } catch (error) {
@@ -2159,34 +2298,28 @@ export const completeRevenue = async (req, res) => {
 export const forceUpdateOrderStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
-        console.log(status)
+        const { status, reason } = req.body;
         if (!status) {
             return res.status(400).json({ message: "Status is required" });
         }
 
-        const order = await Order.findByIdAndUpdate(
-            id,
-            { status },
-            { new: true, runValidators: true }
-        );
-
+        const order = await Order.findById(id);
         if (!order) {
             return res.status(404).json({ message: "Order not found" });
         }
 
-        // Optional: Notify the customer about the change
-        if (order.userId) {
-            const userRecipient = getUserRecipient(order.userId);
-            await createNotification({
-                type: 'order_update',
-                title: '🛵 Order Status Updated',
-                body: `Your order #${order.orderId} status has been updated to ${status}.`,
-                recipients: userRecipient,
-                orderId: order._id,
-                data: { orderId: order._id.toString(), screenOrderId: order.orderId },
-            });
+        const actor = actorFromReq(req);
+
+        if (status === 'Cancelled') {
+            const err = applyCancellation(order, { reason, actor, force: true });
+            if (err) return res.status(400).json({ message: err });
+        } else {
+            order.status = status;
+            clearCancellation(order);
         }
+        await order.save();
+
+        await notifyStatusChange(order, { actor, status });
 
         return res.status(200).json({
             message: "Order status forcefully updated",

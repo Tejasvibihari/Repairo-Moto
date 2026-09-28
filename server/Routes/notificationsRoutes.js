@@ -49,6 +49,8 @@ router.post('/unregister-token', authGeneric, async (req, res) => {
 router.get('/', authGeneric, async (req, res) => {
     try {
         const userId = req.user._id;
+        // was hard-capped at 10 → older notifications were unreachable
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
 
         const notifications = await Notification.find(
             { 'recipients.userId': userId },
@@ -60,7 +62,7 @@ router.get('/', authGeneric, async (req, res) => {
             }
         )
             .sort({ createdAt: -1 })
-            .limit(10)
+            .limit(limit)
             .lean();
 
         const shaped = notifications.map(n => {
@@ -70,7 +72,7 @@ router.get('/', authGeneric, async (req, res) => {
                 title: n.title,
                 body: n.body,
                 type: n.type,
-                orderId: n.orderId?.toString?.() || String(n.orderId),
+                orderId: n.orderId ? n.orderId.toString() : null,   // was String(null) === "null"
                 data: n.data,
                 isRead: n.recipients?.[0]?.isRead ?? false,
                 createdAt: n.createdAt,

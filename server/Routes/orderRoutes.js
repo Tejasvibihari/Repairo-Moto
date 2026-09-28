@@ -33,6 +33,7 @@ import {
 } from "../Controllers/orderController.js";
 import authAdmin from "../Middleware/authAdmin.js";
 import authUser from "../Middleware/authUser.js";
+import authGeneric from "../Middleware/authGeneric.js";
 import { uploadSingle } from "../Middleware/photoUpload.js";
 
 const router = express.Router();
@@ -121,7 +122,7 @@ router.post('/:id/mark-paid-cod', markPaidCod);
 router.put("/update/updateMechanic/:id", authAdmin, updateMechanic);
 router.put("/updateDelivery/:id", updateDelivery);
 router.put("/updateVendor/:id", updateVendor);
-router.put("/updateStatus/:id", updateOrderStatus);
+router.put("/updateStatus/:id", authGeneric, updateOrderStatus);
 
 //---------------------------------------------------------------------
 // FORCE UPDATE STATUS
@@ -145,7 +146,7 @@ router.get('/:id/invoice', getInvoice);
 // -------------------------------------------------------------------
 // CANCELLATION
 // -------------------------------------------------------------------
-router.put('/cancel/:id', cancelOrder);
+router.put('/cancel/:id', authGeneric, cancelOrder);
 
 // -------------------------------------------------------------------
 // RESCHEDULE

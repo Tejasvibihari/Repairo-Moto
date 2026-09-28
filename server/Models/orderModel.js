@@ -224,6 +224,11 @@ const orderSchema = new mongoose.Schema({
 
     cancellationReason: { type: String, default: null, trim: true },
     cancelledAt: { type: Date, default: null },
+    cancelledBy: {
+        role: { type: String, enum: ['user', 'admin', 'employee'], default: undefined },
+        id: { type: mongoose.Schema.Types.ObjectId, default: undefined },
+        name: { type: String, trim: true, default: undefined },
+    },
 }, {
     timestamps: true,
 });
