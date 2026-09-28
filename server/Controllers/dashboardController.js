@@ -4,165 +4,276 @@ import Employee from '../Models/employeeModel.js';
 import Vendor from '../Models/vendorModel.js';
 import mongoose from 'mongoose';
 
-// ── Period → Date range ───────────────────────────────────────────────────────
-const getPeriodRange = (period) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// Date helpers — everything is bucketed in IST (Asia/Kolkata, UTC+05:30) so that
+// "Today" means the admin's today, not the server's (usually UTC) today.
+// ─────────────────────────────────────────────────────────────────────────────
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const TZ = 'Asia/Kolkata';
+
+// Midnight IST of the day containing `date`, returned as a real UTC Date.
+const startOfDayIST = (date) => {
+    const shifted = new Date(date.getTime() + IST_OFFSET_MS);
+    shifted.setUTCHours(0, 0, 0, 0);
+    return new Date(shifted.getTime() - IST_OFFSET_MS);
+};
+
+// 'YYYY-MM-DD' (an IST calendar day) → midnight IST as UTC Date, or null.
+const parseISTDate = (str) => {
+    if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return null;
+    const d = new Date(`${str}T00:00:00+05:30`);
+    return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const PERIODS = ['today', 'yesterday', 'week', 'last30', 'month', 'year', 'custom'];
+
+/**
+ * Resolve a period key into a half-open range [start, end).
+ * Also returns the immediately preceding range of equal length so the UI can
+ * show "vs previous period" deltas.
+ *
+ *  today      – since midnight IST
+ *  yesterday  – yesterday midnight → today midnight
+ *  week       – last 7 days (incl. today)
+ *  last30     – last 30 days (incl. today)
+ *  month      – calendar month to date
+ *  year       – calendar year to date
+ *  custom     – ?from=YYYY-MM-DD&to=YYYY-MM-DD (both inclusive)
+ */
+const resolveRange = ({ period, from, to }) => {
     const now = new Date();
-    const start = new Date();
+    const todayStart = startOfDayIST(now);
+    const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
+    let start;
+    let end = tomorrowStart;
 
     switch (period) {
         case 'today':
-            start.setHours(0, 0, 0, 0);
+            start = todayStart;
+            break;
+        case 'yesterday':
+            start = new Date(todayStart.getTime() - DAY_MS);
+            end = todayStart;
             break;
         case 'week':
-            start.setDate(now.getDate() - 7);
+            start = new Date(todayStart.getTime() - 6 * DAY_MS);
             break;
-        case 'month':
-            start.setMonth(now.getMonth() - 1);
+        case 'last30':
+            start = new Date(todayStart.getTime() - 29 * DAY_MS);
             break;
-        case 'year':
-            start.setFullYear(now.getFullYear() - 1);
+        case 'month': {
+            const s = new Date(todayStart.getTime() + IST_OFFSET_MS);
+            s.setUTCDate(1);
+            start = new Date(s.getTime() - IST_OFFSET_MS);
             break;
+        }
+        case 'year': {
+            const s = new Date(todayStart.getTime() + IST_OFFSET_MS);
+            s.setUTCMonth(0, 1);
+            start = new Date(s.getTime() - IST_OFFSET_MS);
+            break;
+        }
+        case 'custom': {
+            const f = parseISTDate(from);
+            const t = parseISTDate(to);
+            if (!f || !t) return { error: 'Custom range needs valid from and to dates (YYYY-MM-DD).' };
+            if (t < f) return { error: '"To" date cannot be before "From" date.' };
+            if ((t - f) / DAY_MS > 731) return { error: 'Custom range cannot exceed 2 years.' };
+            start = f;
+            end = new Date(t.getTime() + DAY_MS); // make `to` inclusive
+            break;
+        }
         default:
-            start.setMonth(now.getMonth() - 1);
+            return { error: 'Invalid period.' };
     }
 
-    return { start, now };
-};
-
-// ── Revenue chart grouping format (changes by period) ────────────────────────
-const getChartGroupStage = (period) => {
-    if (period === 'today') {
-        // Group by hour
-        return {
-            $group: {
-                _id: {
-                    hour: { $hour: '$createdAt' },
-                },
-                revenue: { $sum: '$total.finalPayable' },
-                orders: { $sum: 1 },
-            },
-        };
-    }
-    if (period === 'year') {
-        // Group by month
-        return {
-            $group: {
-                _id: {
-                    year: { $year: '$createdAt' },
-                    month: { $month: '$createdAt' },
-                },
-                revenue: { $sum: '$total.finalPayable' },
-                orders: { $sum: 1 },
-            },
-        };
-    }
-    // Default: group by day (week / month)
+    const length = end.getTime() - start.getTime();
     return {
-        $group: {
-            _id: {
-                year: { $year: '$createdAt' },
-                month: { $month: '$createdAt' },
-                day: { $dayOfMonth: '$createdAt' },
-            },
-            revenue: { $sum: '$total.finalPayable' },
-            orders: { $sum: 1 },
-        },
+        start,
+        end,
+        prevStart: new Date(start.getTime() - length),
+        prevEnd: start,
     };
 };
 
-// ── GET /api/admin/dashboard?period=today|week|month|year ─────────────────────
+// ── Chart bucketing ──────────────────────────────────────────────────────────
+// hour buckets for ≤ 1 day, day buckets up to ~3 months, month buckets beyond.
+const getGranularity = (start, end) => {
+    const days = (end - start) / DAY_MS;
+    if (days <= 1) return 'hour';
+    if (days <= 92) return 'day';
+    return 'month';
+};
+
+const BUCKET_FORMAT = { hour: '%H', day: '%Y-%m-%d', month: '%Y-%m' };
+
+const bucketKeyIST = (date, granularity) => {
+    const s = new Date(date.getTime() + IST_OFFSET_MS).toISOString(); // IST wall-clock as ISO
+    if (granularity === 'hour') return s.slice(11, 13);
+    if (granularity === 'day') return s.slice(0, 10);
+    return s.slice(0, 7);
+};
+
+// Mongo only returns buckets that have data; fill the gaps with zeros so the
+// chart's x-axis is continuous.
+const fillBuckets = (rows, start, end, granularity) => {
+    const map = new Map(rows.map((r) => [r._id, r]));
+    const out = [];
+    const push = (key) => {
+        const r = map.get(key);
+        out.push({ key, revenue: r?.revenue || 0, orders: r?.orders || 0 });
+    };
+
+    if (granularity === 'hour') {
+        for (let h = 0; h < 24; h++) push(String(h).padStart(2, '0'));
+    } else if (granularity === 'day') {
+        for (let t = start.getTime(); t < end.getTime(); t += DAY_MS) {
+            push(bucketKeyIST(new Date(t), 'day'));
+        }
+    } else {
+        const cur = new Date(start.getTime() + IST_OFFSET_MS);
+        cur.setUTCDate(1);
+        const last = new Date(end.getTime() - 1 + IST_OFFSET_MS);
+        while (cur <= last) {
+            push(cur.toISOString().slice(0, 7));
+            cur.setUTCMonth(cur.getUTCMonth() + 1);
+        }
+    }
+    return out;
+};
+
+const pctChange = (curr, prev) => {
+    if (!prev) return curr ? null : 0; // null → "new" (no baseline to compare to)
+    return Math.round(((curr - prev) / prev) * 1000) / 10;
+};
+
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Revenue actually collected on an order: full bill if paid, part-payment if partial.
+const COLLECTED_EXPR = {
+    $switch: {
+        branches: [
+            { case: { $eq: ['$paymentStatus', 'paid'] }, then: { $ifNull: ['$total.finalPayable', 0] } },
+            { case: { $eq: ['$paymentStatus', 'partial'] }, then: { $ifNull: ['$amountPaid', 0] } },
+        ],
+        default: 0,
+    },
+};
+
+// ── GET /api/admin/dashboard ─────────────────────────────────────────────────
+// Query params:
+//   period       today | yesterday | week | last30 | month | year | custom   (default: month)
+//   from, to     YYYY-MM-DD (IST, inclusive) — required when period=custom
+//   city         exact city (case-insensitive)
+//   serviceType  'Schedule Repair' | 'Emergency Repair'
+//   mechanicId   Employee _id — orders that mechanic is assigned to
 export const getAdminDashboard = async (req, res) => {
     try {
-        const period = ['today', 'week', 'month', 'year'].includes(req.query.period)
-            ? req.query.period
-            : 'month';
+        const period = PERIODS.includes(req.query.period) ? req.query.period : 'month';
+        const range = resolveRange({ period, from: req.query.from, to: req.query.to });
+        if (range.error) {
+            return res.status(400).json({ success: false, message: range.error });
+        }
+        const { start, end, prevStart, prevEnd } = range;
 
-        const { start } = getPeriodRange(period);
-        const periodMatch = { createdAt: { $gte: start } };
+        // ── Scope filters (apply to every order-based number) ─────────────
+        const scope = {};
+        const city = (req.query.city || '').trim();
+        if (city) scope.city = new RegExp(`^${escapeRegex(city)}$`, 'i');
+
+        const serviceType = (req.query.serviceType || '').trim();
+        if (serviceType) {
+            if (!['Schedule Repair', 'Emergency Repair'].includes(serviceType)) {
+                return res.status(400).json({ success: false, message: 'Invalid serviceType.' });
+            }
+            scope.serviceType = serviceType;
+        }
+
+        const mechanicId = (req.query.mechanicId || '').trim();
+        if (mechanicId) {
+            if (!mongoose.Types.ObjectId.isValid(mechanicId)) {
+                return res.status(400).json({ success: false, message: 'Invalid mechanicId.' });
+            }
+            scope.mechanicIds = new mongoose.Types.ObjectId(mechanicId);
+        }
+
+        const periodMatch = { ...scope, createdAt: { $gte: start, $lt: end } };
+        const prevMatch = { ...scope, createdAt: { $gte: prevStart, $lt: prevEnd } };
+        const billedMatch = { ...periodMatch, status: { $ne: 'Cancelled' }, 'total.finalPayable': { $gt: 0 } };
+
+        const granularity = getGranularity(start, end);
+
+        const mechanicFilter = { position: 'mechanic' };
+        if (city) mechanicFilter.city = new RegExp(`^${escapeRegex(city)}$`, 'i');
 
         const [
-            // ── KPI ───────────────────────────────────────────────────────────
-            totalOrders,
             periodOrders,
+            prevOrders,
+            statusAgg,
+            revenueAgg,
+            prevRevenueAgg,
+            paymentAgg,
+            recentOrders,
+            chartAgg,
+            topServices,
             totalUsers,
             newUsers,
             totalMechanics,
             totalVendors,
-
-            // ── Order status (scoped to period) ───────────────────────────────
-            pendingOrders,
-            inProgressOrders,
-            mechanicAssignedOrders,
-            completedOrders,
-            invoiceGeneratedOrders,
-            cancelledOrders,
-
-            // ── Revenue ───────────────────────────────────────────────────────
-            totalRevenueAgg,
-            periodRevenueAgg,
-
-            // ── Payment health (scoped to period) ─────────────────────────────
-            unpaidCount,
-            partialCount,
-            paidCount,
-
-            // ── Recent 10 orders (scoped to period) ───────────────────────────
-            recentOrders,
-
-            // ── Revenue chart (scoped to period) ─────────────────────────────
-            revenueChart,
-
-            // ── Top services (scoped to period) ───────────────────────────────
-            topServices,
-
         ] = await Promise.all([
-
-            // KPI — all-time totals
-            Order.countDocuments(),
             Order.countDocuments(periodMatch),
-            User.countDocuments(),
-            User.countDocuments(periodMatch),
-            Employee.countDocuments({ position: 'mechanic' }),
-            Vendor.countDocuments(),
+            Order.countDocuments(prevMatch),
 
-            // Order status — scoped to period
-            Order.countDocuments({ ...periodMatch, status: 'Pending' }),
-            Order.countDocuments({ ...periodMatch, status: 'In Progress' }),
-            Order.countDocuments({ ...periodMatch, status: 'Mechanic Assigned' }),
-            Order.countDocuments({ ...periodMatch, status: 'Completed' }),
-            Order.countDocuments({ ...periodMatch, status: 'Invoice Generated' }),
-            Order.countDocuments({ ...periodMatch, status: 'Cancelled' }),
-
-            // Revenue — all-time vs period
+            // one pass instead of six countDocuments — also picks up statuses the
+            // old dashboard silently ignored (Mechanic Arrived, Work Completed, …)
             Order.aggregate([
-                { $match: { paymentStatus: 'paid' } },
-                { $group: { _id: null, total: { $sum: '$total.finalPayable' } } },
-            ]),
-            Order.aggregate([
-                { $match: { paymentStatus: 'paid', ...periodMatch } },
-                { $group: { _id: null, total: { $sum: '$total.finalPayable' } } },
+                { $match: periodMatch },
+                { $group: { _id: '$status', count: { $sum: 1 } } },
             ]),
 
-            // Payment health — scoped to period
-            Order.countDocuments({ ...periodMatch, paymentStatus: 'unpaid' }),
-            Order.countDocuments({ ...periodMatch, paymentStatus: 'partial' }),
-            Order.countDocuments({ ...periodMatch, paymentStatus: 'paid' }),
+            Order.aggregate([
+                { $match: periodMatch },
+                { $group: { _id: null, total: { $sum: COLLECTED_EXPR } } },
+            ]),
+            Order.aggregate([
+                { $match: prevMatch },
+                { $group: { _id: null, total: { $sum: COLLECTED_EXPR } } },
+            ]),
 
-            // Recent 10 orders — scoped to period, sorted by latest update
+            // Payment health: only orders that actually have a bill and aren't cancelled
+            Order.aggregate([
+                { $match: billedMatch },
+                {
+                    $group: {
+                        _id: '$paymentStatus',
+                        count: { $sum: 1 },
+                        outstanding: {
+                            $sum: {
+                                $max: [0, { $subtract: ['$total.finalPayable', { $ifNull: ['$amountPaid', 0] }] }],
+                            },
+                        },
+                    },
+                },
+            ]),
+
             Order.find(periodMatch)
                 .sort({ updatedAt: -1 })
                 .limit(10)
-                .select('orderId name city status serviceType total paymentStatus createdAt updatedAt assignedMechanic')
+                .select('orderId name city status serviceType total paymentStatus createdAt updatedAt assignedMechanics')
                 .lean(),
 
-            // Revenue chart — grouped by period granularity
             Order.aggregate([
-                { $match: { paymentStatus: 'paid', ...periodMatch } },
-                getChartGroupStage(period),
-                { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.hour': 1 } },
+                { $match: periodMatch },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: BUCKET_FORMAT[granularity], date: '$createdAt', timezone: TZ } },
+                        revenue: { $sum: COLLECTED_EXPR },
+                        orders: { $sum: 1 },
+                    },
+                },
             ]),
 
-            // Top 5 services — scoped to period
             Order.aggregate([
                 { $match: periodMatch },
                 { $unwind: '$services' },
@@ -170,48 +281,102 @@ export const getAdminDashboard = async (req, res) => {
                 { $sort: { count: -1 } },
                 { $limit: 5 },
             ]),
+
+            // Users have no city, so these two are global by design
+            User.countDocuments(),
+            User.countDocuments({ createdAt: { $gte: start, $lt: end } }),
+            Employee.countDocuments(mechanicFilter),
+            Vendor.countDocuments(),
         ]);
 
-        // ── Response ──────────────────────────────────────────────────────────
+        // ── Shape results ─────────────────────────────────────────────────
+        const statusCount = Object.fromEntries(statusAgg.map((s) => [s._id, s.count]));
+        const orderStatus = {
+            pending: statusCount['Pending'] || 0,
+            mechanicAssigned: statusCount['Mechanic Assigned'] || 0,
+            mechanicArrived: statusCount['Mechanic Arrived'] || 0,
+            inProgress: statusCount['In Progress'] || 0,
+            completionRequested: statusCount['Completion Requested'] || 0,
+            workCompleted: statusCount['Work Completed'] || 0,
+            invoiceGenerated: statusCount['Invoice Generated'] || 0,
+            completed: statusCount['Completed'] || 0,
+            cancelled: statusCount['Cancelled'] || 0,
+        };
+
+        const pay = Object.fromEntries(paymentAgg.map((p) => [p._id, p]));
+        const payments = {
+            unpaid: pay.unpaid?.count || 0,
+            partial: pay.partial?.count || 0,
+            paid: pay.paid?.count || 0,
+        };
+        const outstandingAmount = (pay.unpaid?.outstanding || 0) + (pay.partial?.outstanding || 0);
+
+        const periodRevenue = revenueAgg[0]?.total || 0;
+        const prevRevenue = prevRevenueAgg[0]?.total || 0;
+
         res.json({
             success: true,
             period,
+            range: { from: start, to: new Date(end.getTime() - 1) },
+            filters: { city: city || null, serviceType: serviceType || null, mechanicId: mechanicId || null },
             data: {
                 kpi: {
-                    totalRevenue: totalRevenueAgg[0]?.total || 0,
-                    periodRevenue: periodRevenueAgg[0]?.total || 0,
-                    totalOrders,
+                    periodRevenue,
+                    revenueChange: pctChange(periodRevenue, prevRevenue),
                     periodOrders,
+                    ordersChange: pctChange(periodOrders, prevOrders),
+                    outstandingAmount,
+                    avgOrderValue: payments.paid ? Math.round(periodRevenue / payments.paid) : 0,
                     totalUsers,
                     newUsers,
                     totalMechanics,
                     totalVendors,
                 },
-                orderStatus: {
-                    pending: pendingOrders,
-                    inProgress: inProgressOrders,
-                    mechanicAssigned: mechanicAssignedOrders,
-                    completed: completedOrders,
-                    invoiceGenerated: invoiceGeneratedOrders,
-                    cancelled: cancelledOrders,
+                orderStatus,
+                payments,
+                revenueChart: {
+                    granularity,
+                    points: fillBuckets(chartAgg, start, end, granularity),
                 },
-                payments: {
-                    unpaid: unpaidCount,
-                    partial: partialCount,
-                    paid: paidCount,
-                },
-                revenueChart,
                 topServices,
                 recentOrders,
             },
         });
-
     } catch (err) {
         console.error('[Dashboard]', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
 
+// ── GET /api/admin/dashboard/filters ─────────────────────────────────────────
+// Options that populate the dashboard filter sheet.
+export const getDashboardFilterOptions = async (req, res) => {
+    try {
+        const [cities, mechanics] = await Promise.all([
+            Order.distinct('city'),
+            Employee.find({ position: 'mechanic' })
+                .select('firstName lastName city')
+                .sort({ firstName: 1 })
+                .lean(),
+        ]);
+
+        res.json({
+            success: true,
+            data: {
+                cities: cities.filter(Boolean).sort(),
+                serviceTypes: ['Schedule Repair', 'Emergency Repair'],
+                mechanics: mechanics.map((m) => ({
+                    _id: m._id,
+                    name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || 'Unnamed',
+                    city: m.city || '',
+                })),
+            },
+        });
+    } catch (err) {
+        console.error('[Dashboard filters]', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
 
 export const getOrderCounts = async (req, res) => {
     try {
