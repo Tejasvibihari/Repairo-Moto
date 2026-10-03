@@ -36,6 +36,7 @@ import bannerRouter from "./Routes/bannerRoutes.js";
 import appVersionRoutes from "./Routes/appVersionRoutes.js";
 import adminSettingsRoutes from "./Routes/adminSettingsRoutes.js";
 import trackingAdminRouter from "./Routes/trackingAdminRoutes.js";
+import { attendanceRouter, attendanceAdminRouter } from "./Routes/attendanceRoutes.js";
 import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
 import './Utils/notificationScheduler.js';
@@ -89,6 +90,8 @@ app.use("/api/admin/banner", bannerRouter);
 app.use("/api/app-version", appVersionRoutes);
 app.use("/api/admin-settings", adminSettingsRoutes);
 app.use("/api/admin/tracking", trackingAdminRouter);
+app.use("/api/employee/attendance", attendanceRouter);
+app.use("/api/admin/attendance", attendanceAdminRouter);
 app.get("/", (req, res) => {
     res.send("Welcome to the Admin API");
 });

@@ -39,6 +39,7 @@ const notificationSchema = new mongoose.Schema({
             'promotion',        // → users: admin-created offer / announcement
             'service_reminder', // → user: "time for your next service" follow-up
             'mechanic_status',  // → admin: mechanic turned ON / OFF the app
+            'attendance',       // → admin: employee marked attendance (data has location + map link)
             'chat',             // → support chat: customer message → admin/telecaller, staff reply → customer
             'general',          // → any role, generic message
         ],
