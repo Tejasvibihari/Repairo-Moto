@@ -45,14 +45,47 @@ export const daysInclusive = (a, b) => {
     return Math.round((t(b) - t(a)) / 86400000) + 1;
 };
 
+// ─── Breaks ───────────────────────────────────────────────────────────────────
+
+/** Milliseconds spent on break. A break with no `end` is still running → counted up to `until`. */
+export function breakMsOf(breaks = [], until = new Date()) {
+    const to = new Date(until).getTime();
+    let ms = 0;
+    for (const b of breaks || []) {
+        if (!b?.start) continue;
+        const end = b.end ? new Date(b.end).getTime() : to;
+        ms += Math.max(0, end - new Date(b.start).getTime());
+    }
+    return ms;
+}
+
+export const breakMinutesOf = (breaks, until) => Math.round(breakMsOf(breaks, until) / 60000);
+
+/** Only the breaks that have finished (a running one is not counted). */
+export const closedBreakMinutes = (breaks) => breakMinutesOf((breaks || []).filter((b) => b?.end));
+
+/** The break the employee is on right now, or null. */
+export const openBreakOf = (breaks = []) => (breaks || []).find((b) => b?.start && !b.end) || null;
+
+/** Finish any running break at `at` (used when the employee signs out while on a break). */
+export const closeOpenBreaks = (breaks = [], at) =>
+    (breaks || []).map((b) => ({ start: b.start, end: b.end || (b.start ? at : undefined) }));
+
+/** Working minutes between check-in and `until`, with break time taken out. */
+export function netWorkedMinutes(checkInAt, until, breaks = []) {
+    const gross = new Date(until).getTime() - new Date(checkInAt).getTime();
+    return Math.max(0, Math.round((gross - breakMsOf(breaks, until)) / 60000));
+}
+
 // ─── Admin report ─────────────────────────────────────────────────────────────
 
 export const MAX_REPORT_DAYS = 62;
 
 /**
  * Turn raw attendance records (+ the employee list) into flat rows for the admin screen.
- *   status: working | completed | missed_signout | absent
+ *   status: working | on_break | completed | missed_signout | absent
  * - "working"        checked in today, not signed out yet (minutes keep growing)
+ * - "on_break"       checked in today and currently on a break (minutes are paused)
  * - "missed_signout" checked in on a PAST day and never signed out (hours unknown → 0)
  * - "absent"         only generated for a single-day report, for every employee who had
  *                    already joined by that day and has no record
@@ -73,7 +106,8 @@ export function buildReportRows({ employees = [], records = [], from, to, today,
         const e = byId.get(String(r.employeeId));
         const out = r.checkOut?.at;
         const live = !out && r.date === today;
-        const status = out ? "completed" : live ? "working" : "missed_signout";
+        const open = live ? openBreakOf(r.breaks) : null;
+        const status = out ? "completed" : live ? (open ? "on_break" : "working") : "missed_signout";
         rows.push({
             _id: String(r._id),
             ...person(e, r.employeeId),
@@ -81,7 +115,11 @@ export function buildReportRows({ employees = [], records = [], from, to, today,
             status,
             checkIn: r.checkIn || null,
             checkOut: out ? r.checkOut : null,
-            minutes: out ? (r.workedMinutes || 0) : live ? minutesBetween(r.checkIn.at, now) : 0,
+            // net of breaks; while on a break the figure is naturally frozen at break start
+            minutes: out ? (r.workedMinutes || 0) : live ? netWorkedMinutes(r.checkIn.at, now, r.breaks) : 0,
+            breaks: (r.breaks || []).map((b) => ({ start: b.start, end: b.end || null })),
+            breakMinutes: closedBreakMinutes(r.breaks),          // finished breaks only
+            onBreakSince: open ? open.start : null,              // the app ticks the running one itself
         });
         seen.add(`${r.employeeId}|${r.date}`);
     }
@@ -98,6 +136,9 @@ export function buildReportRows({ employees = [], records = [], from, to, today,
                 checkIn: null,
                 checkOut: null,
                 minutes: 0,
+                breaks: [],
+                breakMinutes: 0,
+                onBreakSince: null,
             });
         }
     }
@@ -113,6 +154,7 @@ export function summarizeRows(rows, { singleDay, employeeCount }) {
         presentEmployees: new Set(present.map((r) => r.employeeId)).size,
         absent: singleDay ? rows.filter((r) => r.status === "absent").length : null,
         working: rows.filter((r) => r.status === "working").length,
+        onBreak: rows.filter((r) => r.status === "on_break").length,
         completed: completed.length,
         missedSignOut: rows.filter((r) => r.status === "missed_signout").length,
         totalMinutes,

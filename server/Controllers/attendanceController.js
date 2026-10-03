@@ -8,20 +8,29 @@ import { createNotification, getAdminRecipients } from "../services/notification
 import {
     MAX_REPORT_DAYS,
     attendanceVars,
+    breakMinutesOf,
     buildReportRows,
+    closeOpenBreaks,
+    closedBreakMinutes,
     daysInclusive,
     isValidDateKey,
     isValidMonthKey,
     istDateKey,
     istMonthKey,
     mapsLink,
-    minutesBetween,
+    netWorkedMinutes,
     normalizePhone,
+    openBreakOf,
     parseLocation,
     summarizeRows,
 } from "../Utils/attendanceUtils.js";
 
-const stateOf = (rec) => (!rec ? "not_marked" : rec.checkOut?.at ? "checked_out" : "checked_in");
+// not_marked → checked_in ⇄ on_break → checked_out
+const stateOf = (rec) =>
+    !rec ? "not_marked"
+        : rec.checkOut?.at ? "checked_out"
+            : openBreakOf(rec.breaks) ? "on_break"
+                : "checked_in";
 
 const getOrCreateSettings = async () =>
     (await AttendanceSettings.findOne()) || (await AttendanceSettings.create({}));
@@ -122,10 +131,19 @@ export const checkOut = async (req, res) => {
         }
 
         const now = new Date();
+        // Signing out while still on a break ends that break at the sign-out time
+        const breaks = closeOpenBreaks(current.breaks, now);
         // Filter on "no checkOut yet" → atomic against a double tap
         const updated = await Attendance.findOneAndUpdate(
             { _id: current._id, "checkOut.at": { $exists: false } },
-            { $set: { checkOut: { ...loc.value, at: now }, workedMinutes: minutesBetween(current.checkIn.at, now) } },
+            {
+                $set: {
+                    checkOut: { ...loc.value, at: now },
+                    breaks,
+                    breakMinutes: breakMinutesOf(breaks, now),
+                    workedMinutes: netWorkedMinutes(current.checkIn.at, now, breaks),   // break time is NOT work time
+                },
+            },
             { new: true }
         ).lean();
 
@@ -139,6 +157,91 @@ export const checkOut = async (req, res) => {
     } catch (err) {
         console.error("[attendance] check-out failed:", err);
         res.status(500).json({ success: false, message: "Could not sign out. Please try again." });
+    }
+};
+
+// POST /api/employee/attendance/break-start      (no body — breaks don't need a location)
+export const startBreak = async (req, res) => {
+    try {
+        const date = istDateKey();
+        const current = await Attendance.findOne({ employeeId: req.employee._id, date }).lean();
+        if (!current?.checkIn?.at) {
+            return res.status(400).json({ success: false, message: "Mark your attendance before taking a break." });
+        }
+        if (current.checkOut?.at) {
+            return res.status(409).json({
+                success: false, message: "You have already signed out today.", state: "checked_out", attendance: current,
+            });
+        }
+        if (openBreakOf(current.breaks)) {
+            return res.status(409).json({
+                success: false, message: "You are already on a break.", state: "on_break", attendance: current,
+            });
+        }
+
+        // Guard: not signed out AND no running break → atomic against a double tap
+        const updated = await Attendance.findOneAndUpdate(
+            {
+                _id: current._id,
+                "checkOut.at": { $exists: false },
+                breaks: { $not: { $elemMatch: { end: null } } },
+            },
+            { $push: { breaks: { start: new Date() } } },
+            { new: true }
+        ).lean();
+
+        if (!updated) {
+            const latest = await Attendance.findById(current._id).lean();
+            return res.status(409).json({
+                success: false, message: "Could not start your break. Please check your status.", state: stateOf(latest), attendance: latest,
+            });
+        }
+        res.status(201).json({ success: true, date, state: "on_break", attendance: updated });
+    } catch (err) {
+        console.error("[attendance] break-start failed:", err);
+        res.status(500).json({ success: false, message: "Could not start your break. Please try again." });
+    }
+};
+
+// POST /api/employee/attendance/break-end        (no body)
+export const endBreak = async (req, res) => {
+    try {
+        const date = istDateKey();
+        const current = await Attendance.findOne({ employeeId: req.employee._id, date }).lean();
+        if (!current?.checkIn?.at) {
+            return res.status(400).json({ success: false, message: "Mark your attendance first." });
+        }
+        if (current.checkOut?.at) {
+            return res.status(409).json({
+                success: false, message: "You have already signed out today.", state: "checked_out", attendance: current,
+            });
+        }
+        if (!openBreakOf(current.breaks)) {
+            return res.status(409).json({
+                success: false, message: "You are not on a break.", state: "checked_in", attendance: current,
+            });
+        }
+
+        const updated = await Attendance.findOneAndUpdate(
+            {
+                _id: current._id,
+                "checkOut.at": { $exists: false },
+                breaks: { $elemMatch: { end: null } },
+            },
+            { $set: { "breaks.$[open].end": new Date() } },
+            { new: true, arrayFilters: [{ "open.end": null }] }
+        ).lean();
+
+        if (!updated) {
+            const latest = await Attendance.findById(current._id).lean();
+            return res.status(409).json({
+                success: false, message: "Could not end your break. Please check your status.", state: stateOf(latest), attendance: latest,
+            });
+        }
+        res.json({ success: true, date, state: "checked_in", attendance: updated });
+    } catch (err) {
+        console.error("[attendance] break-end failed:", err);
+        res.status(500).json({ success: false, message: "Could not resume work. Please try again." });
     }
 };
 
@@ -186,7 +289,8 @@ export const getMyAttendance = async (req, res) => {
             month,
             summary: {
                 presentDays: records.length,
-                totalMinutes: records.reduce((sum, r) => sum + (r.workedMinutes || 0), 0),
+                totalMinutes: records.reduce((sum, r) => sum + (r.workedMinutes || 0), 0),   // net of breaks
+                breakMinutes: records.reduce((sum, r) => sum + closedBreakMinutes(r.breaks), 0),
             },
             records,
         });

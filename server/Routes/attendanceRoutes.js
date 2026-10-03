@@ -3,6 +3,8 @@ import {
     getToday,
     checkIn,
     checkOut,
+    startBreak,
+    endBreak,
     getMyAttendance,
     setAddress,
     getAttendanceReport,
@@ -18,6 +20,8 @@ export const attendanceRouter = express.Router();
 attendanceRouter.get("/today", authenticateEmployee, getToday);
 attendanceRouter.post("/check-in", authenticateEmployee, checkIn);
 attendanceRouter.post("/check-out", authenticateEmployee, checkOut);
+attendanceRouter.post("/break-start", authenticateEmployee, startBreak);
+attendanceRouter.post("/break-end", authenticateEmployee, endBreak);
 attendanceRouter.patch("/address", authenticateEmployee, setAddress);
 attendanceRouter.get("/", authenticateEmployee, getMyAttendance);
 
