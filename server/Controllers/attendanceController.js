@@ -1,12 +1,16 @@
 // Controllers/attendanceController.js
 import Attendance from "../Models/attendanceModel.js";
 import AttendanceSettings from "../Models/attendanceSettings.js";
+import Employee from "../Models/employeeModel.js";
 import { createNotification, getAdminRecipients } from "../services/notificationService.js";
 // WhatsApp — uncomment this import together with the call inside `checkIn` once the API is ready.
 // import { sendAttendanceWhatsApp } from "../services/whatsappService.js";
 import {
+    MAX_REPORT_DAYS,
     attendanceVars,
-    formatTimeIST,
+    buildReportRows,
+    daysInclusive,
+    isValidDateKey,
     isValidMonthKey,
     istDateKey,
     istMonthKey,
@@ -14,6 +18,7 @@ import {
     minutesBetween,
     normalizePhone,
     parseLocation,
+    summarizeRows,
 } from "../Utils/attendanceUtils.js";
 
 const stateOf = (rec) => (!rec ? "not_marked" : rec.checkOut?.at ? "checked_out" : "checked_in");
@@ -137,6 +142,33 @@ export const checkOut = async (req, res) => {
     }
 };
 
+// PATCH /api/employee/attendance/address   body: { kind: "in" | "out", address }
+// The app sends the location the instant the employee taps (so marking is fast) and, only if
+// the street address wasn't ready yet, fills it in here a moment later. Never overwrites one.
+export const setAddress = async (req, res) => {
+    try {
+        const kind = req.body?.kind === "out" ? "checkOut" : req.body?.kind === "in" ? "checkIn" : null;
+        const address = typeof req.body?.address === "string" ? req.body.address.trim().slice(0, 300) : "";
+        if (!kind) return res.status(400).json({ success: false, message: 'kind must be "in" or "out".' });
+        if (!address) return res.status(400).json({ success: false, message: "address is required." });
+
+        const updated = await Attendance.findOneAndUpdate(
+            {
+                employeeId: req.employee._id,
+                date: istDateKey(),
+                [`${kind}.at`]: { $exists: true },
+                $or: [{ [`${kind}.address`]: { $exists: false } }, { [`${kind}.address`]: "" }],
+            },
+            { $set: { [`${kind}.address`]: address } },
+            { new: true }
+        ).lean();
+
+        res.json({ success: true, updated: !!updated });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 // GET /api/employee/attendance?month=YYYY-MM   (defaults to the current IST month)
 export const getMyAttendance = async (req, res) => {
     try {
@@ -160,6 +192,43 @@ export const getMyAttendance = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// ─── Admin: everyone's attendance ────────────────────────────────────────────
+
+// GET /api/admin/attendance/report?from=YYYY-MM-DD&to=YYYY-MM-DD   (both default to today, IST)
+// One flat list of rows (filtering and sorting happen in the app so they feel instant).
+// A single-day report also lists employees with no record as "absent".
+export const getAttendanceReport = async (req, res) => {
+    try {
+        const today = istDateKey();
+        const from = req.query.from ? String(req.query.from) : today;
+        const to = req.query.to ? String(req.query.to) : from;
+
+        if (!isValidDateKey(from) || !isValidDateKey(to)) {
+            return res.status(400).json({ success: false, message: "from and to must look like 2026-10-03." });
+        }
+        if (from > to) {
+            return res.status(400).json({ success: false, message: "from must not be after to." });
+        }
+        if (daysInclusive(from, to) > MAX_REPORT_DAYS) {
+            return res.status(400).json({ success: false, message: `Choose a range of ${MAX_REPORT_DAYS} days or less.` });
+        }
+
+        const [employees, records] = await Promise.all([
+            Employee.find({}).select("firstName lastName email phone position role profileImage createdAt").lean(),
+            Attendance.find({ date: { $gte: from, $lte: to } }).lean(),
+        ]);
+
+        const singleDay = from === to;
+        const rows = buildReportRows({ employees, records, from, to, today, now: new Date() });
+        const summary = summarizeRows(rows, { singleDay, employeeCount: employees.length });
+
+        res.json({ success: true, from, to, today, singleDay, summary, rows });
+    } catch (err) {
+        console.error("[attendance] report failed:", err);
+        res.status(500).json({ success: false, message: "Could not load attendance." });
     }
 };
 

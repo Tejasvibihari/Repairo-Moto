@@ -4,6 +4,8 @@ import {
     checkIn,
     checkOut,
     getMyAttendance,
+    setAddress,
+    getAttendanceReport,
     getAttendanceSettings,
     updateAttendanceSettings,
 } from "../Controllers/attendanceController.js";
@@ -16,9 +18,11 @@ export const attendanceRouter = express.Router();
 attendanceRouter.get("/today", authenticateEmployee, getToday);
 attendanceRouter.post("/check-in", authenticateEmployee, checkIn);
 attendanceRouter.post("/check-out", authenticateEmployee, checkOut);
+attendanceRouter.patch("/address", authenticateEmployee, setAddress);
 attendanceRouter.get("/", authenticateEmployee, getMyAttendance);
 
 // ── Admin side — mounted at /api/admin/attendance ──
 export const attendanceAdminRouter = express.Router();
+attendanceAdminRouter.get("/report", authAdmin, requireAdminRole, getAttendanceReport);
 attendanceAdminRouter.get("/settings", authAdmin, requireAdminRole, getAttendanceSettings);
 attendanceAdminRouter.put("/settings", authAdmin, requireAdminRole, updateAttendanceSettings);

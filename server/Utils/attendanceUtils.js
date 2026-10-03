@@ -31,6 +31,95 @@ export const minutesBetween = (from, to) =>
 
 export const isValidMonthKey = (s) => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(s || ""));
 
+/** True only for a real calendar day written as "YYYY-MM-DD" (rejects 2026-02-31). */
+export function isValidDateKey(s) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(s || ""))) return false;
+    const [y, m, d] = s.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
+/** Whole days from a to b (both "YYYY-MM-DD"), inclusive of both ends: same day → 1. */
+export const daysInclusive = (a, b) => {
+    const t = (k) => { const [y, m, d] = k.split("-").map(Number); return Date.UTC(y, m - 1, d); };
+    return Math.round((t(b) - t(a)) / 86400000) + 1;
+};
+
+// ─── Admin report ─────────────────────────────────────────────────────────────
+
+export const MAX_REPORT_DAYS = 62;
+
+/**
+ * Turn raw attendance records (+ the employee list) into flat rows for the admin screen.
+ *   status: working | completed | missed_signout | absent
+ * - "working"        checked in today, not signed out yet (minutes keep growing)
+ * - "missed_signout" checked in on a PAST day and never signed out (hours unknown → 0)
+ * - "absent"         only generated for a single-day report, for every employee who had
+ *                    already joined by that day and has no record
+ */
+export function buildReportRows({ employees = [], records = [], from, to, today, now = new Date() }) {
+    const byId = new Map(employees.map((e) => [String(e._id), e]));
+    const person = (e, id) => ({
+        employeeId: String(id),
+        name: e ? employeeName(e) : "Deleted employee",
+        position: e?.position || e?.role || "employee",
+        phone: e?.phone || "",
+        profileImage: e?.profileImage || "",
+    });
+
+    const rows = [];
+    const seen = new Set();
+    for (const r of records) {
+        const e = byId.get(String(r.employeeId));
+        const out = r.checkOut?.at;
+        const live = !out && r.date === today;
+        const status = out ? "completed" : live ? "working" : "missed_signout";
+        rows.push({
+            _id: String(r._id),
+            ...person(e, r.employeeId),
+            date: r.date,
+            status,
+            checkIn: r.checkIn || null,
+            checkOut: out ? r.checkOut : null,
+            minutes: out ? (r.workedMinutes || 0) : live ? minutesBetween(r.checkIn.at, now) : 0,
+        });
+        seen.add(`${r.employeeId}|${r.date}`);
+    }
+
+    if (from === to) {
+        for (const e of employees) {
+            if (seen.has(`${e._id}|${from}`)) continue;
+            if (e.createdAt && istDateKey(e.createdAt) > from) continue;     // had not joined yet
+            rows.push({
+                _id: `absent-${e._id}-${from}`,
+                ...person(e, e._id),
+                date: from,
+                status: "absent",
+                checkIn: null,
+                checkOut: null,
+                minutes: 0,
+            });
+        }
+    }
+    return rows;
+}
+
+export function summarizeRows(rows, { singleDay, employeeCount }) {
+    const present = rows.filter((r) => r.status !== "absent");
+    const completed = rows.filter((r) => r.status === "completed");
+    const totalMinutes = present.reduce((sum, r) => sum + r.minutes, 0);
+    return {
+        employees: employeeCount,
+        presentEmployees: new Set(present.map((r) => r.employeeId)).size,
+        absent: singleDay ? rows.filter((r) => r.status === "absent").length : null,
+        working: rows.filter((r) => r.status === "working").length,
+        completed: completed.length,
+        missedSignOut: rows.filter((r) => r.status === "missed_signout").length,
+        totalMinutes,
+        avgMinutes: completed.length ? Math.round(completed.reduce((s, r) => s + r.minutes, 0) / completed.length) : 0,
+    };
+}
+
 // ─── Location ─────────────────────────────────────────────────────────────────
 
 /**
