@@ -6,9 +6,11 @@ import {
     getLead,
     getAllLeads,
     deleteLead,
+    getLeadOverview,
 } from "../Controllers/leadController.js";
 
 import authAdmin from "../Middleware/authAdmin.js";
+import requireAdminRole from "../Middleware/requireAdminRole.js";
 
 const router = express.Router();
 
@@ -17,6 +19,15 @@ router.post(
     "/new",
     authAdmin,
     createLead
+);
+
+// Admin overview: per-telecaller lead counts + status breakdown.
+// Must stay above "/:id" or "overview" would be treated as an id.
+router.get(
+    "/overview",
+    authAdmin,
+    requireAdminRole,
+    getLeadOverview
 );
 
 // Get all leads

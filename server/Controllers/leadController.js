@@ -1,4 +1,15 @@
 import Lead from "../Models/leadModel.js";
+import Employee from "../Models/employeeModel.js";
+import {
+    RANGES,
+    endOfToday,
+    escapeRegex,
+    exactNameRegex,
+    isTelecallerUser,
+    ownershipFilter,
+    resolveRange,
+    startOfToday,
+} from "../Utils/leadHelpers.js";
 
 // ─────────────────────────────────────────────────────────────
 // CREATE LEAD
@@ -50,6 +61,8 @@ export const createLead = async (req, res) => {
             status: status || "new",
             remarks: remarks || [],
             leadBy,
+            leadById: req.user?._id || null,
+            leadByModel: req.user?.model || null,
             followUp,
         });
 
@@ -80,6 +93,7 @@ export const updateLead = async (req, res) => {
         const lead = await Lead.findOne({
             _id: id,
             isDeleted: false,
+            ...ownershipFilter(req.user),
         });
 
         if (!lead) {
@@ -177,6 +191,7 @@ export const getLead = async (req, res) => {
         const lead = await Lead.findOne({
             _id: id,
             isDeleted: false,
+            ...ownershipFilter(req.user),
         }).lean();
 
         if (!lead) {
@@ -217,6 +232,7 @@ export const getAllLeads = async (req, res) => {
             serviceInterest,
             leadBy,
             hasInvoice,
+            range,
             startDate,
             endDate,
             sortBy = "createdAt",
@@ -240,12 +256,19 @@ export const getAllLeads = async (req, res) => {
             isDeleted: false,
         };
 
+        // Telecallers are always restricted to their own leads,
+        // whatever `leadBy` they pass in the query string.
+        const telecaller = isTelecallerUser(req.user);
+        if (telecaller) {
+            filter.leadBy = req.user.leadBy;
+        }
+
         // ─────────────────────────────────────────────
         // Search
         // ─────────────────────────────────────────────
         if (search?.trim()) {
             const searchRegex = new RegExp(
-                search.trim(),
+                escapeRegex(search.trim()),
                 "i"
             );
 
@@ -303,17 +326,21 @@ export const getAllLeads = async (req, res) => {
         // ─────────────────────────────────────────────
         // Lead creator filter
         // ─────────────────────────────────────────────
-        if (leadBy?.trim()) {
-            filter.leadBy = new RegExp(
-                leadBy.trim(),
-                "i"
-            );
+        // (ignored for telecallers — already pinned above)
+        if (!telecaller && leadBy?.trim()) {
+            filter.leadBy = exactNameRegex(leadBy);
         }
 
         // ─────────────────────────────────────────────
         // Date filter
         // ─────────────────────────────────────────────
-        if (startDate || endDate) {
+        const ranged = resolveRange(range);
+        if (ranged.start || ranged.end) {
+            // `range` (today / 7d / 30d) wins over startDate / endDate
+            filter.createdAt = {};
+            if (ranged.start) filter.createdAt.$gte = ranged.start;
+            if (ranged.end) filter.createdAt.$lte = ranged.end;
+        } else if (startDate || endDate) {
             filter.createdAt = {};
 
             if (startDate) {
@@ -439,6 +466,7 @@ export const deleteLead = async (req, res) => {
         const lead = await Lead.findOne({
             _id: id,
             isDeleted: false,
+            ...ownershipFilter(req.user),
         });
 
         if (!lead) {
@@ -495,6 +523,228 @@ export const deleteLead = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Failed to delete lead.",
+            error: error.message,
+        });
+    }
+};
+
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN: LEADS OVERVIEW (per-telecaller performance)
+//
+// GET /api/lead/overview?range=today|7d|30d|all
+//
+// Groups every non-deleted lead in the range by who created it
+// (`leadBy`) and returns counts per status plus follow-up /
+// invoice figures. Telecallers with zero leads in the range are
+// still listed so the admin can spot inactivity.
+//
+// "Converted" = status booked or completed.
+// ─────────────────────────────────────────────────────────────
+const CONVERTED_STATUSES = ["booked", "completed"];
+
+const pct = (part, whole) =>
+    whole > 0 ? Math.round((part / whole) * 1000) / 10 : 0;
+
+export const getLeadOverview = async (req, res) => {
+    try {
+        const range = RANGES.includes(req.query.range)
+            ? req.query.range
+            : "all";
+        const { start, end } = resolveRange(range);
+
+        const match = { isDeleted: false };
+        if (start) match.createdAt = { $gte: start, $lte: end };
+
+        const now = new Date();
+        const todayStart = startOfToday(now);
+        const todayEnd = endOfToday(now);
+
+        const hasFollowUpDate = {
+            $eq: [{ $type: "$followUp.date" }, "date"],
+        };
+        const isFollowUpStatus = { $eq: ["$status", "follow_up"] };
+
+        const [statusRows, metricRows, telecallers] = await Promise.all([
+            Lead.aggregate([
+                { $match: match },
+                {
+                    $group: {
+                        _id: { leadBy: "$leadBy", status: "$status" },
+                        count: { $sum: 1 },
+                    },
+                },
+            ]),
+            Lead.aggregate([
+                { $match: match },
+                {
+                    $group: {
+                        _id: "$leadBy",
+                        leadById: { $max: "$leadById" },
+                        leadByModel: { $max: "$leadByModel" },
+                        total: { $sum: 1 },
+                        createdToday: {
+                            $sum: {
+                                $cond: [{ $gte: ["$createdAt", todayStart] }, 1, 0],
+                            },
+                        },
+                        followUpsToday: {
+                            $sum: {
+                                $cond: [
+                                    {
+                                        $and: [
+                                            isFollowUpStatus,
+                                            hasFollowUpDate,
+                                            { $gte: ["$followUp.date", todayStart] },
+                                            { $lte: ["$followUp.date", todayEnd] },
+                                        ],
+                                    },
+                                    1,
+                                    0,
+                                ],
+                            },
+                        },
+                        overdueFollowUps: {
+                            $sum: {
+                                $cond: [
+                                    {
+                                        $and: [
+                                            isFollowUpStatus,
+                                            hasFollowUpDate,
+                                            { $lt: ["$followUp.date", now] },
+                                        ],
+                                    },
+                                    1,
+                                    0,
+                                ],
+                            },
+                        },
+                        invoicesLinked: {
+                            $sum: { $cond: [{ $eq: ["$invoice.linked", true] }, 1, 0] },
+                        },
+                        lastActivityAt: { $max: "$updatedAt" },
+                    },
+                },
+            ]),
+            Employee.find({ position: "telecaller" })
+                .select("firstName lastName email position profileImage")
+                .lean(),
+        ]);
+
+        // status counts per creator
+        const statusByCreator = new Map();
+        for (const r of statusRows) {
+            const key = r._id.leadBy;
+            if (!statusByCreator.has(key)) statusByCreator.set(key, {});
+            statusByCreator.get(key)[r._id.status] = r.count;
+        }
+
+        // employee lookup by the same display-name rule the auth middleware uses
+        const nameOf = (e) =>
+            `${e.firstName || ""} ${e.lastName || ""}`.trim() || e.email;
+        const employeeByName = new Map(
+            telecallers.map((e) => [nameOf(e).toLowerCase(), e])
+        );
+
+        const buildRow = (leadBy, m, employee) => {
+            const byStatus = statusByCreator.get(leadBy) || {};
+            const total = m?.total || 0;
+            const converted = CONVERTED_STATUSES.reduce(
+                (sum, s) => sum + (byStatus[s] || 0),
+                0
+            );
+            const role = employee
+                ? "telecaller"
+                : m?.leadByModel === "Admin"
+                    ? "admin"
+                    : "other";
+
+            return {
+                leadBy,
+                leadById: employee?._id || m?.leadById || null,
+                role,
+                profileImage: employee?.profileImage || null,
+                total,
+                byStatus,
+                createdToday: m?.createdToday || 0,
+                followUpsToday: m?.followUpsToday || 0,
+                overdueFollowUps: m?.overdueFollowUps || 0,
+                invoicesLinked: m?.invoicesLinked || 0,
+                converted,
+                conversionRate: pct(converted, total),
+                lastActivityAt: m?.lastActivityAt || null,
+            };
+        };
+
+        const rows = [];
+        const seen = new Set();
+
+        for (const m of metricRows) {
+            const employee = employeeByName.get(String(m._id).toLowerCase());
+            rows.push(buildRow(m._id, m, employee));
+            seen.add(String(m._id).toLowerCase());
+        }
+
+        // telecallers who created nothing in this range
+        for (const e of telecallers) {
+            const name = nameOf(e);
+            if (!seen.has(name.toLowerCase())) {
+                rows.push(buildRow(name, null, e));
+            }
+        }
+
+        rows.sort(
+            (a, b) => b.total - a.total || a.leadBy.localeCompare(b.leadBy)
+        );
+
+        // overall summary
+        const byStatus = {};
+        let total = 0;
+        let converted = 0;
+        const summary = {
+            createdToday: 0,
+            followUpsToday: 0,
+            overdueFollowUps: 0,
+            invoicesLinked: 0,
+        };
+        for (const r of rows) {
+            total += r.total;
+            converted += r.converted;
+            summary.createdToday += r.createdToday;
+            summary.followUpsToday += r.followUpsToday;
+            summary.overdueFollowUps += r.overdueFollowUps;
+            summary.invoicesLinked += r.invoicesLinked;
+            for (const [status, count] of Object.entries(r.byStatus)) {
+                byStatus[status] = (byStatus[status] || 0) + count;
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                range,
+                from: start,
+                to: end,
+                summary: {
+                    total,
+                    byStatus,
+                    ...summary,
+                    converted,
+                    conversionRate: pct(converted, total),
+                    activeTelecallers: rows.filter(
+                        (r) => r.role === "telecaller" && r.total > 0
+                    ).length,
+                    totalTelecallers: telecallers.length,
+                },
+                telecallers: rows,
+            },
+        });
+    } catch (error) {
+        console.error("Lead Overview Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to build leads overview.",
             error: error.message,
         });
     }

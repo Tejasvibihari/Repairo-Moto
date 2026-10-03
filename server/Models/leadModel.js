@@ -113,10 +113,26 @@ const leadSchema = new mongoose.Schema(
                 },
             },
         ],
+        // Display name of whoever created the lead (kept for backward
+        // compatibility; older leads only have this).
         leadBy: {
             type: String,
             required: true,
             trim: true,
+            index: true,
+        },
+        // Stable reference to the creator (set on new leads). Lets the admin
+        // overview tell two people with the same name apart.
+        leadById: {
+            type: mongoose.Schema.Types.ObjectId,
+            refPath: "leadByModel",
+            default: null,
+            index: true,
+        },
+        leadByModel: {
+            type: String,
+            enum: ["Admin", "Employee"],
+            default: null,
         },
         // Optional follow-up information
         followUp: {
