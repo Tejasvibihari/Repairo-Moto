@@ -79,6 +79,9 @@ const empleyeeSchema = new mongoose.Schema({
     lastOnlineAt: { type: Date, default: null },
     lastOfflineAt: { type: Date, default: null },
     lastSeenAt: { type: Date, default: null },   // last location ping, used to detect dead connections
+    // Somebody (admin map / customer tracking screen) is watching until this time → phone streams fast.
+    // Otherwise the phone only sends a low-power ping about once a minute. See services/trackingService.js
+    trackingDemandUntil: { type: Date, default: null },
     currentLocation: {
         lat: { type: Number },
         lng: { type: Number },

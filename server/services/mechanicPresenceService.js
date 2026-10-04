@@ -1,7 +1,10 @@
 // services/mechanicPresenceService.js
 //
-// Single place that flips a mechanic ONLINE / OFFLINE.
-// Used by: the on/off switch endpoint, and the stale-connection cron.
+// Single place that flips a mechanic / delivery partner ONLINE / OFFLINE.
+// Used by: attendance (check-in / break / resume / sign-out), the status endpoint,
+// and the stale-connection cron.
+//
+// Online is DRIVEN BY ATTENDANCE: checked-in = online; on a break / signed out = offline.
 //
 // Guarantees:
 //   • Idempotent — only acts when the state really changes, so a double tap or a
@@ -12,6 +15,7 @@
 import Employee from "../Models/employeeModel.js";
 import { createNotification, getAdminRecipients } from "./notificationService.js";
 import { emitToWatchers } from "../sockets/trackingSocket.js";
+import { ROLE_LABEL } from "./trackingService.js";
 
 const fullName = (e) =>
     [e.firstName, e.lastName].filter(Boolean).join(" ").trim() || e.email || "A mechanic";
@@ -24,43 +28,58 @@ const timeIST = (d = new Date()) =>
         timeZone: "Asia/Kolkata",
     });
 
-function buildMessage(name, online, reason, at) {
+function buildMessage(name, online, reason, at, role) {
     const t = timeIST(at);
     if (online) {
         return {
-            title: "🟢 Mechanic Online",
-            body: `${name} turned ON the app at ${t} and is now available.`,
+            title: `🟢 ${role} Online`,
+            body: `${name} is online since ${t} and now available.`,
         };
     }
     if (reason === "connection_lost") {
         return {
-            title: "🟠 Mechanic Disconnected",
+            title: `🟠 ${role} Disconnected`,
             body: `${name} went offline at ${t} (no signal or app closed).`,
         };
     }
     if (reason === "logout") {
         return {
-            title: "🔴 Mechanic Offline",
+            title: `🔴 ${role} Offline`,
             body: `${name} logged out and went offline at ${t}.`,
         };
     }
+    if (reason === "no_location") {
+        return {
+            title: `🔴 ${role} Offline`,
+            body: `${name} could not share location at ${t} (location permission is off).`,
+        };
+    }
+    if (reason === "break") {
+        return { title: `🔴 ${role} Offline`, body: `${name} went on a break at ${t}.` };
+    }
+    if (reason === "sign_out") {
+        return { title: `🔴 ${role} Offline`, body: `${name} signed out at ${t}.` };
+    }
     return {
-        title: "🔴 Mechanic Offline",
-        body: `${name} turned OFF the app at ${t}.`,
+        title: `🔴 ${role} Offline`,
+        body: `${name} went offline at ${t}.`,
     };
 }
 
 /**
  * @param {string|ObjectId} employeeId
  * @param {boolean} online
- * @param {{reason?: 'manual'|'logout'|'connection_lost'}} opts
+ * @param {{
+ *   reason?: 'attendance'|'break'|'resume'|'sign_out'|'manual'|'logout'|'connection_lost'|'no_location'|'attendance_ended',
+ *   notify?: boolean   // false → update the live map only, no admin notification/push (default true)
+ * }} opts
  * @returns {Promise<{changed: boolean}>}
  */
-export async function setPresence(employeeId, online, { reason = "manual" } = {}) {
+export async function setPresence(employeeId, online, { reason = "manual", notify = true } = {}) {
     const now = new Date();
     const set = online
         ? { isOnline: true, lastOnlineAt: now, lastSeenAt: now }
-        : { isOnline: false, lastOfflineAt: now };
+        : { isOnline: false, lastOfflineAt: now, trackingDemandUntil: null };   // nobody can be watching an offline person
 
     // Filter on the OPPOSITE state → atomic "only if it actually changes"
     const emp = await Employee.findOneAndUpdate(
@@ -68,26 +87,30 @@ export async function setPresence(employeeId, online, { reason = "manual" } = {}
         { $set: set },
         { new: true }
     )
-        .select("firstName lastName email phone currentLocation")
+        .select("firstName lastName email phone position currentLocation")
         .lean();
 
     if (!emp) return { changed: false };
 
     const name = fullName(emp);
-    const message = buildMessage(name, online, reason, now);
+    const role = ROLE_LABEL[emp.position] || "Staff";
+    const message = buildMessage(name, online, reason, now, role);
 
     // 1) Live update for anyone watching the map
     emitToWatchers("mechanic:status", {
         id: String(emp._id),
         name,
         phone: emp.phone || null,
+        position: emp.position || null,
         isOnline: online,
         reason,
         at: now,
         location: online ? emp.currentLocation || null : null,
     });
 
-    // 2) Persistent notification + push to all admins
+    // 2) Persistent notification + push to all admins (skipped for routine attendance-driven changes —
+    //    admins already get the attendance notifications, and the map updates live anyway)
+    if (!notify) return { changed: true };
     try {
         const recipients = await getAdminRecipients();
         await createNotification({
@@ -99,6 +122,7 @@ export async function setPresence(employeeId, online, { reason = "manual" } = {}
                 screen: "LiveMechanics",
                 employeeId: String(emp._id),
                 mechanicName: name,
+                position: emp.position || null,
                 isOnline: online,
                 reason,
                 at: now.toISOString(),

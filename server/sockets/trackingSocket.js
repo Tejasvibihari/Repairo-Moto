@@ -1,15 +1,20 @@
 // sockets/trackingSocket.js
 //
-// Live mechanic tracking — SERVER → ADMIN only.
-// Mechanics do NOT connect here: their phones POST location over HTTP
+// Live tracking of mechanics + delivery partners — SERVER → ADMIN.
+// Staff phones do NOT connect here: they POST location over HTTP
 // (POST /api/employee/auth/location) because sockets die in the background,
 // while a background HTTP call keeps working. The controller then calls
 // emitToWatchers() so every admin sees the marker move.
+//
+// Watchers also send a "watch" heartbeat while their live map is on screen. That flags the
+// staff as "being watched", which makes their phones switch to the fast GPS stream (and back
+// to low-power when the heartbeats stop). See services/trackingService.js.
 //
 // Namespace: /tracking     Rooms: "watchers" (admins + managers)
 import jwt from "jsonwebtoken";
 import Admin from "../Models/adminModel.js";
 import Employee from "../Models/employeeModel.js";
+import { requestLiveLocation } from "../services/trackingService.js";
 
 let ns = null;
 
@@ -58,6 +63,18 @@ export const setupTrackingSockets = (io) => {
     ns.on("connection", (socket) => {
         socket.join("watchers");
         console.log(`📍 tracking watcher ${socket.user.type} ${socket.user.id} connected`);
+
+        // { ids?: string[] }  — which people are on screen; omit for "everyone online".
+        // Send it when the map opens and every ~30s while it stays open.
+        socket.on("watch", async (payload) => {
+            try {
+                const ids = Array.isArray(payload?.ids) ? payload.ids.slice(0, 200) : null;
+                await requestLiveLocation(ids);
+            } catch (err) {
+                console.error("[tracking] watch failed:", err.message);
+            }
+        });
+
         socket.on("disconnect", () => { });
     });
 };

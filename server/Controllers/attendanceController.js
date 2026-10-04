@@ -3,6 +3,8 @@ import Attendance from "../Models/attendanceModel.js";
 import AttendanceSettings from "../Models/attendanceSettings.js";
 import Employee from "../Models/employeeModel.js";
 import { createNotification, getAdminRecipients } from "../services/notificationService.js";
+import { setPresence } from "../services/mechanicPresenceService.js";
+import { isTrackable } from "../services/trackingService.js";
 // WhatsApp — uncomment this import together with the call inside `checkIn` once the API is ready.
 // import { sendAttendanceWhatsApp } from "../services/whatsappService.js";
 import {
@@ -24,6 +26,19 @@ import {
     parseLocation,
     summarizeRows,
 } from "../Utils/attendanceUtils.js";
+
+// Online/Offline follows attendance for mechanics + delivery partners:
+//   checked in / resumed → ONLINE (phone starts sharing location)
+//   break / signed out   → OFFLINE (phone stops)
+// Never lets a presence problem break the attendance action itself.
+async function syncPresence(employee, online, reason) {
+    if (!isTrackable(employee?.position)) return;
+    try {
+        await setPresence(employee._id, online, { reason, notify: false });
+    } catch (err) {
+        console.error("[attendance] presence sync failed:", err.message);
+    }
+}
 
 // not_marked → checked_in ⇄ on_break → checked_out
 const stateOf = (rec) =>
@@ -104,6 +119,7 @@ export const checkIn = async (req, res) => {
         }
 
         notifyAdmins(req.employee, record);                     // push to admins
+        await syncPresence(req.employee, true, "attendance");   // mechanic / delivery → Online
         // sendAttendanceWhatsApp(req.employee, record);        // WhatsApp — uncomment once the API is set up (services/whatsappService.js)
 
         res.status(201).json({ success: true, date, state: "checked_in", attendance: record });
@@ -153,6 +169,7 @@ export const checkOut = async (req, res) => {
                 success: false, message: "You have already signed out today.", state: "checked_out", attendance: latest,
             });
         }
+        await syncPresence(req.employee, false, "sign_out");     // → Offline, phone stops sharing location
         res.json({ success: true, date, state: "checked_out", attendance: updated });
     } catch (err) {
         console.error("[attendance] check-out failed:", err);
@@ -196,6 +213,7 @@ export const startBreak = async (req, res) => {
                 success: false, message: "Could not start your break. Please check your status.", state: stateOf(latest), attendance: latest,
             });
         }
+        await syncPresence(req.employee, false, "break");        // on a break = Offline
         res.status(201).json({ success: true, date, state: "on_break", attendance: updated });
     } catch (err) {
         console.error("[attendance] break-start failed:", err);
@@ -238,6 +256,7 @@ export const endBreak = async (req, res) => {
                 success: false, message: "Could not end your break. Please check your status.", state: stateOf(latest), attendance: latest,
             });
         }
+        await syncPresence(req.employee, true, "resume");        // back from the break = Online again
         res.json({ success: true, date, state: "checked_in", attendance: updated });
     } catch (err) {
         console.error("[attendance] break-end failed:", err);

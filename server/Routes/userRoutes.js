@@ -2,6 +2,7 @@ import express from "express";
 import { createUser, editUser, rateEmployee, getRatingStatus, getAllUser, getAllUserByReferralCode, getUserById, getWithdraHistory, updateUserStatus, updateWithdrawalStatus, userSignIn, withdrawRequest, findUserByEmail, accountAction } from "../Controllers/userController.js";
 import { userUpload } from "../Middleware/userMulter.js";
 import authUser from "../Middleware/authUser.js";
+import { getOrderTracking } from "../Controllers/orderTrackingController.js";
 
 
 const router = express.Router();
@@ -26,5 +27,8 @@ router.put('/update-status/:userId', updateUserStatus);
 
 router.post("/rate-employee", authUser, rateEmployee);
 router.get("/rating-status", authUser, getRatingStatus);
+
+// Customer follows their mechanic / delivery partner (only while the order flow allows it)
+router.get("/order-tracking/:orderId", authUser, getOrderTracking);
 
 export default router;
