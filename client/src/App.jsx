@@ -73,6 +73,8 @@ import Referral from './pages/dashboard/Referral';
 import DetailReferral from './pages/dashboard/DetailReferral';
 import ManageServiceArea from './pages/dashboard/ManageServiceArea';
 import AppUi from './pages/dashboard/AppUi'
+import LiveTracking from './pages/dashboard/LiveTracking';
+import EmployeeLiveTracking from './pages/employee/EmployeeLiveTracking';
 
 
 export default function App() {
@@ -233,6 +235,15 @@ export default function App() {
           />
 
 
+          <Route
+            path='/employee/live-tracking'
+            element={
+              <EmployeePrivateRoute>
+                <EmployeeSidebar><EmployeeLiveTracking /></EmployeeSidebar>
+              </EmployeePrivateRoute>
+            }
+          />
+
           {/* Vendor Page and Routes  */}
           <Route path="/vendor/sign-in" element={<VendorSignIn />} />
           {/* Protected Route With Vendor Navbar  */}
@@ -289,6 +300,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><Dashboard /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/live-tracking'
+            element={
+              <PrivateRoute>
+                <Sidebar><LiveTracking /></Sidebar>
               </PrivateRoute>
             }
           />

@@ -7,6 +7,7 @@ import {
     ShoppingCart, QrCode, Menu, ChevronRight,
     HandCoins,
     User,
+    MapPin,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -24,6 +25,7 @@ const EmployeeSidebar = ({ children }) => {
     const highmenuItems = [
         { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
         // { id: 'invoice', path: '/employee/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
+        { id: 'live-tracking', path: '/employee/live-tracking', label: 'Live Tracking', icon: <MapPin size={20} />, roles: ['operational manager'] },
         { id: 'model', path: '/employee/model', label: 'Bike Model', icon: <Bike size={20} /> },
         { id: 'manage-order', path: '/employee/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
         { id: 'manage-vendor', path: '/employee/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
@@ -88,7 +90,7 @@ const EmployeeSidebar = ({ children }) => {
                 <nav className="mt-6">
                     <ul>
                         {(position === "operational manager" || position === "telecaller") ?
-                            highmenuItems.map((item) => (
+                            highmenuItems.filter((item) => !item.roles || item.roles.includes(position)).map((item) => (
                                 <li key={item.id}>
                                     <button
                                         onClick={() => handleNavigation(item.path)}

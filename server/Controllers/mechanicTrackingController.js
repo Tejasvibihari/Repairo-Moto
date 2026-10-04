@@ -180,6 +180,8 @@ export const getLiveMechanics = async (req, res) => {
                 lat: e.currentLocation?.lat ?? null,
                 lng: e.currentLocation?.lng ?? null,
                 speed: e.currentLocation?.speed ?? null,
+                heading: e.currentLocation?.heading ?? null,
+                accuracy: e.currentLocation?.accuracy ?? null,
                 at: e.currentLocation?.updatedAt || e.lastSeenAt || e.lastOnlineAt,
                 onlineSince: e.lastOnlineAt,
             })),

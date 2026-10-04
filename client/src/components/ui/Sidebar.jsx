@@ -5,7 +5,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Home, Bike, FileText, NotebookPen, User2, Briefcase,
     ShoppingCart, QrCode, Menu, ChevronLeft, ChevronRight,
-    User, DollarSign, X, Receipt, Smartphone
+    User, DollarSign, X, Receipt, Smartphone, MapPin
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -30,6 +30,7 @@ const Sidebar = ({ children }) => {
         { id: 'manage-order', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={18} /> },
         { id: 'manual-invoice', path: '/manual-invoice', label: 'Manual Invoice', icon: <Receipt size={18} /> },
         { id: 'app-version', path: '/app-version', label: 'App Version', icon: <Smartphone size={18} /> },
+        { id: 'live-tracking', path: '/live-tracking', label: 'Live Tracking', icon: <MapPin size={18} /> },
         { id: 'manage-employee', path: '/manage-employee', label: 'Manage Employee', icon: <User2 size={18} /> },
         { id: 'manage-vendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={18} /> },
         { id: 'manage-service-area', path: '/manage-service-area', label: 'Manage Service Area', icon: <Briefcase size={18} /> },
