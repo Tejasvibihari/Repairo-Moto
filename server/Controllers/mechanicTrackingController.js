@@ -191,3 +191,61 @@ export const getLiveMechanics = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+
+// GET /api/admin/tracking/staff — EVERY mechanic + delivery partner, online or not, with the reason.
+// Lets the web map explain "0 online" (not checked in / on break / signed out / phone silent)
+// instead of just showing an empty map.
+export const getTrackableStaff = async (req, res) => {
+    try {
+        const u = req.user || {};
+        const allowed = u.model === "Admin" || WATCHER_POSITIONS.includes(u.position);
+        if (!allowed) return res.status(403).json({ success: false, message: "Not allowed." });
+
+        const list = await Employee.find({ position: { $in: TRACKABLE_POSITIONS } })
+            .select("firstName lastName email phone position isOnline lastOnlineAt lastOfflineAt lastSeenAt currentLocation")
+            .lean();
+        const records = await Attendance.find({
+            employeeId: { $in: list.map((e) => e._id) },
+            date: istDateKey(),
+        }).select("employeeId checkIn.at checkOut.at breaks").lean();
+        const byEmp = new Map(records.map((r) => [String(r.employeeId), r]));
+
+        const attendanceOf = (rec) =>
+            !rec?.checkIn?.at ? "not_marked"
+                : rec.checkOut?.at ? "checked_out"
+                    : openBreakOf(rec.breaks) ? "on_break"
+                        : "checked_in";
+
+        res.json({
+            success: true,
+            staff: list.map((e) => {
+                const attendance = attendanceOf(byEmp.get(String(e._id)));
+                const online = !!e.isOnline;
+                let reason = null;
+                if (!online) {
+                    reason = attendance === "not_marked" ? "Has not marked attendance today"
+                        : attendance === "on_break" ? "On a break"
+                            : attendance === "checked_out" ? "Signed out for the day"
+                                : "Checked in, but the phone is not sharing location (open the app, allow location 'all the time')";
+                }
+                return {
+                    id: String(e._id),
+                    name: nameOf(e),
+                    phone: e.phone || null,
+                    position: e.position || null,
+                    online,
+                    attendance,
+                    reason,
+                    lastSeenAt: e.lastSeenAt || null,
+                    lastOfflineAt: e.lastOfflineAt || null,
+                    lat: e.currentLocation?.lat ?? null,
+                    lng: e.currentLocation?.lng ?? null,
+                };
+            }),
+        });
+    } catch (err) {
+        console.error("[getTrackableStaff]", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};

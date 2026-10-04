@@ -20,6 +20,7 @@ export default function useLiveMechanics() {
     const [mechanics, setMechanics] = useState({}); // { [id]: { id, name, phone, position, lat, lng, speed, at } }
     const [connected, setConnected] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [staff, setStaff] = useState([]);          // everyone trackable (online or not) + why they are offline
     const [error, setError] = useState(null);
     const socketRef = useRef(null);
 
@@ -54,9 +55,20 @@ export default function useLiveMechanics() {
         }
     }, []);
 
+    // Explains an empty map: lists offline staff with the reason (not checked in, on break, ...)
+    const loadStaff = useCallback(async () => {
+        try {
+            const { data } = await axiosClient.get("/api/admin/tracking/staff");
+            setStaff(data.staff || []);
+        } catch {
+            /* the diagnostic list is optional — the live map still works without it */
+        }
+    }, []);
+
     useEffect(() => {
         if (!token) return undefined;
         loadSnapshot();
+        loadStaff();
 
         const socket = io(`${SOCKET_URL}/tracking`, {
             auth: { token },
@@ -65,14 +77,15 @@ export default function useLiveMechanics() {
         });
         socketRef.current = socket;
 
-        socket.on("connect", () => { setConnected(true); loadSnapshot(); }); // re-sync after any gap
+        socket.on("connect", () => { setConnected(true); loadSnapshot(); loadStaff(); }); // re-sync after any gap
         socket.on("disconnect", () => setConnected(false));
         socket.on("connect_error", (e) => { setConnected(false); setError(e?.message || "Connection failed"); });
 
         socket.on("mechanic:location", (m) =>
             setMechanics((prev) => ({ ...prev, [m.id]: { ...prev[m.id], ...m } })));
 
-        socket.on("mechanic:status", (m) =>
+        socket.on("mechanic:status", (m) => {
+            loadStaff(); // someone went online / offline → refresh the "not online" list
             setMechanics((prev) => {
                 if (!m.isOnline) {
                     const { [m.id]: _gone, ...rest } = prev;
@@ -88,10 +101,12 @@ export default function useLiveMechanics() {
                         at: m.at,
                     },
                 };
-            }));
+            });
+        });
 
         return () => { socket.disconnect(); socketRef.current = null; };
-    }, [token, loadSnapshot]);
+    }, [token, loadSnapshot, loadStaff]);
 
-    return { mechanics: Object.values(mechanics), connected, loading, error, reload: loadSnapshot };
+    const offline = staff.filter((p) => !p.online);
+    return { mechanics: Object.values(mechanics), offline, connected, loading, error, reload: loadSnapshot };
 }

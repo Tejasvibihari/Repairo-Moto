@@ -57,7 +57,7 @@ function loadLeaflet() {
 }
 
 export default function LiveTrackingView() {
-    const { mechanics, connected, loading, error } = useLiveMechanics();
+    const { mechanics, offline, connected, loading, error } = useLiveMechanics();
     const mapEl = useRef(null);
     const mapRef = useRef(null);
     const markersRef = useRef(new Map()); // id -> L.marker
@@ -187,6 +187,25 @@ export default function LiveTrackingView() {
                             )}
                         </div>
                     ))
+                )}
+
+                {offline.length > 0 && (
+                    <>
+                        <div className="text-xs font-bold text-gray-500 uppercase mt-2 px-1">Not online ({offline.length})</div>
+                        {offline.map((p) => (
+                            <div key={p.id} className="p-3 rounded-xl bg-gray-50 border border-gray-200">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-gray-400" />
+                                    <span className="font-semibold text-sm text-gray-700 truncate flex-1">{p.name}</span>
+                                    <span className="text-[10px] font-bold text-gray-400">{ROLE[p.position]?.label}</span>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">{p.reason}</div>
+                                {p.lastSeenAt && (
+                                    <div className="text-xs text-gray-400 mt-0.5">Last seen {ago(p.lastSeenAt, now)}</div>
+                                )}
+                            </div>
+                        ))}
+                    </>
                 )}
             </aside>
         </div>

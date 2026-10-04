@@ -81,9 +81,11 @@ export async function setPresence(employeeId, online, { reason = "manual", notif
         ? { isOnline: true, lastOnlineAt: now, lastSeenAt: now }
         : { isOnline: false, lastOfflineAt: now, trackingDemandUntil: null };   // nobody can be watching an offline person
 
-    // Filter on the OPPOSITE state → atomic "only if it actually changes"
+    // Filter on the OPPOSITE state → atomic "only if it actually changes".
+    // $ne (not `isOnline: !online`): staff created before the field existed have NO isOnline value,
+    // and `{ isOnline: false }` does not match a missing field → they could never go online.
     const emp = await Employee.findOneAndUpdate(
-        { _id: employeeId, isOnline: !online },
+        { _id: employeeId, isOnline: { $ne: online } },
         { $set: set },
         { new: true }
     )
