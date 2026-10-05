@@ -36,3 +36,15 @@ export function phoneMatchQuery(raw) {
     const sep = "[\\s\\-()]*";
     return { phone: { $regex: new RegExp(`^\\s*(?:\\+?${sep}${DEFAULT_CC}${sep})?0?${sep}${local.split("").join(sep)}\\s*$`) } };
 }
+
+/**
+ * Value to STORE for a phone number: the clean 10-digit number when it is a valid Indian mobile,
+ * otherwise whatever was typed (trimmed). Empty input → undefined so the field is left out
+ * (important for the unique index, which only covers numbers that exist).
+ */
+export function storePhone(raw) {
+    if (raw === null || raw === undefined) return raw;
+    const s = String(raw).trim();
+    if (!s) return undefined;
+    return localNumber(s) || s;
+}

@@ -38,6 +38,7 @@ import adminSettingsRoutes from "./Routes/adminSettingsRoutes.js";
 import trackingAdminRouter from "./Routes/trackingAdminRoutes.js";
 import { attendanceRouter, attendanceAdminRouter } from "./Routes/attendanceRoutes.js";
 import { ensureUserIndexes } from "./Utils/userIndexes.js";
+import { ensureAuthIndexes } from "./Utils/authIndexes.js";
 import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
 import './Utils/notificationScheduler.js';
@@ -106,6 +107,7 @@ mongoose
     .then(async () => {
         console.log("MongoDB connected successfully");
         await ensureUserIndexes();
+        await ensureAuthIndexes();
     })
     .catch((error) => console.error("MongoDB connection error:", error.message));
 

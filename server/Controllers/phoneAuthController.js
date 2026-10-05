@@ -7,41 +7,15 @@
 //   POST /api/user/auth/phone/send-otp   { phone }            → code sent on WhatsApp (primary)
 //   POST /api/user/auth/phone/verify-otp { phone, otp }       → login / sign-up
 //   POST /api/user/auth/phone/firebase   { idToken }          → login / sign-up from Firebase Phone Verification (secondary)
-import crypto from "crypto";
 import User from "../Models/userModel.js";
-import PhoneOtp from "../Models/phoneOtpModel.js";
 import { generateReferralCode } from "../Utils/generateReferralCode.js";
 import { localNumber, phoneMatchQuery, toWhatsAppNumber } from "../Utils/phone.js";
 import { isWhatsAppConfigured, sendWhatsAppOtp } from "../services/whatsappService.js";
 import { verifyFirebasePhoneToken } from "../Utils/firebaseVerify.js";
 import { signUserToken, userAuthPayload } from "../Utils/userAuth.js";
+import { issueOtp, verifyOtp, ipLimited, issueFailureResponse } from "../services/otpService.js";
 
-const OTP_TTL_MS = 5 * 60 * 1000;      // matches "Expires in 5 minutes" on the WhatsApp template
-const RESEND_MS = 30 * 1000;           // minimum gap between two codes for one number
-const WINDOW_MS = 60 * 60 * 1000;
-const MAX_SENDS_PER_WINDOW = 5;        // codes per number per hour
-const MAX_ATTEMPTS = 5;                // wrong guesses per code
-
-// ─── helpers ──────────────────────────────────────────────────────────────────
-
-const hashCode = (phone, code) =>
-    crypto.createHmac("sha256", process.env.OTP_SECRET || process.env.USER_JWT_SECRET || "dev-only-secret")
-        .update(`${phone}:${code}`).digest("hex");
-
-const safeEqual = (a, b) => {
-    const x = Buffer.from(a), y = Buffer.from(b);
-    return x.length === y.length && crypto.timingSafeEqual(x, y);
-};
-
-// tiny per-IP guard on top of the per-number limits (in memory: resets on restart, fine for a safety net)
-const ipHits = new Map();
-const ipLimited = (ip, max = 30) => {
-    const now = Date.now();
-    const hit = ipHits.get(ip);
-    if (!hit || now > hit.reset) { ipHits.set(ip, { count: 1, reset: now + WINDOW_MS }); return false; }
-    hit.count += 1;
-    return hit.count > max;
-};
+const PURPOSE = "user";
 
 /** @returns {Promise<{user, created: boolean}>} */
 async function createPhoneUser(local, method) {
@@ -105,55 +79,26 @@ export const sendPhoneOtp = async (req, res) => {
         if (ipLimited(req.ip)) return res.status(429).json({ message: "Too many requests. Please try again later." });
 
         const phone = toWhatsAppNumber(local);
-        const now = new Date();
-        const row = await PhoneOtp.findOne({ phone });
-        let windowActive = false;
-        if (row) {
-            const wait = Math.ceil((RESEND_MS - (now - row.lastSentAt)) / 1000);
-            if (wait > 0) {
-                return res.status(429).json({ message: `Please wait ${wait}s before requesting another code.`, retryAfter: wait });
-            }
-            windowActive = now - row.windowStart < WINDOW_MS;
-            if (windowActive && row.sendCount >= MAX_SENDS_PER_WINDOW) {
-                return res.status(429).json({ message: "Too many codes requested. Please try again after some time." });
-            }
-        }
-
-        const code = String(crypto.randomInt(100000, 1000000));
-
-        // Local testing without Meta credentials: WHATSAPP_OTP_DEV_LOG=true prints the code in the server console.
-        const devLog = process.env.WHATSAPP_OTP_DEV_LOG === "true" && !isWhatsAppConfigured();
-        if (devLog) {
-            console.log(`[otp] DEV — code for ${phone}: ${code}`);
-        } else {
-            const result = await sendWhatsAppOtp(phone, code);
-            if (!result.sent) {
-                // Tell the app to switch to the secondary method (Firebase SMS verification).
-                return res.status(503).json({
-                    message: "Could not send the WhatsApp code. Use SMS verification instead.",
-                    fallback: "firebase",
-                });
-            }
-        }
-
-        const windowStart = windowActive ? row.windowStart : now;
-        const expiresAt = new Date(now.getTime() + OTP_TTL_MS);
-        await PhoneOtp.findOneAndUpdate(
-            { phone },
-            {
-                phone,
-                codeHash: hashCode(phone, code),
-                expiresAt,
-                attempts: 0,
-                lastSentAt: now,
-                windowStart,
-                sendCount: windowActive ? row.sendCount + 1 : 1,
-                purgeAt: new Date(Math.max(windowStart.getTime() + WINDOW_MS, expiresAt.getTime())),
+        const result = await issueOtp({
+            phone,
+            purpose: PURPOSE,
+            send: async (code) => {
+                // Local testing without Meta credentials: WHATSAPP_OTP_DEV_LOG=true prints the code in the server console.
+                if (process.env.WHATSAPP_OTP_DEV_LOG === "true" && !isWhatsAppConfigured()) {
+                    console.log(`[otp] DEV — code for ${phone}: ${code}`);
+                    return { sent: true };
+                }
+                return sendWhatsAppOtp(phone, code);
             },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
+        });
 
-        res.json({ success: true, channel: "whatsapp", expiresIn: OTP_TTL_MS / 1000, resendIn: RESEND_MS / 1000 });
+        if (!result.ok) {
+            // On a delivery failure, tell the app to switch to the secondary method (Firebase SMS verification).
+            const { status, body } = issueFailureResponse(result, { fallback: "firebase" });
+            return res.status(status).json(body);
+        }
+
+        res.json({ success: true, channel: "whatsapp", expiresIn: result.expiresIn, resendIn: result.resendIn });
     } catch (err) {
         console.error("[phoneAuth] send-otp:", err);
         res.status(500).json({ message: "Could not send the code. Please try again." });
@@ -169,26 +114,8 @@ export const verifyPhoneOtp = async (req, res) => {
         if (!local) return res.status(400).json({ message: "Enter a valid 10-digit mobile number." });
         if (!/^\d{6}$/.test(otp)) return res.status(400).json({ message: "Enter the 6-digit code." });
 
-        const phone = toWhatsAppNumber(local);
-        const row = await PhoneOtp.findOne({ phone });
-        if (!row || row.expiresAt < new Date()) {
-            return res.status(400).json({ message: "This code has expired. Please request a new one." });
-        }
-        if (row.attempts >= MAX_ATTEMPTS) {
-            return res.status(429).json({ message: "Too many wrong attempts. Please request a new code." });
-        }
-
-        if (!safeEqual(hashCode(phone, otp), row.codeHash)) {
-            const upd = await PhoneOtp.findOneAndUpdate({ _id: row._id }, { $inc: { attempts: 1 } }, { new: true });
-            const left = Math.max(0, MAX_ATTEMPTS - (upd?.attempts ?? MAX_ATTEMPTS));
-            return res.status(400).json({
-                message: left ? `Incorrect code. ${left} attempt${left > 1 ? "s" : ""} left.` : "Too many wrong attempts. Please request a new code.",
-            });
-        }
-
-        // single use: only the request that actually deletes the row may log in
-        const used = await PhoneOtp.deleteOne({ _id: row._id, codeHash: row.codeHash });
-        if (!used.deletedCount) return res.status(400).json({ message: "This code was already used. Please request a new one." });
+        const checked = await verifyOtp({ phone: toWhatsAppNumber(local), purpose: PURPOSE, otp });
+        if (!checked.ok) return res.status(checked.status).json({ message: checked.message });
 
         return await loginOrCreateByPhone(local, "whatsapp", res);
     } catch (err) {

@@ -4,6 +4,22 @@ import bcrypt from "bcryptjs";
 import fs from "fs";
 import jwt from "jsonwebtoken";
 import path from 'path';
+import { localNumber, looksLikePhone, phoneMatchQuery } from "../Utils/phone.js";
+
+const INVALID_PHONE = "Enter a valid 10-digit mobile number.";
+const DUPLICATE_PHONE = "An employee with this phone number already exists";
+
+/** Token + response body for a logged-in employee. Shared by password login and WhatsApp-OTP login. */
+export const buildEmployeeSession = (employee) => {
+    const token = jwt.sign(
+        { id: employee._id, role: employee.position },
+        process.env.EMPLOYEE_JWT_SECRET,
+        { expiresIn: "7d" } // Token expires in 7 day
+    );
+    // Exclude the password (and any stored OTP) from the response
+    const { password: _p, otp: _o, otpExpires: _e, ...employeeData } = employee._doc;
+    return { message: "Sign-in successful", token, employee: employeeData };
+};
 export const createEmployee = async (req, res) => {
     const {
         firstName,
@@ -20,15 +36,25 @@ export const createEmployee = async (req, res) => {
     } = req.body;
 
     try {
+        // Phone is required, must be a real mobile number, and must be unique (like email)
+        const localPhone = localNumber(phone);
+        if (!localPhone) {
+            return res.status(400).json({ message: INVALID_PHONE });
+        }
+
         // Check if employee already exists
         const existingEmployee = await Employee.findOne({ email });
         if (existingEmployee) {
             return res.status(400).json({ message: "Employee already exists" });
         }
+        const phoneTaken = await Employee.findOne(phoneMatchQuery(localPhone)).select("_id").lean();
+        if (phoneTaken) {
+            return res.status(400).json({ message: DUPLICATE_PHONE });
+        }
 
         // Generate password
         const firstNameDigits = firstName.slice(0, 4);
-        const lastPhoneDigits = phone.slice(-4);
+        const lastPhoneDigits = localPhone.slice(-4);
         const password = `${firstNameDigits}${lastPhoneDigits}`;
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -46,7 +72,7 @@ export const createEmployee = async (req, res) => {
             firstName,
             lastName,
             email,
-            phone,
+            phone: localPhone,
             position,
             password: hashedPassword,
             address,
@@ -72,18 +98,37 @@ export const createEmployee = async (req, res) => {
         });
 
     } catch (error) {
+        if (error?.code === 11000) {   // two requests raced past the checks above
+            const field = Object.keys(error.keyPattern || {})[0];
+            return res.status(400).json({ message: field === "phone" ? DUPLICATE_PHONE : "Employee already exists" });
+        }
         console.error("Error creating employee:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
 
-// Employee Sign In 
+// Employee Sign In — "identifier" is an email OR a phone number ("email" is still accepted for older app builds)
 export const employeeSignIn = async (req, res) => {
-    const { email, password } = req.body;
+    const { identifier, email, password } = req.body;
+    const login = String(identifier ?? email ?? "").trim();
 
     try {
-        // Check if the employee exists
-        const employee = await Employee.findOne({ email });
+        if (!login || !password) {
+            return res.status(400).json({ message: "Enter your email or phone number and password." });
+        }
+
+        let employee;
+        if (looksLikePhone(login)) {
+            const query = phoneMatchQuery(login);
+            const matches = query ? await Employee.find(query).limit(2) : [];
+            if (matches.length > 1) {
+                // legacy data: the same number was saved on two employees. Never guess which one is meant.
+                return res.status(409).json({ message: "This phone number is linked to more than one account. Please sign in with your email or contact the admin." });
+            }
+            employee = matches[0];
+        } else {
+            employee = await Employee.findOne({ email: login });
+        }
         if (!employee) {
             return res.status(404).json({ message: "Employee not found" });
         }
@@ -94,22 +139,7 @@ export const employeeSignIn = async (req, res) => {
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // Generate a JWT token
-        const token = jwt.sign(
-            { id: employee._id, role: employee.position },
-            process.env.EMPLOYEE_JWT_SECRET,
-            { expiresIn: "7d" } // Token expires in 7 day
-        );
-
-        // Exclude the password from the response
-        const { password: _, ...employeeData } = employee._doc;
-
-        // Send the response
-        res.status(200).json({
-            message: "Sign-in successful",
-            token,
-            employee: employeeData, // Send all employee data excluding the password
-        });
+        res.status(200).json(buildEmployeeSession(employee));
     } catch (error) {
         console.error("Error during employee sign-in:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -195,6 +225,20 @@ export const updateEmployeeById = async (req, res) => {
             return res.status(404).json({ message: "Employee not found" });
         }
 
+        // Phone: only touched when sent; must be valid and not used by another employee
+        let nextPhone = employee.phone;
+        if (req.body.phone !== undefined && String(req.body.phone).trim() !== "") {
+            const localPhone = localNumber(req.body.phone);
+            if (!localPhone) {
+                return res.status(400).json({ message: INVALID_PHONE });
+            }
+            const clash = await Employee.findOne({ ...phoneMatchQuery(localPhone), _id: { $ne: id } }).select("_id").lean();
+            if (clash) {
+                return res.status(400).json({ message: DUPLICATE_PHONE });
+            }
+            nextPhone = localPhone;
+        }
+
         let profileImage = employee.profileImage; // keep existing by default
 
         if (req.file) {
@@ -230,7 +274,7 @@ export const updateEmployeeById = async (req, res) => {
                 firstName: req.body.firstName,
                 lastName: req.body.lastName,
                 email: req.body.email,
-                phone: req.body.phone,
+                phone: nextPhone,
                 position: req.body.position,
                 address: req.body.address,
                 city: req.body.city,
@@ -248,6 +292,9 @@ export const updateEmployeeById = async (req, res) => {
             employee: updatedEmployee,
         });
     } catch (error) {
+        if (error?.code === 11000 && error.keyPattern?.phone) {
+            return res.status(400).json({ message: DUPLICATE_PHONE });
+        }
         console.error("Error updating employee:", error);
         res.status(500).json({ message: "Internal server error" });
     }

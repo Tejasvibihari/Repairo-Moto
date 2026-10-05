@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { storePhone } from "../Utils/phone.js";
 
 const vendorSchema = new mongoose.Schema({
     firstName: {
@@ -17,8 +18,11 @@ const vendorSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    // Unique per vendor (see the partial index below). Stored as the clean 10-digit number.
     phone: {
         type: String,
+        trim: true,
+        set: storePhone,
     },
     address: {
         type: String,
@@ -89,6 +93,9 @@ const vendorSchema = new mongoose.Schema({
 }, {
     timestamps: true
 })
+
+// Phone must be unique like email. Partial: vendors without a phone don't collide with each other.
+vendorSchema.index({ phone: 1 }, { unique: true, partialFilterExpression: { phone: { $gt: "" } } });
 
 const Vendor = mongoose.model("Vendor", vendorSchema);
 export default Vendor;

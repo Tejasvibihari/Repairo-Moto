@@ -3,11 +3,15 @@ import { employeeSignIn } from "../Controllers/employeeController.js";
 import { employeeUpload } from "../Middleware/employeeMulter.js";
 import authAdmin from "../Middleware/authAdmin.js";
 import { authenticateEmployee } from "../Middleware/employeeAuth.js";
+import { employeeSendOtp, employeeVerifyOtp } from "../Controllers/staffOtpController.js";
 import { getMyStatus, setMyStatus, postMyLocation } from "../Controllers/mechanicTrackingController.js";
 
 const router = express.Router();
 
 router.post("/employee-sign-in", employeeSignIn);
+// WhatsApp OTP login (employees only — never admins)
+router.post("/send-otp", employeeSendOtp);
+router.post("/verify-otp", employeeVerifyOtp);
 router.get("/me", authenticateEmployee, (req, res) => {
     res.status(200).json({
         success: true,

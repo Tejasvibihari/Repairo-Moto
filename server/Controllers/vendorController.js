@@ -4,6 +4,22 @@ import { generateReferralCode } from "../Utils/generateReferralCode.js"
 import fs from "fs";
 import path from "path";
 import jwt from "jsonwebtoken";
+import { localNumber, phoneMatchQuery } from "../Utils/phone.js";
+
+const INVALID_PHONE = "Enter a valid 10-digit mobile number.";
+const DUPLICATE_PHONE = "A vendor with this phone number already exists";
+
+/** Token + response body for a logged-in vendor. Shared by password login and WhatsApp-OTP login. */
+export const buildVendorSession = (vendor) => {
+    const token = jwt.sign(
+        { id: vendor._id, role: vendor.role },
+        process.env.VENDOR_JWT_SECRET,
+        { expiresIn: "1d" } // Token expires in 1 day
+    );
+    // Exclude the password (and any stored OTP) from the response
+    const { password: _p, otp: _o, otpExpires: _e, ...vendorData } = vendor._doc;
+    return { message: "Sign-in successful", token, vendor: vendorData };
+};
 
 
 export const addVendor = async (req, res) => {
@@ -15,6 +31,18 @@ export const addVendor = async (req, res) => {
             return res.status(400).json({ message: "All fields are required" });
         }
 
+        // Phone must be a real mobile number and unique (like email)
+        const localPhone = localNumber(phone);
+        if (!localPhone) {
+            return res.status(400).json({ message: INVALID_PHONE });
+        }
+        if (await Vendor.findOne({ email }).select("_id").lean()) {
+            return res.status(400).json({ message: "A vendor with this email already exists" });
+        }
+        if (await Vendor.findOne(phoneMatchQuery(localPhone)).select("_id").lean()) {
+            return res.status(400).json({ message: DUPLICATE_PHONE });
+        }
+
         // Handle profile image if uploaded
         let profileImage = null;
         if (req.file) {
@@ -22,7 +50,7 @@ export const addVendor = async (req, res) => {
         }
 
         // Create password from the first 4 letters of firstName and the last 4 digits of phone
-        const password = `${firstName.slice(0, 4)}${phone.slice(-4)}`;
+        const password = `${firstName.slice(0, 4)}${localPhone.slice(-4)}`;
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -31,7 +59,7 @@ export const addVendor = async (req, res) => {
         const newVendor = new Vendor({
             firstName,
             lastName,
-            phone,
+            phone: localPhone,
             email,
             address,
             city,
@@ -55,12 +83,16 @@ export const addVendor = async (req, res) => {
             generatedPassword: password // Send the generated password in the response (optional)
         });
     } catch (error) {
+        if (error?.code === 11000) {   // two requests raced past the checks above
+            const field = Object.keys(error.keyPattern || {})[0];
+            return res.status(400).json({ message: field === "phone" ? DUPLICATE_PHONE : "A vendor with this email already exists" });
+        }
         console.error("Error adding vendor:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
 
-// Employee Sign In 
+// Vendor Sign In
 export const vendorSignIn = async (req, res) => {
     const { email, password } = req.body;
 
@@ -77,22 +109,7 @@ export const vendorSignIn = async (req, res) => {
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // Generate a JWT token
-        const token = jwt.sign(
-            { id: vendor._id, role: vendor.role },
-            process.env.VENDOR_JWT_SECRET,
-            { expiresIn: "1d" } // Token expires in 1 day
-        );
-
-        // Exclude the password from the response
-        const { password: _, ...vendorData } = vendor._doc;
-
-        // Send the response
-        res.status(200).json({
-            message: "Sign-in successful",
-            token,
-            vendor: vendorData, // Send all employee data excluding the password
-        });
+        res.status(200).json(buildVendorSession(vendor));
     } catch (error) {
         console.error("Error during vendor sign-in:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -159,6 +176,20 @@ export const updateVendorById = async (req, res) => {
             return res.status(404).json({ message: "Vendor not found" });
         }
 
+        // Phone: only touched when sent; must be valid and not used by another vendor
+        let nextPhone = vendor.phone;
+        if (req.body.phone !== undefined && String(req.body.phone).trim() !== "") {
+            const localPhone = localNumber(req.body.phone);
+            if (!localPhone) {
+                return res.status(400).json({ message: INVALID_PHONE });
+            }
+            const clash = await Vendor.findOne({ ...phoneMatchQuery(localPhone), _id: { $ne: id } }).select("_id").lean();
+            if (clash) {
+                return res.status(400).json({ message: DUPLICATE_PHONE });
+            }
+            nextPhone = localPhone;
+        }
+
         let profileImage = vendor.profileImage;
 
         if (req.file) {
@@ -187,7 +218,7 @@ export const updateVendorById = async (req, res) => {
                 firstName: req.body.firstName,
                 lastName: req.body.lastName,
                 email: req.body.email,
-                phone: req.body.phone,
+                phone: nextPhone,
                 address: req.body.address,
                 city: req.body.city,
                 state: req.body.state,
@@ -203,6 +234,9 @@ export const updateVendorById = async (req, res) => {
             .status(200)
             .json({ message: "Vendor updated successfully", vendor: updatedVendor });
     } catch (error) {
+        if (error?.code === 11000 && error.keyPattern?.phone) {
+            return res.status(400).json({ message: DUPLICATE_PHONE });
+        }
         console.error("Error updating vendor:", error);
         res.status(500).json({ message: "Internal server error" });
     }

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { storePhone } from "../Utils/phone.js";
 
 const empleyeeSchema = new mongoose.Schema({
     firstName: {
@@ -16,8 +17,11 @@ const empleyeeSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    // Unique per employee (see the partial index below). Stored as the clean 10-digit number.
     phone: {
         type: String,
+        trim: true,
+        set: storePhone,
     },
     address: {
         type: String,
@@ -114,6 +118,9 @@ const empleyeeSchema = new mongoose.Schema({
 }, {
     timestamps: true
 })
+
+// Phone must be unique like email. Partial: employees without a phone don't collide with each other.
+empleyeeSchema.index({ phone: 1 }, { unique: true, partialFilterExpression: { phone: { $gt: "" } } });
 
 const Employee = mongoose.model("Employee", empleyeeSchema);
 export default Employee;
