@@ -93,6 +93,18 @@ const adminSettingsSchema = new mongoose.Schema({
         openTime: { type: String, default: "10:00" },   // "HH:mm", 24h, IST
         closeTime: { type: String, default: "17:00" },  // "HH:mm", 24h, IST
     },
+
+    // ── Future booking policy ───────────────────────────────────────────────
+    // Dates are calendar dates in IST, stored as YYYY-MM-DD strings.
+    storeClosures: [{
+        date: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ },
+        title: { type: String, default: 'Store closed', trim: true, maxlength: 80 },
+        message: { type: String, default: 'We are closed on this date. Please choose another date.', trim: true, maxlength: 300 },
+    }],
+    bookingPolicy: {
+        dailyOrderLimit: { type: Number, default: null, min: 1, max: 10000 },
+        limitMessage: { type: String, default: 'We have reached our booking limit for this date. Please choose another date.', trim: true, maxlength: 300 },
+    },
 })
 
 const AdminSettings = mongoose.model('AdminSettings', adminSettingsSchema);

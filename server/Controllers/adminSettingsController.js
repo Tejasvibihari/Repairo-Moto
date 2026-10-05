@@ -1,5 +1,6 @@
 import AdminSettings from "../Models/adminSettings.js";
 import { computeShopStatus, isValidTime, loadSettings } from "../Utils/shopStatus.js";
+import { getBookingAvailability, normalizeBookingDate } from "../Utils/bookingPolicy.js";
 
 // There is only ever one settings document (a singleton). This helper fetches
 // it, creating it with schema defaults on first use so callers never have to
@@ -132,5 +133,58 @@ export const updateShopStatus = async (req, res) => {
         res.json({ success: true, status: computeShopStatus(settings) });
     } catch (err) {
         res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+};
+
+// Public - used by the customer app to disable closed/full dates.
+// GET /api/admin-settings/booking-availability?date=YYYY-MM-DD
+export const getBookingDateAvailability = async (req, res) => {
+    try {
+        const result = await getBookingAvailability(req.query.date);
+        res.set('Cache-Control', 'no-store');
+        res.status(result.code === 'INVALID_DATE' ? 400 : 200).json({ success: true, ...result });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Could not check booking availability.' });
+    }
+};
+
+// Admin only - replace future closure dates and the daily order limit.
+// PUT /api/admin-settings/booking-policy
+export const updateBookingPolicy = async (req, res) => {
+    try {
+        const settings = await getOrCreateSettings();
+        const { storeClosures, closures, dailyOrderLimit, limitMessage } = req.body || {};
+        const closureInput = storeClosures ?? closures;
+        if (closureInput !== undefined) {
+            if (!Array.isArray(closureInput)) return res.status(400).json({ success: false, message: 'storeClosures must be an array.' });
+            const cleaned = closureInput.map((item) => {
+                const date = normalizeBookingDate(item?.date);
+                if (!date) throw new Error('Each closure must have a valid YYYY-MM-DD date.');
+                return {
+                    date,
+                    title: String(item.title || 'Store closed').trim().slice(0, 80),
+                    message: String(item.message || 'We are closed on this date. Please choose another date.').trim().slice(0, 300),
+                };
+            });
+            const unique = new Map(cleaned.map(item => [item.date, item]));
+            settings.storeClosures = [...unique.values()].sort((a, b) => a.date.localeCompare(b.date));
+        }
+        if (dailyOrderLimit !== undefined) {
+            if (dailyOrderLimit === null || dailyOrderLimit === '') settings.bookingPolicy.dailyOrderLimit = null;
+            else {
+                const limit = Number(dailyOrderLimit);
+                if (!Number.isInteger(limit) || limit < 1 || limit > 10000) return res.status(400).json({ success: false, message: 'dailyOrderLimit must be an integer from 1 to 10000, or null.' });
+                settings.bookingPolicy.dailyOrderLimit = limit;
+            }
+        }
+        if (limitMessage !== undefined) {
+            const message = String(limitMessage).trim();
+            if (!message || message.length > 300) return res.status(400).json({ success: false, message: 'limitMessage is required and must be 300 characters or fewer.' });
+            settings.bookingPolicy.limitMessage = message;
+        }
+        await settings.save();
+        res.json({ success: true, policy: { closures: settings.storeClosures, ...settings.bookingPolicy.toObject() } });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message || 'Could not save booking policy.' });
     }
 };

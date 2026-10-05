@@ -19,6 +19,11 @@ import {
     actorFromReq,
 } from "../services/notificationService.js";
 import mongoose from "mongoose";
+import {
+    normalizeBookingDate,
+    reserveBookingDate,
+    releaseBookingDate,
+} from "../Utils/bookingPolicy.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const deleteUploadedFile = (filePath) => {
@@ -380,6 +385,7 @@ export const createManualOrder = async (req, res) => {
 };
 
 export const userOrder = async (req, res) => {
+    let reservation = null;
     try {
         const {
             name, contactNo, email, city, address, selectedBrand, selectedModel,
@@ -394,6 +400,10 @@ export const userOrder = async (req, res) => {
         if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services?.length || !preferredDate || !preferredTime) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
+
+        const bookingDate = normalizeBookingDate(preferredDate);
+        if (!bookingDate) return res.status(400).json({ code: 'INVALID_DATE', message: 'Booking date must use YYYY-MM-DD format.' });
+        reservation = await reserveBookingDate(bookingDate);
 
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -456,6 +466,7 @@ export const userOrder = async (req, res) => {
         const newOrder = new Order(orderPayload);
 
         const savedOrder = await newOrder.save();
+        reservation = null;
         await sendBookingConfirmationEmail(savedOrder, user.email);
 
         await notifyOrderParties(savedOrder, {
@@ -473,6 +484,10 @@ export const userOrder = async (req, res) => {
 
         return res.status(201).json({ message: 'Order Confirmed!', data: savedOrder });
     } catch (error) {
+        if (reservation?.reserved) await releaseBookingDate(reservation.date).catch(() => { });
+        if (error.code === 'STORE_CLOSED' || error.code === 'DAILY_LIMIT_REACHED' || error.code === 'INVALID_DATE') {
+            return res.status(error.status || 409).json({ success: false, code: error.code, message: error.message, ...(error.details || {}) });
+        }
         console.error("Error Creating Order:", error);
         return res.status(500).json({ message: 'Server error while creating Order' });
     }
@@ -770,6 +785,7 @@ export const updateOrderStatus = async (req, res) => {
         if (!order) return res.status(404).json({ message: "Order not found" });
 
         const actor = actorFromReq(req);
+        const wasCancelled = order.status === 'Cancelled';
 
         if (status === 'Cancelled') {
             const err = applyCancellation(order, { reason, actor });
@@ -779,6 +795,9 @@ export const updateOrderStatus = async (req, res) => {
             clearCancellation(order);
         }
         await order.save();
+        if (status === 'Cancelled' && !wasCancelled) {
+            await releaseBookingDate(order.preferredDate?.toISOString().slice(0, 10));
+        }
 
         await notifyStatusChange(order, { actor, status });
 
@@ -1958,6 +1977,7 @@ export const cancelOrder = async (req, res) => {
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
         const actor = actorFromReq(req);
+        const wasCancelled = order.status === 'Cancelled';
 
         if (actor.role === 'user') {
             if (String(order.userId) !== String(actor.userId)) {
@@ -1975,6 +1995,9 @@ export const cancelOrder = async (req, res) => {
         const err = applyCancellation(order, { reason, actor });
         if (err) return res.status(400).json({ message: err });
         await order.save();
+        if (!wasCancelled) {
+            await releaseBookingDate(order.preferredDate?.toISOString().slice(0, 10));
+        }
 
         await notifyStatusChange(order, { actor, status: 'Cancelled' });
 
@@ -2057,6 +2080,7 @@ const formatScheduleLabel = (date, time) => {
  * actorRole: 'user' (customer, must own the order) | 'admin' (admin/employee via authAdmin)
  */
 const applyReschedule = async (req, res, actorRole) => {
+    let reservation = null;
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -2090,6 +2114,9 @@ const applyReschedule = async (req, res, actorRole) => {
         if (currentYmd === parsed.ymd && currentSlot?.label === parsed.slot.label) {
             return res.status(400).json({ message: 'The booking is already scheduled for this date and time.' });
         }
+
+        const movedToDifferentDay = currentYmd !== parsed.ymd;
+        reservation = movedToDifferentDay ? await reserveBookingDate(parsed.ymd) : null;
 
         const actor = isUser
             ? {
@@ -2131,10 +2158,15 @@ const applyReschedule = async (req, res, actorRole) => {
         );
 
         if (!updated) {
+            if (reservation?.reserved) await releaseBookingDate(reservation.date).catch(() => { });
+            reservation = null;
             return res.status(409).json({
                 message: 'The order status changed just now, so it can no longer be rescheduled. Please refresh.',
             });
         }
+
+        if (movedToDifferentDay) await releaseBookingDate(currentYmd).catch(() => { });
+        reservation = null;
 
         // ── Notifications (best-effort: the reschedule is already saved) ──
         // Customer reschedules → admins/managers + assigned mechanic (+ delivery/vendor if any).
@@ -2163,6 +2195,10 @@ const applyReschedule = async (req, res, actorRole) => {
 
         return res.status(200).json({ message: 'Booking rescheduled successfully.', order: updated });
     } catch (error) {
+        if (reservation?.reserved) await releaseBookingDate(reservation.date).catch(() => { });
+        if (error.code === 'STORE_CLOSED' || error.code === 'DAILY_LIMIT_REACHED' || error.code === 'INVALID_DATE') {
+            return res.status(error.status || 409).json({ success: false, code: error.code, message: error.message, ...(error.details || {}) });
+        }
         console.error('Reschedule order error:', error);
         return res.status(500).json({ message: 'Server error while rescheduling order.' });
     }
@@ -2283,6 +2319,7 @@ export const forceUpdateOrderStatus = async (req, res) => {
         }
 
         const actor = actorFromReq(req);
+        const wasCancelled = order.status === 'Cancelled';
 
         if (status === 'Cancelled') {
             const err = applyCancellation(order, { reason, actor, force: true });
@@ -2292,6 +2329,9 @@ export const forceUpdateOrderStatus = async (req, res) => {
             clearCancellation(order);
         }
         await order.save();
+        if (status === 'Cancelled' && !wasCancelled) {
+            await releaseBookingDate(order.preferredDate?.toISOString().slice(0, 10));
+        }
 
         await notifyStatusChange(order, { actor, status });
 
