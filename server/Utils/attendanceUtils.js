@@ -225,20 +225,32 @@ export function resolveWhatsAppRecipients(employee, settings) {
     return out;
 }
 
-// ─── WhatsApp message (fixed placeholders) ────────────────────────────────────
+// ─── WhatsApp templates (Meta-approved, English (US)) ─────────────────────────
+//
+// All four templates share the same body:  {{1}} employee · {{2}} date · {{3}} time · {{4}} location
+// and the same dynamic URL button:         https://www.google.com/maps/search/?api=1&query={{1}}
+// (the button value is the URL-encoded "lat,lng", e.g. 28.6139%2C77.2090)
 
-export const ATTENDANCE_WA_TEMPLATE =
-    `✅ *Attendance Marked*
-👤 Name: {{name}}
-💼 Role: {{role}}
-📅 Date: {{date}}
-⏰ Time: {{time}}
-📍 Location: {{address}}
-🗺️ Map: {{mapLink}}
-— Repairo Moto`;
+export const ATTENDANCE_EVENTS = {
+    check_in:    { template: "employee_attendancemarked", label: "Attendance marked" },
+    break_start: { template: "employee_breakstarted",     label: "Break started" },
+    break_end:   { template: "employee_break_ended",      label: "Break ended" },
+    check_out:   { template: "employee_signed_out",       label: "Signed out" },
+};
 
-// Order matters if your provider uses numbered template variables ({{1}}, {{2}} ...)
-export const ATTENDANCE_WA_PARAM_ORDER = ["name", "role", "date", "time", "address", "mapLink"];
+export const ATTENDANCE_WA_LANGUAGE = "en_US";   // "English (US)"
+
+const NA = "Not available";
+
+/** WhatsApp rejects template variables that are empty or contain newlines / tabs / 4+ spaces. */
+export const cleanTemplateParam = (value, fallback = NA, max = 300) => {
+    const s = String(value ?? "").replace(/[\r\n\t]+/g, " ").replace(/ {2,}/g, " ").trim().slice(0, max);
+    return s || fallback;
+};
+
+/** Value for the button's {{1}}: URL-encoded "lat,lng" (comma → %2C). null when there are no coordinates. */
+export const mapsButtonParam = (lat, lng) =>
+    Number.isFinite(lat) && Number.isFinite(lng) ? encodeURIComponent(`${lat},${lng}`) : null;
 
 const titleCase = (s) => String(s || "").replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -265,3 +277,41 @@ export const fillTemplate = (template, vars) =>
 
 export const buildAttendanceMessage = (vars) => fillTemplate(ATTENDANCE_WA_TEMPLATE, vars);
 export const buildAttendanceParams = (vars) => ATTENDANCE_WA_PARAM_ORDER.map((k) => String(vars[k] ?? ""));
+
+/**
+ * Template variables for one attendance event.
+ * @param {object} employee
+ * @param {{at?: Date, lat?: number, lng?: number, address?: string}} stamp  when + where it happened
+ * @returns {{bodyParams: string[], buttonParam: string}}
+ */
+export function buildEventTemplateData(employee, stamp = {}) {
+    const at = stamp.at || new Date();
+    const { lat, lng, address } = stamp;
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+    const location = address || (hasCoords ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : NA);
+    return {
+        bodyParams: [
+            cleanTemplateParam(employeeName(employee), "An employee", 60),
+            formatDateIST(at),
+            formatTimeIST(at),
+            cleanTemplateParam(location),
+        ],
+        // The URL button always needs a value; with no coordinates fall back to searching the address text.
+        buttonParam: mapsButtonParam(lat, lng) ?? encodeURIComponent(cleanTemplateParam(address, "India", 100)),
+    };
+}
+
+/**
+ * Where did this break event happen?
+ * 1) location the app sent with the tap  2) the phone's last live ping (≤ 30 min old)  3) today's check-in spot
+ */
+export function resolveBreakStamp({ own, employee, checkIn, at, maxPingAgeMs = 30 * 60 * 1000 }) {
+    if (Number.isFinite(own?.lat) && Number.isFinite(own?.lng)) return { ...own, at };
+    const cur = employee?.currentLocation;
+    const fresh = cur?.updatedAt && Date.now() - new Date(cur.updatedAt).getTime() <= maxPingAgeMs;
+    if (fresh && Number.isFinite(cur.lat) && Number.isFinite(cur.lng)) return { lat: cur.lat, lng: cur.lng, at };
+    if (Number.isFinite(checkIn?.lat) && Number.isFinite(checkIn?.lng)) {
+        return { lat: checkIn.lat, lng: checkIn.lng, address: checkIn.address, at };
+    }
+    return { at };
+}

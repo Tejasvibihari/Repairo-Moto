@@ -14,10 +14,14 @@ const stampSchema = new mongoose.Schema({
 }, { _id: false });
 
 // A break inside the working day. `end` is missing while the employee is still on it.
-// Breaks carry no location — they must be instant and are not what the admin audits.
+// Breaks must stay instant, so a location is optional on them (see startLoc / endLoc).
+// Location is OPTIONAL: when the app sends it with break-start / break-end it is stored here and
+// shown in the WhatsApp alert; when it doesn't, the alert falls back to the employee's last known spot.
 const breakSchema = new mongoose.Schema({
     start: { type: Date, required: true },   // server time
     end: { type: Date },
+    startLoc: { type: stampSchema, default: undefined },
+    endLoc: { type: stampSchema, default: undefined },
 }, { _id: false });
 
 const attendanceSchema = new mongoose.Schema({

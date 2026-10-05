@@ -9,15 +9,18 @@
 //   WHATSAPP_API_VERSION         optional, default v21.0
 //   WHATSAPP_OTP_TEMPLATE        optional, default "otp"     (the AUTHENTICATION template name)
 //   WHATSAPP_OTP_LANGUAGE        optional, default "en_US"   (English (US))
-//   WHATSAPP_ATTENDANCE_TEMPLATE optional — approved template for attendance alerts (see sendAttendanceWhatsApp)
+//   WHATSAPP_ATTENDANCE_LANGUAGE optional, default "en_US" — language of the 4 attendance templates
+//   WHATSAPP_TPL_CHECK_IN / _BREAK_START / _BREAK_END / _CHECK_OUT
+//                                optional template-name overrides (defaults: employee_attendancemarked,
+//                                employee_breakstarted, employee_break_ended, employee_signed_out)
 //
 // Every helper RETURNS { to, sent, ... } and never throws: a WhatsApp problem must never crash a request.
 import axios from "axios";
 import AttendanceSettings from "../Models/attendanceSettings.js";
 import {
-    attendanceVars,
-    buildAttendanceMessage,
-    buildAttendanceParams,
+    ATTENDANCE_EVENTS,
+    ATTENDANCE_WA_LANGUAGE,
+    buildEventTemplateData,
     resolveWhatsAppRecipients,
 } from "../Utils/attendanceUtils.js";
 import { toWhatsAppNumber } from "../Utils/phone.js";
@@ -28,7 +31,7 @@ const cfg = () => ({
     version: process.env.WHATSAPP_API_VERSION || "v21.0",
     otpTemplate: process.env.WHATSAPP_OTP_TEMPLATE || "otp",
     otpLanguage: process.env.WHATSAPP_OTP_LANGUAGE || "en_US",
-    attendanceTemplate: process.env.WHATSAPP_ATTENDANCE_TEMPLATE || "",
+    attendanceLanguage: process.env.WHATSAPP_ATTENDANCE_LANGUAGE || ATTENDANCE_WA_LANGUAGE,
 });
 
 export const isWhatsAppConfigured = () => {
@@ -118,31 +121,45 @@ export function sendWhatsAppMessage({ to, message, params = [], template, langua
         : sendWhatsAppText({ to, body: message });
 }
 
+const TEMPLATE_ENV = {
+    check_in: "WHATSAPP_TPL_CHECK_IN",
+    break_start: "WHATSAPP_TPL_BREAK_START",
+    break_end: "WHATSAPP_TPL_BREAK_END",
+    check_out: "WHATSAPP_TPL_CHECK_OUT",
+};
+
 /**
- * Tell everyone on the list that `employee` marked attendance.
- * Recipients = the employee (if admin left that on) + every active number the admin added.
- * Business-initiated, so Meta needs an approved template: set WHATSAPP_ATTENDANCE_TEMPLATE
- * (its body variables are filled from buildAttendanceParams). Without it plain text is attempted,
- * which only works inside the 24h customer-service window.
+ * Tell everyone on the list about one attendance event.
+ *   event: "check_in" | "break_start" | "break_end" | "check_out"
+ *   stamp: { at, lat, lng, address } — when and where it happened
+ * Recipients = the employee (if admin left that on) + every active number in the attendance settings.
+ * Business-initiated, so each event uses its approved template (body {{1}}-{{4}} + the Google Maps button).
+ * Never throws and is safe to call without await.
  */
-export async function sendAttendanceWhatsApp(employee, record) {
+export async function sendAttendanceEventWhatsApp(event, employee, stamp) {
     try {
+        const def = ATTENDANCE_EVENTS[event];
+        if (!def) return [];
+
         const settings = await AttendanceSettings.findOne().lean();
         if (settings && settings.whatsappEnabled === false) return [];
 
         const recipients = resolveWhatsAppRecipients(employee, settings);
         if (!recipients.length) return [];
 
-        const vars = attendanceVars(employee, record);
-        const message = buildAttendanceMessage(vars);
-        const params = buildAttendanceParams(vars);
-        const { attendanceTemplate } = cfg();
+        const { attendanceLanguage } = cfg();
+        const name = process.env[TEMPLATE_ENV[event]] || def.template;
+        const { bodyParams, buttonParam } = buildEventTemplateData(employee, stamp);
 
         return await Promise.all(
-            recipients.map((to) => sendWhatsAppMessage({ to, message, params, template: attendanceTemplate || undefined }))
+            recipients.map((to) => sendWhatsAppTemplate({ to, name, language: attendanceLanguage, bodyParams, buttonParam }))
         );
     } catch (err) {
-        console.error("[whatsapp] attendance alert failed:", err.message);
+        console.error(`[whatsapp] attendance ${event} alert failed:`, err.message);
         return [];
     }
 }
+
+/** Kept for older callers: "attendance marked" alert built from a check-in record. */
+export const sendAttendanceWhatsApp = (employee, record) =>
+    sendAttendanceEventWhatsApp("check_in", employee, record?.checkIn);

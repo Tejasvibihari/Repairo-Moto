@@ -5,8 +5,7 @@ import Employee from "../Models/employeeModel.js";
 import { createNotification, getAdminRecipients } from "../services/notificationService.js";
 import { setPresence } from "../services/mechanicPresenceService.js";
 import { isTrackable } from "../services/trackingService.js";
-// WhatsApp — uncomment this import together with the call inside `checkIn` once the API is ready.
-// import { sendAttendanceWhatsApp } from "../services/whatsappService.js";
+import { sendAttendanceEventWhatsApp } from "../services/whatsappService.js";
 import {
     MAX_REPORT_DAYS,
     attendanceVars,
@@ -24,6 +23,7 @@ import {
     normalizePhone,
     openBreakOf,
     parseLocation,
+    resolveBreakStamp,
     summarizeRows,
 } from "../Utils/attendanceUtils.js";
 
@@ -46,6 +46,14 @@ const stateOf = (rec) =>
         : rec.checkOut?.at ? "checked_out"
             : openBreakOf(rec.breaks) ? "on_break"
                 : "checked_in";
+
+// Break taps normally carry no body. If the app does send { lat, lng, ... } we keep it; a bad or
+// missing location is simply ignored — it must never block a break.
+const optionalLocation = (body) => {
+    if (body?.lat === undefined && body?.lng === undefined) return null;
+    const loc = parseLocation(body);
+    return loc.ok ? loc.value : null;
+};
 
 const getOrCreateSettings = async () =>
     (await AttendanceSettings.findOne()) || (await AttendanceSettings.create({}));
@@ -120,7 +128,7 @@ export const checkIn = async (req, res) => {
 
         notifyAdmins(req.employee, record);                     // push to admins
         await syncPresence(req.employee, true, "attendance");   // mechanic / delivery → Online
-        // sendAttendanceWhatsApp(req.employee, record);        // WhatsApp — uncomment once the API is set up (services/whatsappService.js)
+        sendAttendanceEventWhatsApp("check_in", req.employee, record.checkIn);   // WhatsApp → employee + numbers in attendance settings
 
         res.status(201).json({ success: true, date, state: "checked_in", attendance: record });
     } catch (err) {
@@ -170,6 +178,7 @@ export const checkOut = async (req, res) => {
             });
         }
         await syncPresence(req.employee, false, "sign_out");     // → Offline, phone stops sharing location
+        sendAttendanceEventWhatsApp("check_out", req.employee, updated.checkOut);   // WhatsApp
         res.json({ success: true, date, state: "checked_out", attendance: updated });
     } catch (err) {
         console.error("[attendance] check-out failed:", err);
@@ -177,7 +186,7 @@ export const checkOut = async (req, res) => {
     }
 };
 
-// POST /api/employee/attendance/break-start      (no body — breaks don't need a location)
+// POST /api/employee/attendance/break-start      body (optional): { lat, lng, accuracy?, address? }
 export const startBreak = async (req, res) => {
     try {
         const date = istDateKey();
@@ -196,6 +205,8 @@ export const startBreak = async (req, res) => {
             });
         }
 
+        const now = new Date();
+        const ownLoc = optionalLocation(req.body);
         // Guard: not signed out AND no running break → atomic against a double tap
         const updated = await Attendance.findOneAndUpdate(
             {
@@ -203,7 +214,7 @@ export const startBreak = async (req, res) => {
                 "checkOut.at": { $exists: false },
                 breaks: { $not: { $elemMatch: { end: null } } },
             },
-            { $push: { breaks: { start: new Date() } } },
+            { $push: { breaks: { start: now, ...(ownLoc && { startLoc: { ...ownLoc, at: now } }) } } },
             { new: true }
         ).lean();
 
@@ -214,6 +225,8 @@ export const startBreak = async (req, res) => {
             });
         }
         await syncPresence(req.employee, false, "break");        // on a break = Offline
+        sendAttendanceEventWhatsApp("break_start", req.employee,                 // WhatsApp
+            resolveBreakStamp({ own: ownLoc, employee: req.employee, checkIn: updated.checkIn, at: now }));
         res.status(201).json({ success: true, date, state: "on_break", attendance: updated });
     } catch (err) {
         console.error("[attendance] break-start failed:", err);
@@ -221,7 +234,7 @@ export const startBreak = async (req, res) => {
     }
 };
 
-// POST /api/employee/attendance/break-end        (no body)
+// POST /api/employee/attendance/break-end        body (optional): { lat, lng, accuracy?, address? }
 export const endBreak = async (req, res) => {
     try {
         const date = istDateKey();
@@ -240,13 +253,20 @@ export const endBreak = async (req, res) => {
             });
         }
 
+        const now = new Date();
+        const ownLoc = optionalLocation(req.body);
         const updated = await Attendance.findOneAndUpdate(
             {
                 _id: current._id,
                 "checkOut.at": { $exists: false },
                 breaks: { $elemMatch: { end: null } },
             },
-            { $set: { "breaks.$[open].end": new Date() } },
+            {
+                $set: {
+                    "breaks.$[open].end": now,
+                    ...(ownLoc && { "breaks.$[open].endLoc": { ...ownLoc, at: now } }),
+                },
+            },
             { new: true, arrayFilters: [{ "open.end": null }] }
         ).lean();
 
@@ -257,6 +277,8 @@ export const endBreak = async (req, res) => {
             });
         }
         await syncPresence(req.employee, true, "resume");        // back from the break = Online again
+        sendAttendanceEventWhatsApp("break_end", req.employee,                   // WhatsApp
+            resolveBreakStamp({ own: ownLoc, employee: req.employee, checkIn: updated.checkIn, at: now }));
         res.json({ success: true, date, state: "checked_in", attendance: updated });
     } catch (err) {
         console.error("[attendance] break-end failed:", err);
