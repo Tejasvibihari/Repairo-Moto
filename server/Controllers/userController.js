@@ -12,6 +12,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import { sendWelcomeEmail } from '../Utils/mailer.js';
+import { looksLikePhone, phoneMatchQuery } from "../Utils/phone.js";
+import { signUserToken, userAuthPayload } from "../Utils/userAuth.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -35,9 +37,15 @@ export const createUser = async (req, res) => {
         } = req.body;
 
         // Check for existing user
-        const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
+        const phoneQuery = phoneMatchQuery(phone);   // same number however it was typed (+91, spaces ...)
+        const existingUser = await User.findOne({ $or: [{ phone }, { email }, ...(phoneQuery ? [phoneQuery] : [])] });
         if (existingUser) {
-            return res.status(409).json({ message: "User with phone or email already exists" });
+            const phoneTaken = existingUser.email !== (email || '').toLowerCase().trim();
+            return res.status(409).json({
+                message: phoneTaken && !existingUser.password
+                    ? "An account with this phone number already exists. Please log in with your phone number (OTP)."
+                    : "User with phone or email already exists",
+            });
         }
 
         // Handle profile image if uploaded
@@ -127,17 +135,25 @@ export const createUser = async (req, res) => {
 
 
 export const userSignIn = async (req, res) => {
+    // `email` may hold an email OR a phone number (the app has one "Phone or Email" box)
     const { email, password } = req.body;
 
     try {
-        // Check if the user exists
-        const user = await User.findOne({ email });
+        const identifier = String(email ?? "").trim();
+        const user = looksLikePhone(identifier)
+            ? await User.findOne(phoneMatchQuery(identifier) || { _id: null })
+            : await User.findOne({ email: identifier.toLowerCase() });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
+        // Accounts created with a phone number have no password: they sign in with the OTP
+        if (!user.password) {
+            return res.status(400).json({ message: "This account signs in with a phone number. Please use OTP login.", code: "USE_OTP" });
+        }
+
         // Verify the password
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await bcrypt.compare(password || "", user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
@@ -147,34 +163,10 @@ export const userSignIn = async (req, res) => {
             return res.status(403).json({ message: 'Account is suspended. Please reactivate your account via the website.', reactivationUrl: '/account-delete' });
         }
 
-        // Generate a JWT token
-        const token = jwt.sign(
-            { id: user._id, email: user.email }, // Payload
-            process.env.USER_JWT_SECRET, // Secret key
-            { expiresIn: "7d" } // Token expiration time
-        );
         res.status(200).json({
             message: "Sign-in successful",
-            token, // Include the token in the response
-            user: {
-                _id: user._id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                referralCode: user.referralCode,
-                accountType: user.accountType,
-                phone: user.phone,
-                profileImage: user.profileImage,
-                address: user.address,
-                city: user.city,
-                state: user.state,
-                pincode: user.pincode,
-                businessName: user.businessName,
-                businessType: user.businessType,
-                referredBy: user.referredBy,
-                referralType: user.referralType,
-                status: user.status,
-            },
+            token: signUserToken(user),
+            user: userAuthPayload(user),
         });
     } catch (error) {
         console.log(error);
@@ -385,9 +377,12 @@ export const editUser = async (req, res) => {
 
         // Handle password update
         if (currentPassword || newPassword || confirmPassword) {
-            const isMatch = await bcrypt.compare(currentPassword, user.password);
-            if (!isMatch) {
-                return res.status(400).json({ message: "Current password is incorrect" });
+            // phone-only accounts have no password yet → nothing to compare, they may simply set one
+            if (user.password) {
+                const isMatch = await bcrypt.compare(currentPassword || "", user.password);
+                if (!isMatch) {
+                    return res.status(400).json({ message: "Current password is incorrect" });
+                }
             }
 
             if (newPassword !== confirmPassword) {

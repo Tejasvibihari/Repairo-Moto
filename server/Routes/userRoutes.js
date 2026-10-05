@@ -2,6 +2,7 @@ import express from "express";
 import { createUser, editUser, rateEmployee, getRatingStatus, getAllUser, getAllUserByReferralCode, getUserById, getWithdraHistory, updateUserStatus, updateWithdrawalStatus, userSignIn, withdrawRequest, findUserByEmail, accountAction } from "../Controllers/userController.js";
 import { userUpload } from "../Middleware/userMulter.js";
 import authUser from "../Middleware/authUser.js";
+import { sendPhoneOtp, verifyPhoneOtp, verifyFirebasePhone } from "../Controllers/phoneAuthController.js";
 import { getOrderTracking } from "../Controllers/orderTrackingController.js";
 
 
@@ -9,6 +10,11 @@ const router = express.Router();
 
 router.post("/auth/user-sign-up", createUser);
 router.post("/auth/user-sign-in", userSignIn);
+
+// Phone login (creates the account on first use): 1) WhatsApp OTP  2) Firebase phone verification
+router.post("/auth/phone/send-otp", sendPhoneOtp);
+router.post("/auth/phone/verify-otp", verifyPhoneOtp);
+router.post("/auth/phone/firebase", verifyFirebasePhone);
 router.get("/getalluser", getAllUser);
 
 // Account deletion / deactivation endpoints (public flow where user verifies with email+password)

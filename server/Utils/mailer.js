@@ -11,6 +11,7 @@ import * as emailTemplates from './emailTemplates.js';
  * @returns {Promise<Object>} Email sending result
  */
 export const sendMail = async ({ to, subject, body }) => {
+    if (!to) return null; // phone-only customers have no email address
     try {
         // const transporter = nodemailer.createTransport({
         //     host: "smtpout.secureserver.net",

@@ -15,7 +15,8 @@ const userSchema = new mongoose.Schema({
     firstName: {
         type: String,
         required: true,
-        trim: true
+        trim: true,
+        default: 'Customer'
     },
     lastName: {
         type: String,
@@ -27,17 +28,19 @@ const userSchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
+    // email + password are OPTIONAL: customers who sign up with their phone number (WhatsApp OTP / Firebase)
+    // have neither. Uniqueness of email is a *partial* index below, so many email-less users can coexist.
     email: {
         type: String,
-        required: true,
-        unique: true,
         lowercase: true,
         trim: true
     },
     password: {
-        type: String,
-        required: true
+        type: String
     },
+    phoneVerified: { type: Boolean, default: false },
+    phoneVerifiedAt: { type: Date, default: null },
+    signupMethod: { type: String, enum: ['email', 'whatsapp', 'firebase'], default: 'email' },
     role: {
         type: String,
         default: 'user'
@@ -56,7 +59,8 @@ const userSchema = new mongoose.Schema({
     accountType: {
         type: String,
         enum: ['personal', 'business'],
-        required: true
+        required: true,
+        default: 'personal'
     },
     businessName: {
         type: String,
@@ -121,6 +125,8 @@ const userSchema = new mongoose.Schema({
     withdrawalRequests: [withdrawalSchema], // history of withdrawal requests
 
 }, { timestamps: true });
+
+userSchema.index({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: 'string' } } });
 
 const User = mongoose.model('User', userSchema);
 export default User;

@@ -37,6 +37,7 @@ import appVersionRoutes from "./Routes/appVersionRoutes.js";
 import adminSettingsRoutes from "./Routes/adminSettingsRoutes.js";
 import trackingAdminRouter from "./Routes/trackingAdminRoutes.js";
 import { attendanceRouter, attendanceAdminRouter } from "./Routes/attendanceRoutes.js";
+import { ensureUserIndexes } from "./Utils/userIndexes.js";
 import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
 import './Utils/notificationScheduler.js';
@@ -102,7 +103,10 @@ mongoose
         useNewUrlParser: true,
         useUnifiedTopology: true,
     })
-    .then(() => console.log("MongoDB connected successfully"))
+    .then(async () => {
+        console.log("MongoDB connected successfully");
+        await ensureUserIndexes();
+    })
     .catch((error) => console.error("MongoDB connection error:", error.message));
 
 // --- Create HTTP server and attach Socket.IO ---
