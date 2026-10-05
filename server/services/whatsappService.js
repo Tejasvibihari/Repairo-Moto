@@ -41,7 +41,11 @@ async function post(payload) {
     const { token, phoneNumberId, version } = cfg();
     const { data } = await axios.post(
         `https://graph.facebook.com/${version}/${phoneNumberId}/messages`,
-        { messaging_product: "whatsapp", recipient_type: "individual", ...payload },
+        {
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            ...payload
+        },
         { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }
     );
     return data;
