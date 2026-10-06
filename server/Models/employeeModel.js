@@ -86,6 +86,9 @@ const empleyeeSchema = new mongoose.Schema({
     // Somebody (admin map / customer tracking screen) is watching until this time → phone streams fast.
     // Otherwise the phone only sends a low-power ping about once a minute. See services/trackingService.js
     trackingDemandUntil: { type: Date, default: null },
+    // The trip (Models/tripModel.js) this person is on right now, if any. Lets every GPS ping know
+    // in O(1) whether to add distance, with no extra query for people who are not travelling.
+    activeTripId: { type: mongoose.Schema.Types.ObjectId, ref: "Trip", default: null },
     currentLocation: {
         lat: { type: Number },
         lng: { type: Number },

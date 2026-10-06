@@ -2,21 +2,21 @@
 //
 // Customer side of live tracking:  GET /api/user/order-tracking/:orderId
 //
-// • The customer app calls this every ~10s while its tracking screen is open.
+// • The customer app calls this every ~10s while its tracking screen is open (and pauses when the
+//   app goes to the background).
 // • Each call is ALSO the "somebody is watching" signal, so the mechanic / delivery phone
 //   switches to the fast GPS stream only while a customer is really looking (and goes back to
-//   low-power afterwards). See services/trackingService.js.
-// • What the customer may see follows the ORDER FLOW: only while the order is in a status listed
-//   in CUSTOMER_VISIBLE_STATUSES, only for people who are ONLINE (checked in), only a first name,
-//   and never anyone else's orders.
+//   the distance-based trip mode afterwards). See services/trackingService.js.
+// • What the customer may see follows the TRIP: only while the person is driving TO this
+//   customer (phase `to_customer`, i.e. order status "Mechanic Start" for mechanics), only for
+//   people who are ONLINE, only a first name, and never anyone else's orders.
+// • Every tracker also carries an approximate arrival time (`eta`).
 import mongoose from "mongoose";
 import Order from "../Models/orderModel.js";
 import Employee from "../Models/employeeModel.js";
-import {
-    CUSTOMER_VISIBLE_STATUSES,
-    ROLE_LABEL,
-    requestLiveLocation,
-} from "../services/trackingService.js";
+import Trip from "../Models/tripModel.js";
+import { ROLE_LABEL, requestLiveLocation } from "../services/trackingService.js";
+import { estimateEta } from "../services/tripService.js";
 
 const POLL_AFTER_MS = 10 * 1000;
 
@@ -29,42 +29,49 @@ export const getOrderTracking = async (req, res) => {
 
         // Only the customer who owns the order
         const order = await Order.findOne({ _id: orderId, userId: req.user._id })
-            .select("status mechanicIds deliveryId userLocation")
+            .select("status userLocation")
             .lean();
         if (!order) return res.status(404).json({ success: false, message: "Order not found." });
 
-        const candidates = [];
-        if (order.mechanicIds?.[0]) candidates.push({ role: "mechanic", id: order.mechanicIds[0] });
-        if (order.deliveryId) candidates.push({ role: "delivery", id: order.deliveryId });
-
-        // Order flow decides who may be followed right now
-        const allowed = candidates.filter((c) => (CUSTOMER_VISIBLE_STATUSES[c.role] || []).includes(order.status));
-        if (!allowed.length) {
-            return res.json({ success: true, trackable: false, orderStatus: order.status, trackers: [], pollAfterMs: 30 * 1000 });
+        const trips = await Trip.find({ orderId, open: true, phase: "to_customer" })
+            .select("role employeeId destination speedEma startedAt")
+            .lean();
+        if (!trips.length) {
+            return res.json({ success: true, trackable: false, orderStatus: order.status, trackers: [], eta: null, pollAfterMs: 30 * 1000 });
         }
 
-        const people = await Employee.find({ _id: { $in: allowed.map((a) => a.id) } })
+        const people = await Employee.find({ _id: { $in: trips.map((t) => t.employeeId) } })
             .select("firstName isOnline currentLocation")
             .lean();
         const byId = new Map(people.map((p) => [String(p._id), p]));
 
-        const trackers = allowed.map(({ role, id }) => {
-            const p = byId.get(String(id));
+        const trackers = [];
+        for (const t of trips) {
+            const p = byId.get(String(t.employeeId));
             const loc = p?.isOnline ? p.currentLocation : null;
-            return {
-                role,
-                label: ROLE_LABEL[role],
-                name: p?.firstName || ROLE_LABEL[role],
+            const has = loc?.lat != null && loc?.lng != null;
+            const eta = has ? await estimateEta(t, { lat: loc.lat, lng: loc.lng }).catch(() => null) : null;
+            trackers.push({
+                role: t.role,
+                label: ROLE_LABEL[t.role],
+                name: p?.firstName || ROLE_LABEL[t.role],
                 online: !!p?.isOnline,
-                location: loc?.lat != null && loc?.lng != null
+                startedAt: t.startedAt,
+                location: has
                     ? { lat: loc.lat, lng: loc.lng, heading: loc.heading ?? null, speed: loc.speed ?? null, updatedAt: loc.updatedAt || null }
                     : null,
-            };
-        });
+                eta: eta
+                    ? { minutes: eta.minutes, distanceKm: eta.distanceKm, arrivalAt: eta.arrivalAt, arriving: eta.arriving }
+                    : null,
+            });
+        }
 
         // "A customer is watching" → wake the phones of the people being shown
-        requestLiveLocation(allowed.map((a) => a.id))
+        requestLiveLocation(trips.map((t) => t.employeeId))
             .catch((e) => console.error("[orderTracking] demand failed:", e.message));
+
+        // The headline ETA is the mechanic's (he is the one the customer is waiting for)
+        const headline = trackers.find((t) => t.role === "mechanic" && t.eta) || trackers.find((t) => t.eta) || null;
 
         res.json({
             success: true,
@@ -74,6 +81,7 @@ export const getOrderTracking = async (req, res) => {
                 ? { lat: order.userLocation.coordinates[1], lng: order.userLocation.coordinates[0] }
                 : null,
             trackers,
+            eta: headline?.eta || null,
             pollAfterMs: POLL_AFTER_MS,
         });
     } catch (err) {

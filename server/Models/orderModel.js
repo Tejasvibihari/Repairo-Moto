@@ -87,6 +87,7 @@ const orderSchema = new mongoose.Schema({
         enum: [
             'Pending',
             'Mechanic Assigned',
+            'Mechanic Start',          // mechanic left the hub and is on the way to the customer
             'Mechanic Arrived',
             'In Progress',
             "Completion Requested",
@@ -98,6 +99,27 @@ const orderSchema = new mongoose.Schema({
     },
 
     arrivedAt: { type: Date, default: null },
+    mechanicStartedAt: { type: Date, default: null },
+
+    // ─── Mechanic travel summary ──────────────────────────────────────────────
+    // Cheap copy of the mechanic's Trip (Models/tripModel.js is the source of truth) so lists and
+    // the timeline can show the movement without a join. Kept in sync by services/tripService.js.
+    //   phase: to_customer → at_customer → to_hub → at_hub ("Arrived to Hub"; 'closed' = auto-closed)
+    // This is deliberately NOT part of `status`: the invoice / payment steps depend on the
+    // order sitting in Work Completed / Invoice Generated, and the mechanic usually reaches the hub
+    // after those happen.
+    travel: {
+        employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', default: undefined },
+        tripId: { type: mongoose.Schema.Types.ObjectId, ref: 'Trip', default: undefined },
+        phase: { type: String, enum: ['to_customer', 'at_customer', 'to_hub', 'at_hub', 'closed', undefined], default: undefined },
+        startedAt: { type: Date, default: undefined },
+        arrivedAt: { type: Date, default: undefined },
+        returnStartedAt: { type: Date, default: undefined },
+        hubArrivedAt: { type: Date, default: undefined },
+        distanceMeters: { type: Number, default: undefined },
+        outboundMeters: { type: Number, default: undefined },
+        returnMeters: { type: Number, default: undefined },
+    },
 
     // ─── Work Start OTP ───────────────────────────────────────────────────────
     // pendingPhotoPath: temporary before-photo path stored here until OTP is
@@ -269,6 +291,20 @@ orderSchema.pre('save', function (next) {
         }
     }
     next();
+});
+
+// Trip bookkeeping when the status changes (Work Completed → mechanic heads back to the hub,
+// Cancelled → everybody still travelling turns back). Done here so EVERY path that changes the
+// status — normal flow, admin force-update, cancel — is covered without touching each controller.
+orderSchema.pre('save', function (next) {
+    this.$locals.statusChanged = !this.isNew && this.isModified('status');
+    next();
+});
+orderSchema.post('save', function (doc) {
+    if (!doc.$locals?.statusChanged) return;
+    import('../services/tripService.js')
+        .then((m) => m.onOrderStatusChanged(doc))
+        .catch((err) => console.error('[order→trip] status sync failed:', err.message));
 });
 
 const Order = mongoose.model('Order', orderSchema);

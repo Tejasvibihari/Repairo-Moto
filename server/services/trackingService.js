@@ -26,9 +26,9 @@ export const ROLE_LABEL = { mechanic: "Mechanic", delivery: "Delivery partner" }
  * Edit this one object to change the customer-facing rules.
  */
 export const CUSTOMER_VISIBLE_STATUSES = {
-    mechanic: ["Mechanic Assigned"],     // on the way to the customer
-    delivery: ["Mechanic Assigned"],     // assumption: same window — change if delivery has its own stage
-};
+    mechanic: ["Mechanic Start"],        // on the way to the customer (set when the mechanic taps Start)
+    delivery: [],                        // delivery partners have no order status — the customer sees them
+};                                       // while their TRIP is in the to_customer phase (see orderTrackingController)
 
 /** How long one "I'm watching" signal stays valid. Watchers refresh it every ~30s. */
 export const DEMAND_TTL_MS = 75 * 1000;

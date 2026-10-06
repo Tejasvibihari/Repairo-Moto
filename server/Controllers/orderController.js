@@ -24,6 +24,7 @@ import {
     reserveBookingDate,
     releaseBookingDate,
 } from "../Utils/bookingPolicy.js";
+import { arriveAtCustomer, closeTripsForOrder } from "../services/tripService.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const deleteUploadedFile = (filePath) => {
@@ -625,14 +626,26 @@ export const updateMechanic = async (req, res) => {
         }
 
         const previousMechanicIds = (order.mechanicIds || []).map(String);
+        // A mechanic who is already on the road keeps his "Mechanic Start" status when the admin merely
+        // adds / swaps someone else; if HE is taken off, the order goes back to "Mechanic Assigned".
+        const starterId = order.status === 'Mechanic Start' ? String(order.travel?.employeeId || '') : '';
+        const starterKept = !!starterId && mechanics.some(m => String(m._id) === starterId);
         order.mechanicIds = mechanics.map(m => m._id);
         order.assignedMechanics = mechanics.map(m => `${m.firstName} ${m.lastName}`);
-        order.status = "Mechanic Assigned";
+        order.status = starterKept ? "Mechanic Start" : "Mechanic Assigned";
+        if (starterId && !starterKept) order.travel = undefined;
         await order.save();
 
         const actor = actorFromReq(req);
         const actorRef = { userId: actor.userId, userModel: actor.userModel };
         const newIds = mechanics.map(m => String(m._id));
+
+        // Mechanics taken off a running order stop being a "trip" for it (distance so far is kept)
+        const removedIds = previousMechanicIds.filter(id => !newIds.includes(id));
+        if (removedIds.length) {
+            await closeTripsForOrder(order._id, removedIds, 'reassigned')
+                .catch(e => console.error('close trips on reassign failed:', e.message));
+        }
 
         // Newly assigned mechanics
         for (const mechanic of mechanics.filter(m => !previousMechanicIds.includes(String(m._id)))) {
@@ -772,7 +785,7 @@ export const updateOrderStatus = async (req, res) => {
         if (!status) return res.status(400).json({ message: "Status is required" });
 
         const restrictedStatuses = [
-            "Mechanic Assigned", "Mechanic Arrived", "In Progress",
+            "Mechanic Assigned", "Mechanic Start", "Mechanic Arrived", "In Progress",
             "Work Completed", "Invoice Generated", "Completed",
         ];
         if (restrictedStatuses.includes(status)) {
@@ -816,7 +829,10 @@ export const confirmMechanicArrival = async (req, res) => {
         const order = await Order.findById(id);
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        if (order.status !== 'Mechanic Assigned') {
+        // Normal flow is Mechanic Start → Mechanic Arrived. Mechanic Assigned is still accepted so an
+        // older app build (or a mechanic who forgot to tap Start) is never blocked — that trip simply
+        // has no recorded distance.
+        if (order.status !== 'Mechanic Start' && order.status !== 'Mechanic Assigned') {
             return res.status(400).json({
                 message: `Cannot confirm arrival. Current status is "${order.status}".`,
             });
@@ -825,6 +841,11 @@ export const confirmMechanicArrival = async (req, res) => {
         order.status = 'Mechanic Arrived';
         order.arrivedAt = new Date();
         await order.save();
+
+        // Close the outbound leg: the distance up to the customer's door is now final.
+        // The app sends its current position in the body so the last stretch is counted too.
+        await arriveAtCustomer({ orderId: order._id, role: 'mechanic', lat: req.body?.lat, lng: req.body?.lng })
+            .catch(e => console.error('Trip arrival sync failed:', e.message));
 
         if (order.userId) {
             const userRecipient = getUserRecipient(order.userId);
@@ -1982,6 +2003,9 @@ export const cancelOrder = async (req, res) => {
         if (actor.role === 'user') {
             if (String(order.userId) !== String(actor.userId)) {
                 return res.status(403).json({ message: 'You can only cancel your own orders' });
+            }
+            if (order.status === 'Mechanic Start') {
+                return res.status(400).json({ message: 'Your mechanic is already on the way. Please contact support if you need to cancel.' });
             }
         } else if (actor.role === 'employee') {
             const allowed = ['manager', 'operational manager', 'telecaller'];

@@ -3,6 +3,8 @@ import Employee from "../Models/employeeModel.js";
 import Order from "../Models/orderModel.js";
 import Attendance from "../Models/attendanceModel.js";
 import { setPresence } from "../services/mechanicPresenceService.js";
+import { recordPoints } from "../services/tripService.js";
+import { toKm } from "../Utils/geo.js";
 import { emitToWatchers } from "../sockets/trackingSocket.js";
 import { istDateKey, openBreakOf } from "../Utils/attendanceUtils.js";
 import {
@@ -101,10 +103,18 @@ export const setMyStatus = async (req, res) => {
     }
 };
 
-// POST /api/employee/auth/location   body: { lat, lng, speed?, heading?, accuracy? }
+// POST /api/employee/auth/location
+//   body: { lat, lng, speed?, heading?, accuracy?, mocked?,
+//           points?: [{ lat, lng, t (ms), acc?, mocked? }] }     ← every fix since the last successful upload
+//
+// While the person is on a trip (Employee.activeTripId) the fixes are also added to the trip's
+// distance (services/tripService.js). Reply: { live, mode, trip }
+//   mode 'live' → somebody is watching (admin map / customer screen): fast GPS, every ~5 s
+//   mode 'trip' → driving to the customer or back to the hub: distance-based GPS (cheap, batched)
+//   mode 'idle' → nothing to record: low-power ping about once a minute
 export const postMyLocation = async (req, res) => {
     try {
-        const { lat, lng, speed, heading, accuracy } = req.body || {};
+        const { lat, lng, speed, heading, accuracy, points, mocked } = req.body || {};
         const valid =
             Number.isFinite(lat) && Number.isFinite(lng) &&
             Math.abs(lat) <= 90 && Math.abs(lng) <= 180 &&
@@ -130,7 +140,7 @@ export const postMyLocation = async (req, res) => {
                 },
             },
             { new: true }
-        ).select("firstName lastName email position trackingDemandUntil").lean();
+        ).select("firstName lastName email position trackingDemandUntil activeTripId").lean();
 
         // Server says OFFLINE (break / signed out / cron marked them offline).
         // 409 tells the app to stop the background tracking.
@@ -148,10 +158,31 @@ export const postMyLocation = async (req, res) => {
         syncActiveOrders(emp._id, emp.position, lat, lng, now.getTime())
             .catch((e) => console.error("[syncActiveOrders]", e.message));
 
-        // Tell the phone which GPS mode to use: FAST while somebody is watching (admin map open,
-        // customer tracking screen open) or while en route to a customer; otherwise LOW-POWER.
-        const live = isDemanded(emp, now.getTime()) || enRoute.get(String(emp._id)) === true;
-        res.json({ success: true, live });
+        // Trip distance: only people who are on a trip cost an extra query
+        let trip = null;
+        if (emp.activeTripId) {
+            try {
+                const batch = Array.isArray(points) && points.length
+                    ? points
+                    : [{ lat, lng, t: now.getTime(), acc: num(accuracy), mocked: mocked === true }];
+                trip = await recordPoints(emp.activeTripId, batch, now.getTime());
+            } catch (e) {
+                console.error("[trip.recordPoints]", e.message);
+            }
+        }
+
+        // Tell the phone which GPS mode to use (see the header of this handler)
+        const watched = isDemanded(emp, now.getTime());
+        const moving = !!trip?.moving;
+        const mode = watched ? "live" : moving ? "trip" : "idle";
+        // `live` stays for app builds that only know the two-mode protocol
+        const live = watched || moving || enRoute.get(String(emp._id)) === true;
+        res.json({
+            success: true,
+            live,
+            mode,
+            trip: trip?.phase ? { phase: trip.phase, distanceKm: toKm(trip.distanceMeters) } : null,
+        });
     } catch (err) {
         console.error("[postMyLocation]", err);
         res.status(500).json({ success: false, message: err.message });

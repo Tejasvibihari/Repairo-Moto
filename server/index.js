@@ -36,6 +36,8 @@ import bannerRouter from "./Routes/bannerRoutes.js";
 import appVersionRoutes from "./Routes/appVersionRoutes.js";
 import adminSettingsRoutes from "./Routes/adminSettingsRoutes.js";
 import trackingAdminRouter from "./Routes/trackingAdminRoutes.js";
+import tripRouter from "./Routes/tripRoutes.js";
+import staffOverviewRouter from "./Routes/staffOverviewRoutes.js";
 import { attendanceRouter, attendanceAdminRouter } from "./Routes/attendanceRoutes.js";
 import { ensureUserIndexes } from "./Utils/userIndexes.js";
 import { ensureAuthIndexes } from "./Utils/authIndexes.js";
@@ -43,6 +45,7 @@ import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
 import './Utils/notificationScheduler.js';
 import './Utils/mechanicStaleCron.js';
+import './Utils/tripCron.js';
 // Socket setup
 import { setupChatSockets } from "./sockets/chatSocket.js";
 import { setupTrackingSockets } from "./sockets/trackingSocket.js";
@@ -92,6 +95,8 @@ app.use("/api/admin/banner", bannerRouter);
 app.use("/api/app-version", appVersionRoutes);
 app.use("/api/admin-settings", adminSettingsRoutes);
 app.use("/api/admin/tracking", trackingAdminRouter);
+app.use("/api/employee/trips", tripRouter);
+app.use("/api/admin/staff-overview", staffOverviewRouter);
 app.use("/api/employee/attendance", attendanceRouter);
 app.use("/api/admin/attendance", attendanceAdminRouter);
 app.get("/", (req, res) => {

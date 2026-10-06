@@ -361,6 +361,7 @@ export const getAdminDashboard = async (req, res) => {
         const orderStatus = {
             pending: statusCount['Pending'] || 0,
             mechanicAssigned: statusCount['Mechanic Assigned'] || 0,
+            mechanicStart: statusCount['Mechanic Start'] || 0,
             mechanicArrived: statusCount['Mechanic Arrived'] || 0,
             inProgress: statusCount['In Progress'] || 0,
             completionRequested: statusCount['Completion Requested'] || 0,
@@ -521,7 +522,7 @@ export const getOrderCounts = async (req, res) => {
 
         // Compute totals
         const totalOrders = aggregation.reduce((sum, item) => sum + item.count, 0);
-        const inProgressOrders = (countsMap['In Progress'] || 0) + (countsMap['Mechanic Assigned'] || 0);
+        const inProgressOrders = (countsMap['In Progress'] || 0) + (countsMap['Mechanic Assigned'] || 0) + (countsMap['Mechanic Start'] || 0);
         const completedOrders = (countsMap['Completed'] || 0) + (countsMap['Invoice Generated'] || 0);
         const cancelledOrders = countsMap['Cancelled'] || 0;
 

@@ -25,6 +25,7 @@ const notificationSchema = new mongoose.Schema({
             'order_assigned',   // → mechanic gets assigned
             'mechanic_assigned',// → mechanic assigned specific
             'mechanic_arrived',// → mechanic assigned specific
+            'mechanic_started',// → user/admin: mechanic left the hub and is on the way
             'work_start_otp',
             'work_started',
             'work_complete_otp',

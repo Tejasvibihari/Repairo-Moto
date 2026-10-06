@@ -34,7 +34,7 @@ export const getMechanicDashboard = async (req, res) => {
                 { $group: { _id: '$status', count: { $sum: 1 } } },
             ]),
             Order.countDocuments({ ...matchByMechanic, createdAt: { $gte: startOfDay, $lte: endOfDay } }),
-            Order.countDocuments({ ...matchByMechanic, status: { $in: ['In Progress', 'Mechanic Assigned', 'Mechanic Arrived'] } }),
+            Order.countDocuments({ ...matchByMechanic, status: { $in: ['In Progress', 'Mechanic Assigned', 'Mechanic Start', 'Mechanic Arrived'] } }),
             Order.countDocuments({ ...matchByMechanic, status: { $in: ['Completed', 'Invoice Generated', 'Work Completed'] } }),
             Order.countDocuments({ ...matchByMechanic, preferredDate: { $gte: startOfDay, $lte: next7 } }),
             Order.find(matchByMechanic).sort({ updatedAt: -1 }).limit(10).lean(),

@@ -6,6 +6,8 @@ import { createNotification, getAdminRecipients } from "../services/notification
 import { setPresence } from "../services/mechanicPresenceService.js";
 import { isTrackable } from "../services/trackingService.js";
 import { sendAttendanceEventWhatsApp } from "../services/whatsappService.js";
+import { closeOpenTripsFor } from "../services/tripService.js";
+
 import {
     MAX_REPORT_DAYS,
     attendanceVars,
@@ -179,6 +181,11 @@ export const checkOut = async (req, res) => {
         }
         await syncPresence(req.employee, false, "sign_out");     // → Offline, phone stops sharing location
         sendAttendanceEventWhatsApp("check_out", req.employee, updated.checkOut);   // WhatsApp
+        // A trip must never keep running after the working day ends (distance is paid on it)
+        if (isTrackable(req.employee?.position)) {
+            await closeOpenTripsFor(req.employee._id, "checkout")
+                .catch((e) => console.error("[attendance] closing trip failed:", e.message));
+        }
         res.json({ success: true, date, state: "checked_out", attendance: updated });
     } catch (err) {
         console.error("[attendance] check-out failed:", err);
