@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import User from "../Models/userModel.js";
 import { generateReferralCode } from "../Utils/generateReferralCode.js";
+import { REFERRAL_BONUS_AMOUNT, normalizeReferralCode, adminAdjustReferral, round2 } from "../Utils/referral.js";
 import jwt from "jsonwebtoken";
 import Order from '../Models/orderModel.js';
 import BikeProfile from '../Models/bikeProfile.js';
@@ -80,29 +81,18 @@ export const createUser = async (req, res) => {
             profileImage
         };
 
-        // 🚀 Referral logic
-        if (referredBy) {
-            // 1. Check if referral code exists
-            const referrer = await User.findOne({ referralCode: referredBy });
-
+        // 🚀 Referral logic — validate the code now, credit the referrer only after the new account is saved
+        let referrer = null;
+        const refCode = normalizeReferralCode(referredBy);
+        if (refCode) {
+            referrer = await User.findOne({ referralCode: refCode });
             if (!referrer) {
                 return res.status(400).json({ message: "Invalid referral code" });
             }
-
-            // 2. Handle based on referrer's account type
-            if (referrer.accountType === "personal") {
-                referrer.pendingReferralAmount = (referrer.pendingReferralAmount || 0) + 50;
-                referrer.referralCount = (referrer.referralCount || 0) + 1;
-                await referrer.save();
-            } else if (referrer.accountType === "business") {
-                // Only count referral, no money
-                referrer.referralCount = (referrer.referralCount || 0) + 1;
-                await referrer.save();
-            }
-
-            // Save referredBy for record in the new user
-            newUserData.referredBy = referredBy;
+            newUserData.referredBy = refCode;
             newUserData.referralType = referrer.accountType;
+        } else {
+            newUserData.referredBy = null;
         }
         if (accountType === "personal") {
             newUserData.status = "approved"; // Set status to active for personal accounts
@@ -110,6 +100,14 @@ export const createUser = async (req, res) => {
         // Create new user
         const newUser = new User(newUserData);
         await newUser.save();
+
+        // Referrer: +1 referral and the bonus is "pending" until this user's first paid order unlocks it
+        // (see Utils/referral.js → processReferralCredit).
+        if (referrer) {
+            await User.updateOne({ _id: referrer._id }, {
+                $inc: { referralCount: 1, pendingReferralAmount: REFERRAL_BONUS_AMOUNT },
+            });
+        }
 
         // Send welcome email
         await sendWelcomeEmail({ firstName, lastName, email, accountType, referralCode });
@@ -177,7 +175,7 @@ export const userSignIn = async (req, res) => {
 export const getAllUser = async (req, res) => {
     try {
         // Fetch all users from the database
-        const users = await User.find().select("-password"); // Exclude the password field for security
+        const users = await User.find().select("-password -otp -otpExpires"); // Exclude the password field for security
 
         // Return the list of users
         res.status(200).json({
@@ -199,7 +197,10 @@ export const getAllUserByReferralCode = async (req, res) => {
             return res.status(400).json({ success: false, message: "Referral code is required." });
         }
 
-        const users = await User.find({ referredBy: referalcode });
+        const users = await User.find({ referredBy: normalizeReferralCode(referalcode) })
+            .select("firstName lastName email profileImage status accountType createdAt referralRewardGranted")
+            .sort({ createdAt: -1 })
+            .lean();
 
         res.status(200).json({
             success: true,
@@ -411,14 +412,14 @@ export const editUser = async (req, res) => {
 export const getWithdraHistory = async (req, res) => {
     const { userId } = req.params;
     try {
-        const user = await User.findById(userId).select("withdrawalHistory");
+        const user = await User.findById(userId).select("withdrawalRequests");
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
         res.status(200).json({
             message: "Withdrawal history fetched successfully",
-            withdrawalHistory: user.withdrawalHistory || [],
+            withdrawalHistory: user.withdrawalRequests || [],
         });
     } catch (error) {
         console.error("Error fetching withdrawal history:", error);
@@ -427,28 +428,36 @@ export const getWithdraHistory = async (req, res) => {
 
 }
 export const withdrawRequest = async (req, res) => {
-    const { amount, upiid } = req.body;
+    const { upiid } = req.body;
+    const amount = round2(req.body.amount);
     const { userId } = req.params;
-    console.log(amount, userId, "Amount and User ID for withdrawal request");
     try {
-        const user = await User.findOne({ _id: userId });
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
+        // A customer can only withdraw their own balance.
+        if (req.user && String(req.user._id) !== String(userId)) {
+            return res.status(403).json({ message: "Not allowed" });
         }
-        if (amount <= 0 || amount > user.referralAmount) {
+        if (!Number.isFinite(amount) || amount < 100) {
+            return res.status(400).json({ message: "Minimum withdrawal is ₹100" });
+        }
+        if (!upiid || !String(upiid).trim()) {
+            return res.status(400).json({ message: "UPI ID is required" });
+        }
+        const existing = await User.findById(userId, "accountType");
+        if (!existing) return res.status(404).json({ message: "User not found" });
+        if (existing.accountType !== "business") {
+            return res.status(403).json({ message: "Only business accounts can withdraw cash. Personal credit is used at checkout." });
+        }
+
+        // Atomic: deducts only while the balance still covers it, so two taps can never overdraw.
+        const user = await User.findOneAndUpdate(
+            { _id: userId, referralAmount: { $gte: amount } },
+            { $inc: { referralAmount: -amount }, $push: { withdrawalRequests: { amount, upiId: String(upiid).trim(), status: "pending" } } },
+            { new: true }
+        );
+        if (!user) {
             return res.status(400).json({ message: "Invalid withdrawal amount" });
         }
-        // Create a withdrawal request
-        const withdrawalRequest = {
-            amount,
-            upiId: upiid,
-            status: 'pending',
-            requestedAt: new Date(),
-        };
-        user.withdrawalRequests.push(withdrawalRequest);
-        user.referralAmount -= amount; // Deduct the amount from the user's referral balance
-
-        await user.save();
+        const withdrawalRequest = user.withdrawalRequests[user.withdrawalRequests.length - 1];
         res.status(200).json({
             message: "Withdrawal request submitted successfully",
             withdrawalRequest,
@@ -768,3 +777,78 @@ export const accountAction = async (req, res) => {
     }
 };
 
+
+
+// ─── Admin: edit a user's referral wallet ────────────────────────────────────────────────────
+// PUT /api/user/admin/referral/:userId   (authAdmin)
+// body: { mode: "set" | "adjust", referralAmount?, pendingReferralAmount?, referralCount?, note? }
+//   set    → replace the value(s)            e.g. { mode:"set", referralAmount: 200 }
+//   adjust → add (or subtract with a minus)   e.g. { mode:"adjust", referralAmount: -50, note:"duplicate credit" }
+export const adminUpdateReferral = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(userId)) return res.status(400).json({ message: "Invalid user ID" });
+        const { mode = "set", note, referralAmount, pendingReferralAmount, referralCount } = req.body || {};
+        if (!["set", "adjust"].includes(mode)) return res.status(400).json({ message: 'mode must be "set" or "adjust"' });
+
+        const result = await adminAdjustReferral(userId, {
+            admin: req.user, mode, note,
+            changes: { referralAmount, pendingReferralAmount, referralCount },
+        });
+        if (result.error) return res.status(result.status).json({ message: result.error });
+
+        const u = result.user;
+        res.status(200).json({
+            message: "Referral details updated",
+            referral: {
+                referralAmount: u.referralAmount,
+                pendingReferralAmount: u.pendingReferralAmount,
+                referralCount: u.referralCount,
+                totalReferralEarned: u.totalReferralEarned,
+                totalWithdrawn: u.totalWithdrawn,
+            },
+            lastAdjustment: u.referralAdjustments[u.referralAdjustments.length - 1],
+        });
+    } catch (error) {
+        console.error("Error updating referral:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// GET /api/user/admin/referral/:userId  (authAdmin) — wallet, withdrawals and the audit trail for one user
+export const adminGetReferral = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(userId)) return res.status(400).json({ message: "Invalid user ID" });
+        const u = await User.findById(userId).select(
+            "firstName lastName phone email accountType referralCode referredBy referralCount referralAmount pendingReferralAmount " +
+            "totalWithdrawn totalReferralEarned totalReferralRedeemed withdrawalRequests referralAdjustments"
+        ).lean();
+        if (!u) return res.status(404).json({ message: "User not found" });
+        const referred = await User.find({ referredBy: u.referralCode })
+            .select("firstName lastName phone createdAt referralRewardGranted").sort({ createdAt: -1 }).lean();
+        res.status(200).json({ user: u, referred });
+    } catch (error) {
+        console.error("Error fetching referral:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// GET /api/user/admin/referral-users?q=  (authAdmin) — find a customer to edit
+export const adminSearchReferralUsers = async (req, res) => {
+    try {
+        const q = String(req.query.q || "").trim();
+        const filter = q ? { $or: [
+            { firstName: new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") },
+            { lastName: new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") },
+            { phone: new RegExp(q.replace(/[^\d]/g, "") || "^$") },
+            { referralCode: q.toUpperCase() },
+        ] } : {};
+        const users = await User.find(filter)
+            .select("firstName lastName phone accountType referralCode referralCount referralAmount pendingReferralAmount")
+            .sort({ referralAmount: -1, createdAt: -1 }).limit(30).lean();
+        res.status(200).json({ users });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error" });
+    }
+};

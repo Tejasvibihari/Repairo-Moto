@@ -1,3 +1,4 @@
+import { processReferralCredit } from '../Utils/referral.js';
 import Order from "../Models/orderModel.js";
 import Employee from "../Models/employeeModel.js";
 import Vendor from '../Models/vendorModel.js';
@@ -1691,6 +1692,12 @@ export const markPaidCod = async (req, res) => {
         order.photosScheduledDeleteAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         order.photosDeleted = false;
         await order.save();
+
+        // ── Referral bonus: referee's first paid order (cash counts too; paid once per referee) ──
+        if (order.userId) {
+            await processReferralCredit(order.userId);
+            await Order.findByIdAndUpdate(order._id, { $set: { referralProcessed: true } });
+        }
 
         // ── Generate invoice ──────────────────────────────────────────────────
         const invoiceData = await buildInvoiceData(order, {

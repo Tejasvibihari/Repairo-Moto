@@ -188,3 +188,34 @@ export const updateBookingPolicy = async (req, res) => {
         res.status(400).json({ success: false, message: err.message || 'Could not save booking policy.' });
     }
 };
+
+
+// ── WhatsApp alerts ──────────────────────────────────────────────────────────
+
+// Admin only - read the WhatsApp order-alert switch.
+// GET /api/admin-settings/whatsapp
+export const getWhatsAppSettings = async (req, res) => {
+    try {
+        const settings = await getOrCreateSettings();
+        res.json({ success: true, orderStatusEnabled: settings.whatsappNotifications?.orderStatusEnabled !== false });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+};
+
+// Admin only - turn customer order-status WhatsApp alerts on/off.
+// PUT /api/admin-settings/whatsapp   { orderStatusEnabled: boolean }
+export const updateWhatsAppSettings = async (req, res) => {
+    try {
+        const { orderStatusEnabled } = req.body || {};
+        if (typeof orderStatusEnabled !== "boolean") {
+            return res.status(400).json({ success: false, message: "orderStatusEnabled must be true or false." });
+        }
+        const settings = await getOrCreateSettings();
+        settings.whatsappNotifications = { orderStatusEnabled, updatedAt: new Date() };
+        await settings.save();
+        res.json({ success: true, orderStatusEnabled });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+};

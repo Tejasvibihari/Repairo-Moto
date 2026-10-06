@@ -11,6 +11,16 @@ const withdrawalSchema = new mongoose.Schema({
 });
 
 
+const referralAdjustmentSchema = new mongoose.Schema({
+    adminId: { type: mongoose.Schema.Types.ObjectId },
+    adminName: String,
+    mode: { type: String, enum: ['set', 'adjust'] },
+    before: { type: mongoose.Schema.Types.Mixed },
+    after: { type: mongoose.Schema.Types.Mixed },
+    note: { type: String, default: '' },
+    at: { type: Date, default: Date.now },
+}, { _id: true });
+
 const userSchema = new mongoose.Schema({
     firstName: {
         type: String,
@@ -121,6 +131,13 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // Lifetime referral money credited to the wallet (bonuses + admin top-ups) and spent at checkout.
+    totalReferralEarned: { type: Number, default: 0, min: 0 },
+    totalReferralRedeemed: { type: Number, default: 0, min: 0 },
+    // Set on the REFERRED user once their first paid order has paid the referrer (bonus is paid only once).
+    referralRewardGranted: { type: Boolean, default: false },
+    referralRewardGrantedAt: { type: Date, default: null },
+    referralAdjustments: [referralAdjustmentSchema],   // admin audit trail
 
     withdrawalRequests: [withdrawalSchema], // history of withdrawal requests
 

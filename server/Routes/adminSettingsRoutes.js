@@ -1,5 +1,5 @@
 import express from "express";
-import { getAdminSettings, updateAdminSettings, getShopStatus, updateShopStatus, getBookingDateAvailability, updateBookingPolicy } from "../Controllers/adminSettingsController.js";
+import { getAdminSettings, updateAdminSettings, getShopStatus, updateShopStatus, getBookingDateAvailability, updateBookingPolicy, getWhatsAppSettings, updateWhatsAppSettings } from "../Controllers/adminSettingsController.js";
 import authAdmin from "../Middleware/authAdmin.js";
 
 const router = express.Router();
@@ -12,4 +12,7 @@ router.put("/shop-status", authAdmin, updateShopStatus);    // PUT /api/admin-se
 router.get("/booking-availability", getBookingDateAvailability);
 router.put("/booking-policy", authAdmin, updateBookingPolicy);
 
-export default router;
+router.get("/whatsapp", authAdmin, getWhatsAppSettings);     // admin — WhatsApp order-alert switch
+router.put("/whatsapp", authAdmin, updateWhatsAppSettings);
+
+export default router;

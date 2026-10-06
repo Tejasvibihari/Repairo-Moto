@@ -9,6 +9,7 @@ import {
     getEmployeeRecipient,
     getUserRecipient,
 } from '../services/notificationService.js';
+import { processReferralCredit, debitReferralWallet, round2 } from '../Utils/referral.js';
 
 // ─── Razorpay instance ────────────────────────────────────────────────────────
 let _razorpayInstance = null;
@@ -23,7 +24,6 @@ function getRazorpay() {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const REFERRAL_BONUS_AMOUNT = Number(process.env.REFERRAL_BONUS_AMOUNT) || 50;
 const PHOTO_DELETE_DELAY_MS = 7 * 24 * 60 * 60 * 1000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -35,21 +35,6 @@ const verifyRazorpaySignature = (rzpOrderId, rzpPaymentId, signature) => {
         .update(body.toString())
         .digest('hex');
     return expectedSignature === signature;
-};
-
-const processReferralCredit = async (userId) => {
-    const orderUser = await User.findById(userId);
-    if (!orderUser?.referredBy) return;
-
-    const referrer = await User.findOne({ referralCode: orderUser.referredBy });
-    if (!referrer) return;
-
-    await User.findByIdAndUpdate(referrer._id, {
-        $inc: {
-            referralAmount: REFERRAL_BONUS_AMOUNT,
-            referralCount: 1,
-        },
-    });
 };
 
 const generateInvoiceNumber = async () => {
@@ -304,7 +289,7 @@ export const createRazorpayOrder = async (req, res) => {
         if (useReferralBalance && order.userId) {
             const user = await User.findById(order.userId);
             if (user?.referralAmount > 0) {
-                referralToApply = Math.min(user.referralAmount, originalPayable);
+                referralToApply = round2(Math.min(user.referralAmount, originalPayable));
             }
         }
 
@@ -312,14 +297,11 @@ export const createRazorpayOrder = async (req, res) => {
 
         // ── Full referral cover (no card payment needed) ──────────────────────
         if (payableAfterReferral <= 0 && referralToApply > 0) {
-            const updatedUser = await User.findByIdAndUpdate(
-                order.userId,
-                { $inc: { referralAmount: -referralToApply } },
-                { new: true }
-            );
+            // Atomic: only succeeds while the balance still covers the amount (no negative wallets).
+            const updatedUser = await debitReferralWallet(order.userId, referralToApply);
 
             if (!updatedUser) {
-                return res.status(500).json({ success: false, message: 'Failed to apply referral balance.' });
+                return res.status(409).json({ success: false, message: 'Your referral balance has changed. Please refresh and try again.' });
             }
 
             // Update order totals to reflect wallet deduction
@@ -346,6 +328,11 @@ export const createRazorpayOrder = async (req, res) => {
                 amountPaid: 0,
                 referralApplied: referralToApply,
             });
+
+            if (order.userId) {
+                await processReferralCredit(order.userId);
+                await Order.findByIdAndUpdate(order._id, { $set: { referralProcessed: true } });
+            }
 
             sendPaymentNotifications(order, invoice).catch(err =>
                 console.error('Notification error (referral full cover):', err)
@@ -459,14 +446,7 @@ export const verifyPaymentAndGenerateInvoice = async (req, res) => {
         let finalReferralApplied = 0;
 
         if (referralToApply > 0 && order.userId) {
-            const updatedUser = await User.findOneAndUpdate(
-                {
-                    _id: order.userId,
-                    referralAmount: { $gte: referralToApply },
-                },
-                { $inc: { referralAmount: -referralToApply } },
-                { new: true }
-            );
+            const updatedUser = await debitReferralWallet(order.userId, referralToApply);
 
             if (updatedUser) {
                 finalReferralApplied = referralToApply;
@@ -614,11 +594,7 @@ export const razorpayWebhook = async (req, res) => {
         let finalReferralApplied = 0;
 
         if (referralToApply > 0 && order.userId) {
-            const updatedUser = await User.findOneAndUpdate(
-                { _id: order.userId, referralAmount: { $gte: referralToApply } },
-                { $inc: { referralAmount: -referralToApply } },
-                { new: true }
-            );
+            const updatedUser = await debitReferralWallet(order.userId, referralToApply);
 
             if (updatedUser) {
                 finalReferralApplied = referralToApply;
@@ -695,4 +671,4 @@ export const getInvoiceByOrder = async (req, res) => {
         console.error('Error fetching invoice:', error);
         return res.status(500).json({ success: false, message: 'Failed to fetch invoice.' });
     }
-};
+};

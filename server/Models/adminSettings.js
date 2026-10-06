@@ -101,6 +101,13 @@ const adminSettingsSchema = new mongoose.Schema({
         title: { type: String, default: 'Store closed', trim: true, maxlength: 80 },
         message: { type: String, default: 'We are closed on this date. Please choose another date.', trim: true, maxlength: 300 },
     }],
+    // ── WhatsApp alerts to customers ────────────────────────────────────────
+    // Master switch for order-status WhatsApp messages (booking confirmed, mechanic assigned,
+    // status changes, invoice, payment, cancellation ...). Admin can flip it from the Console.
+    whatsappNotifications: {
+        orderStatusEnabled: { type: Boolean, default: true },
+        updatedAt: { type: Date, default: null },
+    },
     bookingPolicy: {
         dailyOrderLimit: { type: Number, default: null, min: 1, max: 10000 },
         limitMessage: { type: String, default: 'We have reached our booking limit for this date. Please choose another date.', trim: true, maxlength: 300 },
@@ -108,4 +115,4 @@ const adminSettingsSchema = new mongoose.Schema({
 })
 
 const AdminSettings = mongoose.model('AdminSettings', adminSettingsSchema);
-export default AdminSettings;
+export default AdminSettings;

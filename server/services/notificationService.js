@@ -3,6 +3,7 @@ import Employee from '../Models/employeeModel.js';
 import Admin from '../Models/adminModel.js';
 import { sendPushToRecipients } from './pushService.js';
 import User from '../Models/userModel.js';
+import { sendOrderStatusWhatsApp } from './whatsappService.js';
 /**
  * Create a notification in DB and fire push notifications.
  *
@@ -55,6 +56,16 @@ export async function createNotification({
         }
     })
         .catch(err => console.error('Push send failed:', err));
+
+    // 3. WhatsApp copy for the customer (order events only; honours the admin on/off switch).
+    if (orderId) {
+        sendOrderStatusWhatsApp({
+            userIds: recipients.filter(r => r.userModel === 'User').map(r => r.userId),
+            orderRef: data?.screenOrderId,
+            body,
+            type,
+        }).catch(err => console.error('WhatsApp order alert failed:', err));
+    }
 
     return notification;
 }

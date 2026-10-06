@@ -11,6 +11,9 @@
 //   WHATSAPP_OTP_LANGUAGE        optional, default "en_US"   (English (US))
 //   WHATSAPP_ATTENDANCE_LANGUAGE optional, default "en_US" — language of the 4 attendance templates
 //   WHATSAPP_TPL_CHECK_IN / _BREAK_START / _BREAK_END / _CHECK_OUT
+//   WHATSAPP_TPL_ORDER_UPDATE / WHATSAPP_ORDER_LANGUAGE
+//                                customer order-status template (default "order_status_update", en_US).
+//                                Body: {{1}} customer name, {{2}} order id, {{3}} status message
 //                                optional template-name overrides (defaults: employee_attendancemarked,
 //                                employee_breakstarted, employee_break_ended, employee_signed_out)
 //
@@ -24,6 +27,8 @@ import {
     resolveWhatsAppRecipients,
 } from "../Utils/attendanceUtils.js";
 import { toWhatsAppNumber } from "../Utils/phone.js";
+import AdminSettings from "../Models/adminSettings.js";
+import User from "../Models/userModel.js";
 
 const cfg = () => ({
     token: process.env.WHATSAPP_ACCESS_TOKEN,
@@ -163,3 +168,47 @@ export async function sendAttendanceEventWhatsApp(event, employee, stamp) {
 /** Kept for older callers: "attendance marked" alert built from a check-in record. */
 export const sendAttendanceWhatsApp = (employee, record) =>
     sendAttendanceEventWhatsApp("check_in", employee, record?.checkIn);
+
+
+// ─── Customer order-status alerts ────────────────────────────────────────────────────────────
+
+/** Notification types that are customer-facing order progress. OTP / chat / promo types are deliberately NOT here. */
+export const ORDER_WHATSAPP_TYPES = new Set([
+    "new_order", "order_update", "order_cancelled", "order_rescheduled", "order_assigned", "mechanic_assigned",
+    "mechanic_started", "mechanic_arrived", "work_started", "order_confirmed_complete", "delivery_assigned",
+    "delivery_update", "invoice_generated", "payment_received",
+]);
+
+/** Admin master switch (defaults to ON when the setting has never been saved). */
+export async function isOrderWhatsAppEnabled() {
+    const s = await AdminSettings.findOne({}, "whatsappNotifications").lean();
+    return s?.whatsappNotifications?.orderStatusEnabled !== false;
+}
+
+// WhatsApp template parameters may not contain newlines/tabs or 4+ consecutive spaces.
+const clean = (t) => String(t ?? "").replace(/[\r\n\t]+/g, " ").replace(/ {2,}/g, " ").trim().slice(0, 900);
+
+/**
+ * Send the customer a WhatsApp copy of an order notification. Never throws, safe without await.
+ * Called from createNotification() so every existing order event is covered in one place.
+ */
+export async function sendOrderStatusWhatsApp({ userIds = [], orderRef, body, type }) {
+    try {
+        if (!ORDER_WHATSAPP_TYPES.has(type) || !userIds.length || !body) return [];
+        if (!isWhatsAppConfigured()) return [];
+        if (!(await isOrderWhatsAppEnabled())) return [];
+
+        const users = await User.find({ _id: { $in: userIds } }, "firstName phone").lean();
+        const name = process.env.WHATSAPP_TPL_ORDER_UPDATE || "order_status_update";
+        const language = process.env.WHATSAPP_ORDER_LANGUAGE || "en_US";
+        return await Promise.all(users.filter((u) => u.phone).map((u) => sendWhatsAppTemplate({
+            to: u.phone,
+            name,
+            language,
+            bodyParams: [clean(u.firstName) || "Customer", clean(orderRef) || "-", clean(body)],
+        })));
+    } catch (err) {
+        console.error("[whatsapp] order status alert failed:", err.message);
+        return [];
+    }
+}
