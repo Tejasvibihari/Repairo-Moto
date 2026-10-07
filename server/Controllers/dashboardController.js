@@ -4,6 +4,7 @@ import User from '../Models/userModel.js';
 import Employee from '../Models/employeeModel.js';
 import Vendor from '../Models/vendorModel.js';
 import mongoose from 'mongoose';
+import { countOrdersByBucket, orderScopeFor } from '../Utils/employeeStats.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Date helpers — everything is bucketed in IST (Asia/Kolkata, UTC+05:30) so that
@@ -477,63 +478,20 @@ export const getOrderCounts = async (req, res) => {
             return res.status(401).json({ success: false, message: 'Unauthorized' });
         }
 
-        const { _id: employeeId, position: role, city } = employee;
+        // mechanic → orders where he is in `mechanicIds`; delivery → `deliveryId`;
+        // managers → their city (Order.city is upper-case); anyone else → every order.
+        const { total, pending, open, completed, cancelled } = await countOrdersByBucket(orderScopeFor(employee));
 
-        // Build match conditions based on role
-        let matchConditions = {};
-
-        if (role === 'mechanic') {
-            matchConditions = {
-                $or: [
-                    { mechanicId: new mongoose.Types.ObjectId(employeeId) },
-                    { assignedMechanic: employeeId.toString() }
-                ]
-            };
-        }
-        else if (role === 'delivery') {
-            matchConditions = {
-                $or: [
-                    { deliveryId: new mongoose.Types.ObjectId(employeeId) },
-                    { assignedDelivery: employeeId.toString() }
-                ]
-            };
-        }
-        else if (role === 'admin' || role === 'manager' || role === 'operational manager') {
-            if (city) matchConditions.city = city;
-        }
-        // telecaller or other roles: matchConditions = {} (all orders)
-
-        // Aggregate counts for each status
-        const aggregation = await Order.aggregate([
-            { $match: matchConditions },
-            {
-                $group: {
-                    _id: '$status',
-                    count: { $sum: 1 }
-                }
-            }
-        ]);
-
-        // Convert aggregation result to a map
-        const countsMap = {};
-        aggregation.forEach(item => {
-            countsMap[item._id] = item.count;
-        });
-
-        // Compute totals
-        const totalOrders = aggregation.reduce((sum, item) => sum + item.count, 0);
-        const inProgressOrders = (countsMap['In Progress'] || 0) + (countsMap['Mechanic Assigned'] || 0) + (countsMap['Mechanic Start'] || 0);
-        const completedOrders = (countsMap['Completed'] || 0) + (countsMap['Invoice Generated'] || 0);
-        const cancelledOrders = countsMap['Cancelled'] || 0;
-
+        // Buckets are exclusive:  pending + inProgress + completed + cancelled = total
         return res.status(200).json({
             success: true,
             data: {
-                totalOrders,
-                inProgressOrders,
-                completedOrders,
-                cancelledOrders
-            }
+                totalOrders: total,
+                pendingOrders: pending,
+                inProgressOrders: open,
+                completedOrders: completed,
+                cancelledOrders: cancelled,
+            },
         });
 
     } catch (error) {
