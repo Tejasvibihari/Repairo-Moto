@@ -16,6 +16,7 @@ import mongoose from "mongoose";
 import Employee from "../Models/employeeModel.js";
 import Attendance from "../Models/attendanceModel.js";
 import Trip from "../Models/tripModel.js";
+import DutyDistance from "../Models/dutyDistanceModel.js";
 import Order from "../Models/orderModel.js";
 import Lead from "../Models/leadModel.js";
 import {
@@ -61,7 +62,7 @@ async function buildMetrics(employees, from, to, today) {
     const telecallers = employees.filter((e) => e.position === "telecaller");
     const rangeStart = istStart(from), rangeEnd = istEnd(to);
 
-    const [att, trips, mechDone, delivDone, openMech, openDeliv, leads] = await Promise.all([
+    const [att, trips, mechDone, delivDone, openMech, openDeliv, leads, dutyDays, tripDays] = await Promise.all([
         Attendance.aggregate([
             { $match: { employeeId: { $in: ids }, date: { $gte: from, $lte: to }, "checkIn.at": { $exists: true } } },
             {
@@ -135,7 +136,28 @@ async function buildMetrics(employees, from, to, today) {
                 },
             },
         ]) : [],
+        // Kilometres per person per day: what was travelled while ONLINE, plus trip distance to
+        // fall back on for days recorded before on-duty distance existed.
+        trackIds.length ? DutyDistance.aggregate([
+            { $match: { employeeId: { $in: trackIds }, date: { $gte: from, $lte: to } } },
+            { $group: { _id: { e: "$employeeId", d: "$date" }, meters: { $sum: "$distanceMeters" } } },
+        ]) : [],
+        trackIds.length ? Trip.aggregate([
+            { $match: { employeeId: { $in: trackIds }, date: { $gte: from, $lte: to } } },
+            { $group: { _id: { e: "$employeeId", d: "$date" }, meters: { $sum: "$distanceMeters" } } },
+        ]) : [],
     ]);
+
+    // employeeId → total metres (a day with an on-duty record wins over that day's trip total)
+    const kmMeters = new Map();
+    {
+        const dutyKey = new Set(dutyDays.map((r) => `${r._id.e}|${r._id.d}`));
+        for (const r of dutyDays) kmMeters.set(String(r._id.e), (kmMeters.get(String(r._id.e)) || 0) + (r.meters || 0));
+        for (const r of tripDays) {
+            if (dutyKey.has(`${r._id.e}|${r._id.d}`)) continue;
+            kmMeters.set(String(r._id.e), (kmMeters.get(String(r._id.e)) || 0) + (r.meters || 0));
+        }
+    }
 
     const by = (rows) => new Map(rows.map((r) => [String(r._id), r]));
     const attM = by(att), tripM = by(trips), mDone = by(mechDone), dDone = by(delivDone), mOpen = by(openMech), dOpen = by(openDeliv), leadM = by(leads);
@@ -154,7 +176,7 @@ async function buildMetrics(employees, from, to, today) {
         if (e.position === "mechanic" || e.position === "delivery") {
             const t = tripM.get(k);
             m.distance = {
-                km: toKm(t?.meters),
+                km: toKm(kmMeters.get(k)),
                 trips: t?.trips || 0,
                 avgKmPerTrip: t?.trips ? toKm((t.meters || 0) / t.trips) : 0,
                 flaggedTrips: t?.flagged || 0,
@@ -251,7 +273,7 @@ export const getStaffDetail = async (req, res) => {
         const isTele = emp.position === "telecaller";
         const tz = "Asia/Kolkata";
 
-        const [metrics, records, trips, doneByDay, leadsByDay] = await Promise.all([
+        const [metrics, records, trips, doneByDay, leadsByDay, dutyRows] = await Promise.all([
             buildMetrics([emp], from, to, today),
             Attendance.find({ employeeId: id, date: { $gte: from, $lte: to } }).lean(),
             isMech || isDeliv
@@ -283,7 +305,11 @@ export const getStaffDetail = async (req, res) => {
                     },
                 ])
                 : [],
+            isMech || isDeliv
+                ? DutyDistance.find({ employeeId: id, date: { $gte: from, $lte: to } }).select("date distanceMeters").lean()
+                : [],
         ]);
+        const dutyByDay = new Map(dutyRows.map((r) => [r.date, r.distanceMeters || 0]));
 
         const attByDay = new Map(records.map((r) => [r.date, r]));
         const tripByDay = new Map();
@@ -311,7 +337,7 @@ export const getStaffDetail = async (req, res) => {
                         breakMinutes: r.breakMinutes || 0,
                     }
                     : null,
-                km: toKm(tripByDay.get(key)?.m),
+                km: toKm(dutyByDay.has(key) ? dutyByDay.get(key) : tripByDay.get(key)?.m),
                 trips: tripByDay.get(key)?.n || 0,
                 completed: doneM.get(key) || 0,
                 leads: leadM.get(key)?.n || 0,

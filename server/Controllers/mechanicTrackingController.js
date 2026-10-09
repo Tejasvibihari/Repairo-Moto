@@ -4,6 +4,7 @@ import Order from "../Models/orderModel.js";
 import Attendance from "../Models/attendanceModel.js";
 import { setPresence } from "../services/mechanicPresenceService.js";
 import { recordPoints } from "../services/tripService.js";
+import { recordDutyPoints } from "../services/dutyDistanceService.js";
 import { toKm } from "../Utils/geo.js";
 import { emitToWatchers } from "../sockets/trackingSocket.js";
 import { istDateKey, openBreakOf } from "../Utils/attendanceUtils.js";
@@ -107,11 +108,14 @@ export const setMyStatus = async (req, res) => {
 //   body: { lat, lng, speed?, heading?, accuracy?, mocked?,
 //           points?: [{ lat, lng, t (ms), acc?, mocked? }] }     ← every fix since the last successful upload
 //
-// While the person is on a trip (Employee.activeTripId) the fixes are also added to the trip's
-// distance (services/tripService.js). Reply: { live, mode, trip }
+// DISTANCE: this endpoint is only reachable while the person is ONLINE, so every accepted fix is
+// added to today's on-duty distance (services/dutyDistanceService.js) — online + moving = km grow,
+// no trip or order needed. While the person is also on an order trip (Employee.activeTripId) the
+// same fixes go to that trip's distance (services/tripService.js).
+// Reply: { live, mode, trip, dutyKm }
 //   mode 'live' → somebody is watching (admin map / customer screen): fast GPS, every ~5 s
-//   mode 'trip' → driving to the customer or back to the hub: distance-based GPS (cheap, batched)
-//   mode 'idle' → nothing to record: low-power ping about once a minute
+//   mode 'trip' → moving (on duty or on a trip): distance-based GPS (cheap, batched) so the road is measured well
+//   mode 'idle' → standing still: low-power ping about once a minute
 export const postMyLocation = async (req, res) => {
     try {
         const { lat, lng, speed, heading, accuracy, points, mocked } = req.body || {};
@@ -146,11 +150,25 @@ export const postMyLocation = async (req, res) => {
         // 409 tells the app to stop the background tracking.
         if (!emp) return res.status(409).json({ success: false, code: "OFFLINE" });
 
+        // Every fix since the last successful upload (or just this one)
+        const batch = Array.isArray(points) && points.length
+            ? points
+            : [{ lat, lng, t: now.getTime(), acc: num(accuracy), mocked: mocked === true }];
+
+        // On-duty distance: online + moving → it grows
+        let duty = null;
+        try {
+            duty = await recordDutyPoints(emp._id, emp.position, batch, now.getTime());
+        } catch (e) {
+            console.error("[duty.recordDutyPoints]", e.message);
+        }
+
         emitToWatchers("mechanic:location", {
             id: String(emp._id),
             name: nameOf(emp),
             position: emp.position || null,
             lat, lng,
+            todayKm: duty ? toKm(duty.distanceMeters) : undefined,
             speed: num(speed), heading: num(heading), accuracy: num(accuracy),
             at: now,
         });
@@ -162,9 +180,6 @@ export const postMyLocation = async (req, res) => {
         let trip = null;
         if (emp.activeTripId) {
             try {
-                const batch = Array.isArray(points) && points.length
-                    ? points
-                    : [{ lat, lng, t: now.getTime(), acc: num(accuracy), mocked: mocked === true }];
                 trip = await recordPoints(emp.activeTripId, batch, now.getTime());
             } catch (e) {
                 console.error("[trip.recordPoints]", e.message);
@@ -173,7 +188,7 @@ export const postMyLocation = async (req, res) => {
 
         // Tell the phone which GPS mode to use (see the header of this handler)
         const watched = isDemanded(emp, now.getTime());
-        const moving = !!trip?.moving;
+        const moving = !!trip?.moving || !!duty?.moving;
         const mode = watched ? "live" : moving ? "trip" : "idle";
         // `live` stays for app builds that only know the two-mode protocol
         const live = watched || moving || enRoute.get(String(emp._id)) === true;
@@ -182,6 +197,7 @@ export const postMyLocation = async (req, res) => {
             live,
             mode,
             trip: trip?.phase ? { phase: trip.phase, distanceKm: toKm(trip.distanceMeters) } : null,
+            dutyKm: duty ? toKm(duty.distanceMeters) : null,
         });
     } catch (err) {
         console.error("[postMyLocation]", err);

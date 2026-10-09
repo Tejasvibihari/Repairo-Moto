@@ -8,11 +8,13 @@
 //     `deliveryId` for a delivery partner, `city` (upper-case, like Order.city) for managers.
 //   • "today" / "this month" are IST calendar days, never the server's (usually UTC) day.
 //   • status buckets are exclusive, so  pending + open + completed + cancelled = total.
-//   • distance comes from the Trip collection (server-computed), attendance from Attendance.
+//   • distance = what was travelled while ONLINE (DutyDistance, server-computed); days recorded before
+//     that existed fall back to the Trip collection. Attendance comes from Attendance.
 import mongoose from "mongoose";
 import Order from "../Models/orderModel.js";
 import Attendance from "../Models/attendanceModel.js";
 import Trip from "../Models/tripModel.js";
+import DutyDistance from "../Models/dutyDistanceModel.js";
 import {
     breakMinutesOf,
     istDateKey,
@@ -211,7 +213,7 @@ export async function buildDistanceStats(employeeId, { today, month }) {
     const weekFrom = addDays(today, -6);
     const from = monthFrom < weekFrom ? monthFrom : weekFrom;
 
-    const [byDay, monthAgg, openTrip] = await Promise.all([
+    const [byDay, monthAgg, openTrip, dutyByDay] = await Promise.all([
         Trip.aggregate([
             { $match: { employeeId: id, date: { $gte: from, $lte: today } } },
             { $group: { _id: "$date", meters: { $sum: "$distanceMeters" }, trips: { $sum: 1 } } },
@@ -232,17 +234,28 @@ export async function buildDistanceStats(employeeId, { today, month }) {
         Trip.findOne({ employeeId: id, open: true })
             .select("orderRef orderId phase startedAt distanceMeters")
             .lean(),
+        DutyDistance.aggregate([
+            { $match: { employeeId: id, date: { $gte: from, $lte: today } } },
+            { $group: { _id: "$date", meters: { $sum: "$distanceMeters" } } },
+        ]),
     ]);
 
     const dayMap = new Map(byDay.map((r) => [r._id, r]));
+    const dutyMap = new Map(dutyByDay.map((r) => [r._id, r.meters || 0]));
     const m = monthAgg[0] || {};
     const t = dayMap.get(today);
 
+    // A day with an on-duty record uses it; older days (before it existed) keep their trip distance.
+    const metersOf = (date) => (dutyMap.has(date) ? dutyMap.get(date) : dayMap.get(date)?.meters || 0);
+    const dates = new Set([...dayMap.keys(), ...dutyMap.keys()]);
+    let monthMeters = 0;
+    for (const d of dates) if (d >= monthFrom) monthMeters += metersOf(d);
+
     return {
         distance: {
-            todayKm: toKm(t?.meters),
+            todayKm: toKm(metersOf(today)),
             todayTrips: t?.trips || 0,
-            monthKm: toKm(m.meters),
+            monthKm: toKm(monthMeters),
             monthTrips: m.trips || 0,
             avgKmPerTrip: m.trips ? toKm((m.meters || 0) / m.trips) : 0,
             outboundKm: toKm(m.outbound),
@@ -258,7 +271,7 @@ export async function buildDistanceStats(employeeId, { today, month }) {
                 }
                 : null,
         },
-        kmByDay: new Map(byDay.map((r) => [r._id, toKm(r.meters)])),
+        kmByDay: new Map([...dates].map((d) => [d, toKm(metersOf(d))])),
     };
 }
 

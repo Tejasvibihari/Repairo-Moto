@@ -16,6 +16,7 @@ import Employee from "../Models/employeeModel.js";
 import { createNotification, getAdminRecipients } from "./notificationService.js";
 import { emitToWatchers } from "../sockets/trackingSocket.js";
 import { ROLE_LABEL } from "./trackingService.js";
+import { resetDutyAnchor } from "./dutyDistanceService.js";
 
 const fullName = (e) =>
     [e.firstName, e.lastName].filter(Boolean).join(" ").trim() || e.email || "A mechanic";
@@ -93,6 +94,10 @@ export async function setPresence(employeeId, online, { reason = "manual", notif
         .lean();
 
     if (!emp) return { changed: false };
+
+    // Online/offline changed → forget the last GPS point, so the ground covered between a break
+    // and the resume (phone off, lift in a car, ...) is never counted as distance.
+    resetDutyAnchor(emp._id).catch((e) => console.error("[mechanicPresence] duty anchor reset failed:", e.message));
 
     const name = fullName(emp);
     const role = ROLE_LABEL[emp.position] || "Staff";
