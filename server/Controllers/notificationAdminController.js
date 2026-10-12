@@ -15,7 +15,9 @@ const actorOf = (req) => ({
 
 /** Mass messaging and global reminder settings are Admin-only (telecallers/managers also pass authAdmin). */
 export const requireAdminOnly = (req, res, next) => {
-    if (req.user?.model !== 'Admin') {
+    const position = String(req.user?.position || '').trim().toLowerCase().replace(/_/g, ' ');
+    const canManageCampaigns = req.user?.model === 'Admin' || ['manager', 'operational manager', 'ops manager'].includes(position);
+    if (!canManageCampaigns) {
         return res.status(403).json({ success: false, message: 'Only admins can do this.' });
     }
     next();

@@ -292,6 +292,24 @@ export default function App() {
             element={<EmployeePrivateRoute><EmployeeSidebar><TelecallerChatSupport /></EmployeeSidebar></EmployeePrivateRoute>}
           />
 
+          {/* Operational manager workspace: same admin pages, employee-auth protected. */}
+          <Route path='/employee/manager-orders' element={<EmployeePrivateRoute><EmployeeSidebar><ManageOrder /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-invoices' element={<EmployeePrivateRoute><EmployeeSidebar><ManualInvoice /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-invoices/create' element={<EmployeePrivateRoute><EmployeeSidebar><CreateManualInvoice /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-invoices/:id/edit' element={<EmployeePrivateRoute><EmployeeSidebar><CreateManualInvoice /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-invoices/:id' element={<EmployeePrivateRoute><EmployeeSidebar><ManualInvoiceDetail /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-leads' element={<EmployeePrivateRoute><EmployeeSidebar><AdminLeads /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-coupons' element={<EmployeePrivateRoute><EmployeeSidebar><AdminCouponsManager /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-banners' element={<EmployeePrivateRoute><EmployeeSidebar><AppUi /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-notifications' element={<EmployeePrivateRoute><EmployeeSidebar><AdminNotificationsHistory /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-chat' element={<EmployeePrivateRoute><EmployeeSidebar><TelecallerChatSupport /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-attendance' element={<EmployeePrivateRoute><EmployeeSidebar><TelecallerAttendance /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-staff' element={<EmployeePrivateRoute><EmployeeSidebar><AdminStaffOverview /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-shop' element={<EmployeePrivateRoute><EmployeeSidebar><ShopStatusPage /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-whatsapp' element={<EmployeePrivateRoute><EmployeeSidebar><AdminWhatsappAlerts /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-referrals' element={<EmployeePrivateRoute><EmployeeSidebar><EmployeeReferral /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-settings' element={<EmployeePrivateRoute><EmployeeSidebar><EmpolyeeProfile /></EmployeeSidebar></EmployeePrivateRoute>} />
+
           {/* Vendor Page and Routes  */}
           <Route path="/vendor/sign-in" element={<VendorSignIn />} />
           {/* Protected Route With Vendor Navbar  */}

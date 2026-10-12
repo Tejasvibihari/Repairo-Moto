@@ -137,55 +137,55 @@ const Sidebar = ({ children }) => {
                                 </p>
                             </li>
                             {menuItems.filter((item) => item.section === section).map((item) => {
-                                const isActive = currentPath === item.id || rootSegment === item.id;
-                                const isHovered = hoveredItem === item.id;
+                            const isActive = currentPath === item.id || rootSegment === item.id;
+                            const isHovered = hoveredItem === item.id;
 
-                                return (
-                                    <li key={item.id}>
-                                        <button
-                                            onClick={() => handleNavigation(item.path)}
-                                            onMouseEnter={() => setHoveredItem(item.id)}
-                                            onMouseLeave={() => setHoveredItem(null)}
-                                            className={`
+                            return (
+                                <li key={item.id}>
+                                    <button
+                                        onClick={() => handleNavigation(item.path)}
+                                        onMouseEnter={() => setHoveredItem(item.id)}
+                                        onMouseLeave={() => setHoveredItem(null)}
+                                        className={`
                                             group relative flex items-center w-full p-2.5 text-sm 
                                             rounded-lg transition-all duration-200
                                             ${collapsed && !isMobile ? 'justify-center px-2' : ''}
                                             ${isActive
-                                                    ? 'bg-blue-100 text-primary border-l-4 border-primary'
-                                                    : 'hover:bg-gray-50 text-white hover:text-gray-900'
-                                                }
+                                                ? 'bg-blue-100 text-primary border-l-4 border-primary'
+                                                : 'hover:bg-gray-50 text-white hover:text-gray-900'
+                                            }
                                         `}
-                                            title={collapsed && !isMobile ? item.label : ''}
-                                        >
-                                            {/* Icon */}
-                                            <span className={`
+                                        title={collapsed && !isMobile ? item.label : ''}
+                                    >
+                                        {/* Icon */}
+                                        <span className={`
                                             flex-shrink-0 transition-colors duration-200
                                             ${collapsed && !isMobile ? 'mx-auto' : ''}
                                             ${isActive ? 'text-primary' : 'text-gray-500'}
                                             ${isHovered && !isActive ? 'text-primary' : ''}
                                         `}>
-                                                {item.icon}
-                                            </span>
+                                            {item.icon}
+                                        </span>
 
-                                            {/* Label */}
-                                            <span className={`
+                                        {/* Label */}
+                                        <span className={`
                                             ml-3 font-medium transition-all duration-300 whitespace-nowrap
                                             ${collapsed && !isMobile
-                                                    ? 'opacity-0 w-0 overflow-hidden'
-                                                    : 'opacity-100 w-auto'
-                                                }
+                                                ? 'opacity-0 w-0 overflow-hidden'
+                                                : 'opacity-100 w-auto'
+                                            }
                                         `}>
-                                                {item.label}
-                                            </span>
+                                            {item.label}
+                                        </span>
 
-                                            {/* Active indicator */}
-                                            {isActive && (
-                                                <div className="absolute right-2 w-1.5 h-1.5 bg-primary rounded-full" />
-                                            )}
-                                        </button>
-                                    </li>
-                                );
-                            })}</React.Fragment>)}
+                                        {/* Active indicator */}
+                                        {isActive && (
+                                            <div className="absolute right-2 w-1.5 h-1.5 bg-primary rounded-full" />
+                                        )}
+                                    </button>
+                                </li>
+                            );
+                        })}</React.Fragment>)}
                     </ul>
                 </nav>
 

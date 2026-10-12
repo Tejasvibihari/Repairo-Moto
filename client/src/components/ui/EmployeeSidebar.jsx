@@ -1,202 +1,300 @@
-import Badge from '@mui/material/Badge';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
-    Home, Bike, FileText, NotebookPen, User2, Briefcase,
-    ShoppingCart, QrCode, Menu, ChevronRight,
-    HandCoins,
-    User,
-    MapPin,
-    PhoneCall,
-    CalendarDays,
-    Receipt,
-    MessageCircle,
+    Home, ShoppingCart, Bike, Briefcase, QrCode, FileText, NotebookPen,
+    Menu, X, ChevronLeft, ChevronRight, ChevronDown,
+    HandCoins, User, MapPin, PhoneCall, Users, Store, CalendarDays,
+    Receipt, FilePlus, MessageCircle, Ticket, Image, Megaphone, Settings,
+    Truck, Share2, UserCog,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
+const S = 18;
+
+/* ------------------------------------------------------------------
+   Menus. An entry is either a plain item { id, path, label, icon }
+   or a group { group, label, icon, items: [...] }.
+   Role restrictions are unchanged: position decides which menu loads.
+------------------------------------------------------------------ */
+const TELECALLER_MENU = [
+    { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={S} /> },
+    { id: 'leads', path: '/employee/leads', label: 'Leads', icon: <PhoneCall size={S} /> },
+    { id: 'attendance', path: '/employee/attendance', label: 'Attendance', icon: <CalendarDays size={S} /> },
+    { id: 'invoices-create', path: '/employee/invoices/create', label: 'Create Invoice', icon: <FilePlus size={S} /> },
+    { id: 'invoices', path: '/employee/invoices', label: 'Invoices', icon: <FileText size={S} /> },
+    { id: 'chat-support', path: '/employee/chat-support', label: 'Chat Support', icon: <MessageCircle size={S} /> },
+];
+
+const MANAGER_MENU = [
+    { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={S} /> },
+    {
+        group: 'orders', label: 'Orders & Billing', icon: <Truck size={S} />,
+        items: [
+            { id: 'manager-orders', path: '/employee/manager-orders', label: 'Orders', icon: <ShoppingCart size={S} /> },
+            { id: 'manager-create-invoice', path: '/employee/manager-invoices/create', label: 'Create Invoice', icon: <FilePlus size={S} /> },
+            { id: 'manager-invoices', path: '/employee/manager-invoices', label: 'Invoice', icon: <Receipt size={S} /> },
+            { id: 'live-tracking', path: '/employee/live-tracking', label: 'Live Tracking', icon: <MapPin size={S} /> },
+        ],
+    },
+    {
+        group: 'growth', label: 'Customers & Growth', icon: <Share2 size={S} />,
+        items: [
+            { id: 'manager-leads', path: '/employee/manager-leads', label: 'Leads', icon: <PhoneCall size={S} /> },
+            { id: 'manager-chat', path: '/employee/manager-chat', label: 'Chat Support', icon: <MessageCircle size={S} /> },
+            { id: 'manager-coupons', path: '/employee/manager-coupons', label: 'Coupons', icon: <Ticket size={S} /> },
+            { id: 'manager-banners', path: '/employee/manager-banners', label: 'Banners', icon: <Image size={S} /> },
+            { id: 'manager-notifications', path: '/employee/manager-notifications', label: 'Send Notification', icon: <Megaphone size={S} /> },
+            { id: 'manager-whatsapp', path: '/employee/manager-whatsapp', label: 'WhatsApp Alerts', icon: <MessageCircle size={S} /> },
+            { id: 'manager-referrals', path: '/employee/manager-referrals', label: 'Referral Wallets', icon: <HandCoins size={S} /> },
+        ],
+    },
+    {
+        group: 'team', label: 'Team & Shop', icon: <UserCog size={S} />,
+        items: [
+            { id: 'manager-attendance', path: '/employee/manager-attendance', label: 'My Attendance', icon: <CalendarDays size={S} /> },
+            { id: 'manager-staff', path: '/employee/manager-staff', label: 'Staff Overview', icon: <Users size={S} /> },
+            { id: 'manager-shop', path: '/employee/manager-shop', label: 'Shop Status', icon: <Store size={S} /> },
+        ],
+    },
+    { id: 'manager-settings', path: '/employee/manager-settings', label: 'Settings', icon: <Settings size={S} /> },
+];
+
+const DEFAULT_MENU = [
+    { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={S} /> },
+    { id: 'all-booking', path: '/employee/all-booking', label: 'All Booking', icon: <ShoppingCart size={S} /> },
+    { id: 'referral', path: '/employee/referral', label: 'Referral & Earnings', icon: <HandCoins size={S} /> },
+];
+
+const STORAGE_KEY = 'employee-sidebar-open-groups';
+
+const readOpenGroups = () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (saved && typeof saved === 'object') return saved;
+    } catch (e) { /* ignore */ }
+    return null;
+};
+
 const EmployeeSidebar = ({ children }) => {
-    const employee = useSelector((state) => state.employeeAuth.employee)
-    const position = employee.position;
+    const employee = useSelector((state) => state.employeeAuth.employee);
+    const position = employee?.position;
+
     const [collapsed, setCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [openGroups, setOpenGroups] = useState(() => readOpenGroups() || { orders: true });
     const navigate = useNavigate();
     const location = useLocation();
 
-    const currentPath = location.pathname === '/' ? 'dashboard' : location.pathname.substring(1);
+    /* ---------- pick menu by role (restriction preserved) ---------- */
+    const menu =
+        position === 'telecaller' ? TELECALLER_MENU
+            : position === 'operational manager' ? MANAGER_MENU
+                : DEFAULT_MENU;
 
-    const highmenuItems = [
-        { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-        { id: 'leads', path: '/employee/leads', label: 'Leads', icon: <PhoneCall size={20} />, roles: ['telecaller'] },
-        // { id: 'invoice', path: '/employee/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
-        { id: 'live-tracking', path: '/employee/live-tracking', label: 'Live Tracking', icon: <MapPin size={20} />, roles: ['operational manager'] },
-        { id: 'model', path: '/employee/model', label: 'Bike Model', icon: <Bike size={20} /> },
-        { id: 'manage-order', path: '/employee/manage-order', label: 'Manage Order', icon: <ShoppingCart size={20} /> },
-        { id: 'manage-vendor', path: '/employee/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={20} /> },
-        { id: 'manage-qr', path: '/employee/manage-qr', label: 'Manage Qr', icon: <QrCode size={20} /> },
-        { id: 'all-user', path: '/employee/all-user', label: 'All User', icon: <User size={20} /> },
-        { id: 'add-blog', path: '/employee/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
-        { id: 'manage-blog', path: '/employee/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
-    ];
-    const telecallerMenuItems = [
-        { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-        { id: 'leads', path: '/employee/leads', label: 'Leads', icon: <PhoneCall size={20} /> },
-        { id: 'attendance', path: '/employee/attendance', label: 'Attendance', icon: <CalendarDays size={20} /> },
-        { id: 'invoices-create', path: '/employee/invoices/create', label: 'Create Invoice', icon: <Receipt size={20} /> },
-        { id: 'invoices', path: '/employee/invoices', label: 'Invoices', icon: <FileText size={20} /> },
-        { id: 'chat-support', path: '/employee/chat-support', label: 'Chat Support', icon: <MessageCircle size={20} /> },
-    ];
-    const lowmenuItems = [
-        { id: 'employee/dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-        { id: 'employee/all-booking', path: '/employee/all-booking', label: 'All Booking', icon: <ShoppingCart size={20} /> },
-        { id: 'employee/referral', path: '/employee/referral', label: 'Referral & Earnings', icon: <HandCoins size={20} /> },
-        // { id: 'employeeall-booking', path: '/employee/profile', label: 'Profile', icon: <Home size={20} /> },
-    ];
+    const flatItems = useMemo(
+        () => menu.flatMap((e) => (e.group ? e.items : [e])),
+        [menu]
+    );
 
-    const handleNavigation = (path) => {
-        navigate(path);
-        if (isMobile) setIsMobileMenuOpen(false); // close sidebar after navigation
-    };
+    /* ---------- active item: longest matching path wins ----------
+       Fixes "Invoice" and "Create Invoice" both lighting up on
+       /manager-invoices/create. */
+    const activeItem = useMemo(() => {
+        const path = location.pathname;
+        return flatItems
+            .filter((i) => path === i.path || path.startsWith(`${i.path}/`))
+            .sort((a, b) => b.path.length - a.path.length)[0];
+    }, [flatItems, location.pathname]);
+
+    const activeGroup = menu.find((e) => e.group && e.items.some((i) => i.id === activeItem?.id))?.group;
+    const isProfile = location.pathname.startsWith('/employee/profile');
+    const pageTitle = isProfile ? 'Profile' : activeItem?.label || 'Dashboard';
+
+    useEffect(() => {
+        if (activeGroup) {
+            setOpenGroups((prev) => (prev[activeGroup] ? prev : { ...prev, [activeGroup]: true }));
+        }
+    }, [activeGroup]);
+
+    useEffect(() => {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(openGroups)); } catch (e) { /* ignore */ }
+    }, [openGroups]);
 
     useEffect(() => {
         const handleResize = () => {
-            setIsMobile(window.innerWidth <= 768);
+            const mobile = window.innerWidth <= 768;
+            setIsMobile(mobile);
+            if (!mobile) setIsMobileMenuOpen(false);
         };
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    useEffect(() => {
+        if (isMobile) setIsMobileMenuOpen(false);
+    }, [location.pathname, isMobile]);
+
+    const isCollapsed = collapsed && !isMobile;
+    const toggleGroup = (id) => setOpenGroups((prev) => ({ ...prev, [id]: !prev[id] }));
+    const initials = `${employee?.firstName?.[0] || ''}${employee?.lastName?.[0] || ''}`.toUpperCase() || 'U';
+
+    /* ---------- item ---------- */
+    const renderItem = (item, nested = false) => {
+        const isActive = activeItem?.id === item.id;
+        return (
+            <li key={item.id}>
+                <button
+                    type="button"
+                    onClick={() => navigate(item.path)}
+                    title={isCollapsed ? item.label : undefined}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`
+                        group flex items-center w-full py-2.5 text-sm rounded-lg transition-colors duration-200
+                        ${isCollapsed ? 'justify-center px-2' : nested ? 'px-3' : 'px-3'}
+                        ${isActive ? 'bg-primary text-secondary' : 'text-white hover:bg-white/10'}
+                    `}
+                >
+                    <span className={`flex-shrink-0 ${isActive ? 'text-secondary' : 'text-gray-300 group-hover:text-primary'}`}>
+                        {item.icon}
+                    </span>
+                    {!isCollapsed && (
+                        <span className="ml-3 font-nunito font-medium whitespace-nowrap truncate">{item.label}</span>
+                    )}
+                </button>
+            </li>
+        );
+    };
+
+    /* ---------- group ---------- */
+    const renderGroup = (g) => {
+        const hasActive = g.group === activeGroup;
+
+        if (isCollapsed) {
+            return (
+                <li key={g.group}>
+                    <div className="mx-3 my-2 border-t border-white/10" />
+                    <ul className="space-y-1">{g.items.map((i) => renderItem(i))}</ul>
+                </li>
+            );
+        }
+
+        const isOpen = !!openGroups[g.group];
+        const panelId = `emp-group-${g.group}`;
+
+        return (
+            <li key={g.group}>
+                <button
+                    type="button"
+                    onClick={() => toggleGroup(g.group)}
+                    aria-expanded={isOpen}
+                    aria-controls={panelId}
+                    className={`flex items-center w-full px-3 py-2 rounded-lg text-sm font-semibold font-nunito transition-colors duration-200 hover:bg-white/10 ${hasActive ? 'text-white' : 'text-gray-300'}`}
+                >
+                    <span className="flex-shrink-0">{g.icon}</span>
+                    <span className="ml-3 flex-1 text-left truncate">{g.label}</span>
+                    {hasActive && !isOpen && (
+                        <span className="mr-2 w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
+                    )}
+                    <ChevronDown
+                        size={16}
+                        className={`flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                    />
+                </button>
+                <div
+                    id={panelId}
+                    className={`grid transition-[grid-template-rows] duration-200 ease-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+                >
+                    <div className="overflow-hidden">
+                        <ul className="mt-1 mb-1 ml-4 pl-2 space-y-1 border-l border-white/10">
+                            {g.items.map((i) => renderItem(i, true))}
+                        </ul>
+                    </div>
+                </div>
+            </li>
+        );
+    };
+
     return (
         <div className="flex h-screen relative bg-gray-100">
-            {/* Mobile Overlay */}
-            {isMobile && isMobileMenuOpen && (
-                <div
-                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 transition-opacity"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                />
-            )}
+            {/* Mobile overlay */}
+            <div
+                className={`fixed inset-0 bg-black/40 z-30 transition-opacity duration-300 ${isMobile && isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+            />
 
-            {/* Sidebar */}
-            <div className={`
-                bg-secondary text-white h-screen transition-all duration-300 ease-in-out
-                ${isMobile
-                    ? `fixed top-0 left-0 z-40 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} w-3/4`
-                    : `${collapsed ? 'w-20' : 'w-64'}`
-                }
-            `}>
+            {/* Sidebar: flex column so a long menu scrolls and never runs under the profile block */}
+            <aside
+                className={`
+                    bg-secondary text-white h-screen flex flex-col flex-shrink-0
+                    transition-all duration-300 ease-in-out
+                    ${isMobile
+                        ? `fixed top-0 left-0 z-40 w-72 max-w-[85%] transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`
+                        : isCollapsed ? 'w-20' : 'w-64'}
+                `}
+            >
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-700">
-                    {(!collapsed || isMobile) && (
-                        <img src="/logo/textlogo72.png" className="w-28" />
-                    )}
+                <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0 min-h-[65px]">
+                    {!isCollapsed && <img src="/logo/textlogo72.png" className="w-28" alt="Logo" />}
                     <button
-                        onClick={() => isMobile ? setIsMobileMenuOpen(!isMobileMenuOpen) : setCollapsed(!collapsed)}
-                        className="p-2 rounded-md hover:bg-gray-700 transition-colors"
+                        type="button"
+                        onClick={() => (isMobile ? setIsMobileMenuOpen(false) : setCollapsed((v) => !v))}
+                        aria-label={isMobile ? 'Close menu' : isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        className={`p-2 rounded-md hover:bg-white/10 transition-colors ${isCollapsed ? 'mx-auto' : ''}`}
                     >
-                        {collapsed && !isMobile ? <ChevronRight size={20} /> : <Menu size={20} />}
+                        {isMobile ? <X size={18} /> : isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                     </button>
                 </div>
 
                 {/* Navigation */}
-                <nav className="mt-6">
-                    <ul>
-                        {(position === "operational manager" || position === "telecaller") ?
-                            (position === 'telecaller' ? telecallerMenuItems : highmenuItems.filter((item) => !item.roles || item.roles.includes(position))).map((item) => (
-                                <li key={item.id}>
-                                    <button
-                                        onClick={() => handleNavigation(item.path)}
-                                        className={`group flex ${collapsed && !isMobile ? 'justify-center' : 'items-center'} w-full p-2 text-sm hover:bg-gray-700 transition-all ${currentPath === item.id ? 'bg-primary text-secondary' : ''}`}
-                                    >
-                                        <span className={`flex-shrink-0 ${collapsed && !isMobile ? 'mx-auto' : 'text-gray-400 group-hover:text-primary'} ${currentPath === item.id ? 'text-secondary' : ''}`}>
-                                            {item.icon}
-                                        </span>
-                                        {/* Show label in mobile and expanded */}
-                                        {(!collapsed || isMobile) && (
-                                            <span className="ml-4 font-nunito">{item.label}</span>
-                                        )}
-                                    </button>
-                                </li>
-                            ))
-                            :
-                            lowmenuItems.map((item) => (
-                                <li key={item.id}>
-                                    <button
-                                        onClick={() => handleNavigation(item.path)}
-                                        className={`group flex ${collapsed && !isMobile ? 'justify-center' : 'items-center'} w-full p-2 text-sm hover:bg-gray-700 transition-all ${currentPath === item.id ? 'bg-primary text-secondary' : ''}`}
-                                    >
-                                        <span className={`flex-shrink-0 ${collapsed && !isMobile ? 'mx-auto' : 'text-gray-400 group-hover:text-primary'} ${currentPath === item.id ? 'text-secondary' : ''}`}>
-                                            {item.icon}
-                                        </span>
-                                        {/* Show label in mobile and expanded */}
-                                        {(!collapsed || isMobile) && (
-                                            <span className="ml-4 font-nunito">{item.label}</span>
-                                        )}
-                                    </button>
-                                </li>
-                            ))
-                        }
+                <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2">
+                    <ul className="space-y-1">
+                        {menu.map((entry) => (entry.group ? renderGroup(entry) : renderItem(entry)))}
                     </ul>
                 </nav>
 
-                {/* User Profile at Bottom (Now visible on both mobile and desktop) */}
-                <div className={`absolute bottom-0 border-t border-gray-700 ${isMobile ? 'w-3/4' : (collapsed ? 'w-20' : 'w-64')}`}>
-                    <div className="flex items-center p-4 hover:bg-gray-700 cursor-pointer">
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-medium">
-                            JS
+                {/* Profile (whole row is the link now) */}
+                <div className="border-t border-gray-700 flex-shrink-0">
+                    <Link
+                        to="/employee/profile"
+                        title={isCollapsed ? 'Profile' : undefined}
+                        className={`flex items-center p-4 hover:bg-white/10 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+                    >
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                            {initials}
                         </div>
-                        {(!collapsed || isMobile) && (
-                            <Link to="/employee/profile">
-                                <div className="ml-3">
-                                    <p className="text-sm font-medium font-nunito">{employee.firstName} {employee.lastName}</p>
-                                    <p className="text-xs text-gray-400">{employee.position.toUpperCase()}</p>
-                                </div>
-                            </Link>
+                        {!isCollapsed && (
+                            <div className="ml-3 min-w-0">
+                                <p className="text-sm font-medium font-nunito truncate">
+                                    {employee?.firstName} {employee?.lastName}
+                                </p>
+                                <p className="text-xs text-gray-400 uppercase truncate">{position}</p>
+                            </div>
                         )}
-                    </div>
+                    </Link>
                 </div>
-            </div>
+            </aside>
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-auto">
-                {/* Header Bar */}
-                <header className="bg-white shadow-sm">
-                    <div className="px-6 py-4 flex items-center justify-between">
-                        <h2 className="text-xl font-semibold text-gray-800">
-                            {(position === "operational manager" || position === "telecaller") ?
-                                (position === 'telecaller' ? telecallerMenuItems : highmenuItems).find(item => item.id === currentPath)?.label || 'Dashboard'
-                                :
-                                lowmenuItems.find(item => item.id === currentPath)?.label || 'Dashboard'
-                            }
-                        </h2>
-
-                        {/* Notifications + Mobile Menu Toggle */}
-                        <div className="flex items-center gap-4">
-                            {/* Notification Bell Always */}
-                            {/* <span className="bg-gray-200 border border-gray-300 rounded cursor-pointer p-1">
-                                <Badge badgeContent={4} color="success">
-                                    <NotificationsIcon color="action" />
-                                </Badge>
-                            </span> */}
-
-                            {/* Mobile Menu Button */}
-                            {isMobile && (
-                                <button
-                                    className="p-2 border rounded"
-                                    onClick={() => setIsMobileMenuOpen(true)}
-                                >
-                                    <Menu size={20} />
-                                </button>
-                            )}
-                        </div>
+            {/* Content area */}
+            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+                <header className="bg-white shadow-sm flex-shrink-0">
+                    <div className="px-4 sm:px-6 py-4 flex items-center gap-3">
+                        {isMobile && (
+                            <button
+                                type="button"
+                                aria-label="Open menu"
+                                className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+                                onClick={() => setIsMobileMenuOpen(true)}
+                            >
+                                <Menu size={20} className="text-gray-600" />
+                            </button>
+                        )}
+                        <h2 className="text-xl font-semibold text-gray-800 truncate">{pageTitle}</h2>
                     </div>
                 </header>
 
-                {/* Main Content */}
-                <main className="p-6">
-                    {children}
-                </main>
+                <main className="flex-1 overflow-auto p-4 sm:p-6">{children}</main>
             </div>
         </div>
     );
