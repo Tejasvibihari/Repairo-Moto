@@ -1,19 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { ImagePlus, Pencil, Trash2, X, Loader2, Link as LinkIcon, Calendar, ImageOff, CheckCircle2, AlertCircle } from "lucide-react";
+import { ImagePlus, Pencil, Trash2, X, Loader2, Link as LinkIcon, ImageOff, CheckCircle2, AlertCircle, ArrowUp, ArrowDown } from "lucide-react";
 import Cropper from "react-easy-crop";
 import axiosClient from "../../service/axiosClient";
 
 const emptyForm = {
     title: "",
-    message: "",
     link: "",
-    startsAt: "",
-    endsAt: "",
+    order: 0,
     isActive: true,
 };
 
 const TITLE_LIMIT = 120;
-const MESSAGE_LIMIT = 500;
 const BANNER_ASPECT_RATIO = 2.63;
 
 function createCroppedImage(imageSrc, crop) {
@@ -49,24 +46,8 @@ function createCroppedImage(imageSrc, crop) {
 }
 
 function getSchedule(item) {
-    const now = new Date();
-    const starts = item.startsAt ? new Date(item.startsAt) : null;
-    const ends = item.endsAt ? new Date(item.endsAt) : null;
-
     if (!item.isActive) return { label: "Hidden", tone: "bg-gray-100 text-gray-600" };
-    if (starts && starts > now) return { label: "Scheduled", tone: "bg-amber-100 text-amber-700" };
-    if (ends && ends < now) return { label: "Expired", tone: "bg-red-100 text-red-600" };
     return { label: "Live", tone: "bg-green-100 text-green-700" };
-}
-
-function formatDate(value) {
-    if (!value) return null;
-    return new Date(value).toLocaleString(undefined, {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
 }
 
 export default function AppUi() {
@@ -92,10 +73,10 @@ export default function AppUi() {
     const fetchItems = async () => {
         setFetching(true);
         try {
-            const response = await axiosClient.get("/api/app-content");
-            setItems(response.data.content || []);
+            const response = await axiosClient.get("/api/admin/banner");
+            setItems(response.data.banners || []);
         } catch {
-            setNotice({ type: "error", text: "Could not load app content." });
+            setNotice({ type: "error", text: "Could not load banners." });
         } finally {
             setFetching(false);
         }
@@ -176,7 +157,7 @@ export default function AppUi() {
         if (image) data.append("image", image);
 
         try {
-            const url = editingId ? `/api/app-content/${editingId}` : "/api/app-content";
+            const url = editingId ? `/api/admin/banner/${editingId}` : "/api/admin/banner";
             await axiosClient[editingId ? "patch" : "post"](url, data, {
                 headers: {
                     "Content-Type": "multipart/form-data",
@@ -185,9 +166,9 @@ export default function AppUi() {
             await fetchItems();
             const wasEditing = Boolean(editingId);
             resetForm();
-            setNotice({ type: "success", text: wasEditing ? "Content updated." : "Content published." });
+            setNotice({ type: "success", text: wasEditing ? "Banner updated." : "Banner created." });
         } catch (error) {
-            setNotice({ type: "error", text: error.response?.data?.message || "Could not save content." });
+            setNotice({ type: "error", text: error.response?.data?.message || "Could not save banner." });
         } finally {
             setLoading(false);
         }
@@ -197,10 +178,8 @@ export default function AppUi() {
         setEditingId(item._id);
         setForm({
             title: item.title || "",
-            message: item.message || "",
             link: item.link || "",
-            startsAt: item.startsAt ? item.startsAt.slice(0, 16) : "",
-            endsAt: item.endsAt ? item.endsAt.slice(0, 16) : "",
+            order: item.order ?? 0,
             isActive: item.isActive,
         });
         setImage(null);
@@ -212,12 +191,12 @@ export default function AppUi() {
         if (!window.confirm("Delete this app content? This can't be undone.")) return;
         setDeletingId(id);
         try {
-            await axiosClient.delete(`/api/app-content/${id}`);
+            await axiosClient.delete(`/api/admin/banner/${id}`);
             setItems((current) => current.filter((item) => item._id !== id));
-            setNotice({ type: "success", text: "Content deleted." });
+            setNotice({ type: "success", text: "Banner deleted." });
             if (editingId === id) resetForm();
         } catch (error) {
-            setNotice({ type: "error", text: error.response?.data?.message || "Could not delete content." });
+            setNotice({ type: "error", text: error.response?.data?.message || "Could not delete banner." });
         } finally {
             setDeletingId(null);
         }
@@ -227,8 +206,8 @@ export default function AppUi() {
         <div className="mx-auto max-w-6xl space-y-6 pb-12">
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">App UI content</h1>
-                    <p className="mt-1 text-sm text-gray-500">Publish announcements, offers, and promotional artwork to the home page.</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Banners</h1>
+                    <p className="mt-1 text-sm text-gray-500">Create, update, reorder, activate, and delete banners shown in the app.</p>
                 </div>
                 <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">
                     {items.length} {items.length === 1 ? "item" : "items"} total
@@ -257,7 +236,7 @@ export default function AppUi() {
             <form onSubmit={handleSubmit} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
                 {editingId && (
                     <div className="mb-5 flex items-center justify-between rounded-md bg-primary/5 px-3 py-2 text-sm text-primary">
-                        <span className="font-medium">Editing "{editingItem?.title || "content"}"</span>
+                        <span className="font-medium">Editing "{editingItem?.title || "banner"}"</span>
                         <button type="button" onClick={resetForm} className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide hover:underline">
                             <X size={14} /> Cancel edit
                         </button>
@@ -282,22 +261,6 @@ export default function AppUi() {
                         </label>
 
                         <label className="block text-sm font-medium text-gray-700">
-                            <div className="mb-1 flex items-center justify-between">
-                                <span>Message</span>
-                                <span className="text-xs font-normal text-gray-400">{form.message.length}/{MESSAGE_LIMIT}</span>
-                            </div>
-                            <textarea
-                                name="message"
-                                value={form.message}
-                                onChange={handleChange}
-                                maxLength={MESSAGE_LIMIT}
-                                rows={3}
-                                className="w-full rounded border border-gray-300 px-3 py-2 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                placeholder="Save 20% on your next service"
-                            />
-                        </label>
-
-                        <label className="block text-sm font-medium text-gray-700">
                             Link <span className="font-normal text-gray-400">(optional)</span>
                             <div className="relative mt-1">
                                 <LinkIcon size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -312,28 +275,10 @@ export default function AppUi() {
                             </div>
                         </label>
 
-                        <div className="grid grid-cols-2 gap-3">
-                            <label className="block text-sm font-medium text-gray-700">
-                                Starts at
-                                <input
-                                    name="startsAt"
-                                    type="datetime-local"
-                                    value={form.startsAt}
-                                    onChange={handleChange}
-                                    className="mt-1 w-full rounded border border-gray-300 px-2 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                />
-                            </label>
-                            <label className="block text-sm font-medium text-gray-700">
-                                Ends at
-                                <input
-                                    name="endsAt"
-                                    type="datetime-local"
-                                    value={form.endsAt}
-                                    onChange={handleChange}
-                                    className="mt-1 w-full rounded border border-gray-300 px-2 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                />
-                            </label>
-                        </div>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Display order
+                            <input name="order" type="number" min="0" value={form.order} onChange={handleChange} className="mt-1 w-full rounded border border-gray-300 px-3 py-2 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                        </label>
                     </div>
 
                     <div className="space-y-4">
@@ -382,7 +327,7 @@ export default function AppUi() {
                                 className="inline-flex flex-1 items-center justify-center gap-2 rounded bg-primary px-4 py-2.5 font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {loading ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} />}
-                                {loading ? "Saving..." : editingId ? "Update content" : "Publish content"}
+                                {loading ? "Saving..." : editingId ? "Update banner" : "Create banner"}
                             </button>
                             {editingId && (
                                 <button
@@ -444,7 +389,7 @@ export default function AppUi() {
             )}
 
             <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                <div className="border-b border-gray-200 px-5 py-4 font-semibold text-gray-900">Published content</div>
+                <div className="border-b border-gray-200 px-5 py-4 font-semibold text-gray-900">All banners</div>
 
                 {fetching ? (
                     <div className="space-y-4 p-5">
@@ -461,8 +406,8 @@ export default function AppUi() {
                 ) : items.length === 0 ? (
                     <div className="flex flex-col items-center gap-2 px-5 py-14 text-center">
                         <ImageOff size={28} className="text-gray-300" />
-                        <p className="text-sm font-medium text-gray-600">No app content yet</p>
-                        <p className="text-xs text-gray-400">Publish your first announcement using the form above.</p>
+                        <p className="text-sm font-medium text-gray-600">No banners found</p>
+                        <p className="text-xs text-gray-400">Create your first banner using the form above.</p>
                     </div>
                 ) : (
                     <div className="divide-y divide-gray-200">
@@ -485,22 +430,15 @@ export default function AppUi() {
                                             <h2 className="truncate font-semibold text-gray-900">{item.title}</h2>
                                             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${schedule.tone}`}>{schedule.label}</span>
                                         </div>
-                                        <p className="mt-1 truncate text-sm text-gray-500">{item.message || "No message"}</p>
-                                        {(item.startsAt || item.endsAt) && (
-                                            <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400">
-                                                <Calendar size={12} />
-                                                <span>
-                                                    {formatDate(item.startsAt) || "Anytime"} &rarr; {formatDate(item.endsAt) || "No end date"}
-                                                </span>
-                                            </div>
-                                        )}
+                                        <p className="mt-1 truncate text-sm text-gray-500">{item.link || "No click-through link"}</p>
+                                        <p className="mt-1 text-xs text-gray-400">Display order: {item.order ?? 0}</p>
                                     </div>
                                     <div className="flex shrink-0 gap-2">
                                         <button
                                             type="button"
                                             onClick={() => startEdit(item)}
                                             className="rounded border border-gray-300 p-2 text-gray-600 transition hover:border-primary hover:text-primary"
-                                            title="Edit content"
+                                            title="Edit banner"
                                         >
                                             <Pencil size={17} />
                                         </button>
@@ -509,7 +447,7 @@ export default function AppUi() {
                                             onClick={() => removeItem(item._id)}
                                             disabled={isDeleting}
                                             className="rounded border border-red-200 p-2 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-                                            title="Delete content"
+                                            title="Delete banner"
                                         >
                                             {isDeleting ? <Loader2 size={17} className="animate-spin" /> : <Trash2 size={17} />}
                                         </button>

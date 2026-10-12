@@ -28,6 +28,7 @@ import {
 import { toKm } from "../Utils/geo.js";
 
 const POSITIONS = ["mechanic", "delivery", "telecaller", "manager", "operational manager", "employee"];
+const normalizePosition = (value) => String(value || "").trim().toLowerCase().replace(/_/g, " ");
 const DONE_STATUSES = ["Work Completed", "Invoice Generated", "Completed"];
 const OPEN_STATUSES = ["Mechanic Assigned", "Mechanic Start", "Mechanic Arrived", "In Progress", "Completion Requested"];
 const CONVERTED = ["booked", "completed", "direct_booking"];
@@ -219,9 +220,14 @@ export const getStaffOverview = async (req, res) => {
     try {
         const range = parseRange(req.query);
         if (range.error) return res.status(400).json({ success: false, message: range.error });
-        const position = POSITIONS.includes(req.query.position) ? req.query.position : "mechanic";
+        const requestedPosition = normalizePosition(req.query.position);
+        const position = requestedPosition === "all" || !requestedPosition
+            ? "all"
+            : POSITIONS.includes(requestedPosition) ? requestedPosition : "all";
 
-        const employees = await Employee.find({ position })
+        // "all" must include legacy/custom employee positions too; only admin
+        // accounts are excluded from the staff overview.
+        const employees = await Employee.find(position === "all" ? { position: { $ne: "admin" } } : { position })
             .select("firstName lastName email phone position profileImage averageRating ratings")
             .sort({ firstName: 1 })
             .lean();

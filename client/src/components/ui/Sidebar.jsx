@@ -5,7 +5,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Home, Bike, FileText, NotebookPen, User2, Briefcase,
     ShoppingCart, QrCode, Menu, ChevronLeft, ChevronRight,
-    User, DollarSign, X, Receipt, Smartphone, MapPin
+    User, DollarSign, X, Receipt, Smartphone, MapPin, Users, CalendarDays, BarChart3, Store, Megaphone, BellRing, MessageCircle, Image
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -25,22 +25,32 @@ const Sidebar = ({ children }) => {
     const rootSegment = currentPath.split('/')[0];
 
     const menuItems = [
-        { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <Home size={18} /> },
-        { id: 'model', path: '/model', label: 'Bike Model', icon: <Bike size={18} /> },
-        { id: 'manage-order', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={18} /> },
-        { id: 'manual-invoice', path: '/manual-invoice', label: 'Manual Invoice', icon: <Receipt size={18} /> },
-        { id: 'app-version', path: '/app-version', label: 'App Version', icon: <Smartphone size={18} /> },
-        { id: 'live-tracking', path: '/live-tracking', label: 'Live Tracking', icon: <MapPin size={18} /> },
-        { id: 'manage-employee', path: '/manage-employee', label: 'Manage Employee', icon: <User2 size={18} /> },
-        { id: 'manage-vendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={18} /> },
-        { id: 'manage-service-area', path: '/manage-service-area', label: 'Manage Service Area', icon: <Briefcase size={18} /> },
-        { id: 'manage-qr', path: '/manage-qr', label: 'Manage QR', icon: <QrCode size={18} /> },
-        { id: 'all-user', path: '/all-user', label: 'All Users', icon: <User size={18} /> },
-        { id: 'manage-referral', path: '/manage-referral', label: 'Manage Referral', icon: <DollarSign size={18} /> },
-        { id: 'app-ui', path: '/admin-app-ui', label: 'App UI', icon: <FileText size={18} /> },
-        { id: 'add-blog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={18} /> },
-        { id: 'manage-blog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={18} /> },
+        { section: 'Overview', id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <Home size={18} /> },
+        { section: 'Operations', id: 'manage-order', path: '/manage-order', label: 'Manage Order', icon: <ShoppingCart size={18} /> },
+        { section: 'Operations', id: 'live-tracking', path: '/live-tracking', label: 'Live Tracking', icon: <MapPin size={18} /> },
+        { section: 'Operations', id: 'employee-attendance', path: '/employee-attendance', label: 'Employee Attendance', icon: <CalendarDays size={18} /> },
+        { section: 'Operations', id: 'staff-overview', path: '/staff-overview', label: 'Staff Overview', icon: <BarChart3 size={18} /> },
+        { section: 'Operations', id: 'shop-status', path: '/shop-status', label: 'Shop Status', icon: <Store size={18} /> },
+        { section: 'Communication & Growth', id: 'leads', path: '/leads', label: 'Leads', icon: <Users size={18} /> },
+        { section: 'Communication & Growth', id: 'coupons', path: '/coupons', label: 'Coupons', icon: <DollarSign size={18} /> },
+        { section: 'Communication & Growth', id: 'send-notification', path: '/send-notification', label: 'Send Notification', icon: <Megaphone size={18} /> },
+        { section: 'Communication & Growth', id: 'whatsapp-alerts', path: '/whatsapp-alerts', label: 'WhatsApp Alerts', icon: <MessageCircle size={18} /> },
+        { section: 'Billing', id: 'manual-invoice', path: '/manual-invoice', label: 'Manual Invoice', icon: <Receipt size={18} /> },
+        { section: 'People', id: 'manage-employee', path: '/manage-employee', label: 'Manage Employee', icon: <User2 size={18} /> },
+        { section: 'People', id: 'manage-vendor', path: '/manage-vendor', label: 'Manage Vendor', icon: <Briefcase size={18} /> },
+        { section: 'People', id: 'all-user', path: '/all-user', label: 'All Users', icon: <User size={18} /> },
+        { section: 'People', id: 'manage-referral', path: '/manage-referral', label: 'Manage Referral', icon: <DollarSign size={18} /> },
+        { section: 'Content', id: 'banners', path: '/banners', label: 'Banners', icon: <Image size={18} /> },
+        { section: 'Content', id: 'add-blog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={18} /> },
+        { section: 'Content', id: 'manage-blog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={18} /> },
+        { section: 'Settings', id: 'model', path: '/model', label: 'Bike Model', icon: <Bike size={18} /> },
+        { section: 'Settings', id: 'manage-service-area', path: '/manage-service-area', label: 'Manage Service Area', icon: <Briefcase size={18} /> },
+        { section: 'Settings', id: 'manage-qr', path: '/manage-qr', label: 'Manage QR', icon: <QrCode size={18} /> },
+        { section: 'Settings', id: 'attendance-alerts', path: '/attendance-alerts', label: 'Attendance Alerts', icon: <BellRing size={18} /> },
+        { section: 'Settings', id: 'app-version', path: '/app-version', label: 'App Version', icon: <Smartphone size={18} /> },
     ];
+
+    const sections = [...new Set(menuItems.map((item) => item.section))];
 
     const handleNavigation = (path) => {
         navigate(path);
@@ -120,56 +130,62 @@ const Sidebar = ({ children }) => {
                 {/* Scrollable Navigation */}
                 <nav className="flex-1 overflow-y-auto py-2">
                     <ul className="space-y-1 px-2">
-                        {menuItems.map((item) => {
-                            const isActive = currentPath === item.id || rootSegment === item.id;
-                            const isHovered = hoveredItem === item.id;
+                        {sections.map((section) => <React.Fragment key={section}>
+                            <li className="px-2 pb-1 pt-4 first:pt-1">
+                                <p className={`text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400 ${collapsed && !isMobile ? 'text-center' : ''}`}>
+                                    {collapsed && !isMobile ? '•' : section}
+                                </p>
+                            </li>
+                            {menuItems.filter((item) => item.section === section).map((item) => {
+                                const isActive = currentPath === item.id || rootSegment === item.id;
+                                const isHovered = hoveredItem === item.id;
 
-                            return (
-                                <li key={item.id}>
-                                    <button
-                                        onClick={() => handleNavigation(item.path)}
-                                        onMouseEnter={() => setHoveredItem(item.id)}
-                                        onMouseLeave={() => setHoveredItem(null)}
-                                        className={`
+                                return (
+                                    <li key={item.id}>
+                                        <button
+                                            onClick={() => handleNavigation(item.path)}
+                                            onMouseEnter={() => setHoveredItem(item.id)}
+                                            onMouseLeave={() => setHoveredItem(null)}
+                                            className={`
                                             group relative flex items-center w-full p-2.5 text-sm 
                                             rounded-lg transition-all duration-200
                                             ${collapsed && !isMobile ? 'justify-center px-2' : ''}
                                             ${isActive
-                                                ? 'bg-blue-100 text-primary border-l-4 border-primary'
-                                                : 'hover:bg-gray-50 text-white hover:text-gray-900'
-                                            }
+                                                    ? 'bg-blue-100 text-primary border-l-4 border-primary'
+                                                    : 'hover:bg-gray-50 text-white hover:text-gray-900'
+                                                }
                                         `}
-                                        title={collapsed && !isMobile ? item.label : ''}
-                                    >
-                                        {/* Icon */}
-                                        <span className={`
+                                            title={collapsed && !isMobile ? item.label : ''}
+                                        >
+                                            {/* Icon */}
+                                            <span className={`
                                             flex-shrink-0 transition-colors duration-200
                                             ${collapsed && !isMobile ? 'mx-auto' : ''}
                                             ${isActive ? 'text-primary' : 'text-gray-500'}
                                             ${isHovered && !isActive ? 'text-primary' : ''}
                                         `}>
-                                            {item.icon}
-                                        </span>
+                                                {item.icon}
+                                            </span>
 
-                                        {/* Label */}
-                                        <span className={`
+                                            {/* Label */}
+                                            <span className={`
                                             ml-3 font-medium transition-all duration-300 whitespace-nowrap
                                             ${collapsed && !isMobile
-                                                ? 'opacity-0 w-0 overflow-hidden'
-                                                : 'opacity-100 w-auto'
-                                            }
+                                                    ? 'opacity-0 w-0 overflow-hidden'
+                                                    : 'opacity-100 w-auto'
+                                                }
                                         `}>
-                                            {item.label}
-                                        </span>
+                                                {item.label}
+                                            </span>
 
-                                        {/* Active indicator */}
-                                        {isActive && (
-                                            <div className="absolute right-2 w-1.5 h-1.5 bg-primary rounded-full" />
-                                        )}
-                                    </button>
-                                </li>
-                            );
-                        })}
+                                            {/* Active indicator */}
+                                            {isActive && (
+                                                <div className="absolute right-2 w-1.5 h-1.5 bg-primary rounded-full" />
+                                            )}
+                                        </button>
+                                    </li>
+                                );
+                            })}</React.Fragment>)}
                     </ul>
                 </nav>
 

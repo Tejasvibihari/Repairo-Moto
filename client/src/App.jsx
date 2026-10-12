@@ -1,3 +1,4 @@
+import ShopStatusPage from './pages/dashboard/ShopStatusPage';
 import React from 'react'
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
@@ -80,6 +81,12 @@ import TelecallerLeadForm from './pages/employee/TelecallerLeadForm';
 import TelecallerLeadDetail from './pages/employee/TelecallerLeadDetail';
 import TelecallerAttendance from './pages/employee/TelecallerAttendance';
 import TelecallerChatSupport from './pages/employee/TelecallerChatSupport';
+import AdminLeads from './pages/dashboard/AdminLeads';
+import AdminAttendance from './pages/dashboard/AdminAttendance';
+import AdminStaffOverview from './pages/dashboard/AdminStaffOverview';
+import { AdminShopStatus, AdminWhatsappAlerts, AdminAttendanceAlerts, AdminCoupons } from './pages/dashboard/AdminOperationsSettings';
+import AdminNotificationsHistory from './pages/dashboard/AdminNotificationsHistory';
+import AdminCouponsManager from './pages/dashboard/AdminCouponsManager';
 
 
 export default function App() {
@@ -433,14 +440,6 @@ export default function App() {
             }
           />
           <Route
-            path='/admin-app-ui'
-            element={
-              <PrivateRoute>
-                <Sidebar><AppUi /></Sidebar>
-              </PrivateRoute>
-            }
-          />
-          <Route
             path='/detail-manage-referral/:userId'
             element={
               <PrivateRoute>
@@ -466,6 +465,15 @@ export default function App() {
               </PrivateRoute>
             }
           />
+          <Route path='/leads' element={<PrivateRoute><Sidebar><AdminLeads /></Sidebar></PrivateRoute>} />
+          <Route path='/coupons' element={<PrivateRoute><Sidebar><AdminCouponsManager /></Sidebar></PrivateRoute>} />
+          <Route path='/employee-attendance' element={<PrivateRoute><Sidebar><AdminAttendance /></Sidebar></PrivateRoute>} />
+          <Route path='/staff-overview' element={<PrivateRoute><Sidebar><AdminStaffOverview /></Sidebar></PrivateRoute>} />
+          <Route path='/shop-status' element={<PrivateRoute><Sidebar><ShopStatusPage /></Sidebar></PrivateRoute>} />
+          <Route path='/attendance-alerts' element={<PrivateRoute><Sidebar><AdminAttendanceAlerts /></Sidebar></PrivateRoute>} />
+          <Route path='/whatsapp-alerts' element={<PrivateRoute><Sidebar><AdminWhatsappAlerts /></Sidebar></PrivateRoute>} />
+          <Route path='/send-notification' element={<PrivateRoute><Sidebar><AdminNotificationsHistory /></Sidebar></PrivateRoute>} />
+          <Route path='/banners' element={<PrivateRoute><Sidebar><AppUi /></Sidebar></PrivateRoute>} />
           <Route
             path='/manual-invoice/create'
             element={
@@ -512,14 +520,6 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><EmployeeDetail /></Sidebar>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path='/admin-app-ui'
-            element={
-              <PrivateRoute>
-                <Sidebar><AppUi /></Sidebar>
               </PrivateRoute>
             }
           />

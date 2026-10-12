@@ -10,6 +10,9 @@ import TotalRevenueCard from '../../components/TotalRevenueCard';
 import StaffCountCard from '../../components/StaffCountCard';
 import CompletedOrdersChart from '../../components/CompletedOrdersChart';
 import RevenueChart from '../../components/RevenueChart';
+import { Link } from 'react-router-dom';
+import { Users } from 'lucide-react';
+import { adminOperationsApi } from '../../service/adminOperationsApi';
 
 const PERIODS = [
     { value: 'today', label: 'Today' },
@@ -24,6 +27,7 @@ export default function Dashboard() {
     const [period, setPeriod] = useState('month');
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [leadOverview, setLeadOverview] = useState(null);
 
     useEffect(() => {
         // Brands stay cached in redux for the forms elsewhere that need them.
@@ -57,6 +61,10 @@ export default function Dashboard() {
             }
         })();
     }, [period]);
+
+    useEffect(() => {
+        adminOperationsApi.leadOverview('30d').then((response) => setLeadOverview(response.data?.data || response.data)).catch(() => setLeadOverview(null));
+    }, []);
 
     const kpi = stats?.kpi || {};
     const orderStatus = stats?.orderStatus || {};
@@ -149,6 +157,18 @@ export default function Dashboard() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {leadOverview && (
+                <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div><h2 className="text-lg font-bold text-secondary">Lead overview</h2><p className="text-sm text-gray-500">Last 30 days by telecaller</p></div>
+                        <Link to="/leads" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-secondary"><Users size={16} /> Open leads</Link>
+                    </div>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {(leadOverview.telecallers || []).slice(0, 4).map((person) => <div key={`${person.leadById || ''}-${person.leadBy}`} className="rounded-xl bg-gray-50 p-4"><p className="truncate text-sm font-bold capitalize text-secondary">{person.leadBy || 'Unassigned'}</p><p className="mt-2 text-2xl font-extrabold text-primary">{person.total || 0}</p><p className="text-xs text-gray-500">{person.converted || 0} converted</p></div>)}
+                    </div>
                 </div>
             )}
         </>
