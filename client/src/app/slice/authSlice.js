@@ -19,6 +19,9 @@ const authSlice = createSlice({
         },
         setEmployeeToken: (state, action) => {
             state.employeeToken = action.payload;
+            state.adminToken = null;
+            state.vendorToken = null;
+            state.userToken = null;
         },
         setVendorToken: (state, action) => {
             state.vendorToken = action.payload;

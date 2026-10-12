@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import CircularLoading from '../ui/CircularLoading';
 import { setLoading, setUserSignIn } from '../../app/slice/userSlice';
+import { clearWebSession } from '../../utils/clearWebSession';
 import { useNavigate } from 'react-router-dom';
 
 export default function UserSignUpForm() {
@@ -88,6 +89,7 @@ export default function UserSignUpForm() {
 
         try {
             const response = await axiosClient.post('api/user/auth/user-sign-up', formData);
+            clearWebSession();
             dispatch(setUserSignIn(response.data.user));
             setSnackBarMessage(response.data.message || 'Registration successful.');
             setSnackBarSeverity('success');

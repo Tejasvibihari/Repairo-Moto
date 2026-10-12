@@ -75,6 +75,11 @@ import ManageServiceArea from './pages/dashboard/ManageServiceArea';
 import AppUi from './pages/dashboard/AppUi'
 import LiveTracking from './pages/dashboard/LiveTracking';
 import EmployeeLiveTracking from './pages/employee/EmployeeLiveTracking';
+import TelecallerLeads from './pages/employee/TelecallerLeads';
+import TelecallerLeadForm from './pages/employee/TelecallerLeadForm';
+import TelecallerLeadDetail from './pages/employee/TelecallerLeadDetail';
+import TelecallerAttendance from './pages/employee/TelecallerAttendance';
+import TelecallerChatSupport from './pages/employee/TelecallerChatSupport';
 
 
 export default function App() {
@@ -242,6 +247,42 @@ export default function App() {
                 <EmployeeSidebar><EmployeeLiveTracking /></EmployeeSidebar>
               </EmployeePrivateRoute>
             }
+          />
+          <Route
+            path='/employee/leads'
+            element={<EmployeePrivateRoute><EmployeeSidebar><TelecallerLeads /></EmployeeSidebar></EmployeePrivateRoute>}
+          />
+          <Route
+            path='/employee/leads/new'
+            element={<EmployeePrivateRoute><EmployeeSidebar><TelecallerLeadForm /></EmployeeSidebar></EmployeePrivateRoute>}
+          />
+          <Route
+            path='/employee/leads/:id'
+            element={<EmployeePrivateRoute><EmployeeSidebar><TelecallerLeadDetail /></EmployeeSidebar></EmployeePrivateRoute>}
+          />
+          <Route
+            path='/employee/attendance'
+            element={<EmployeePrivateRoute><EmployeeSidebar><TelecallerAttendance /></EmployeeSidebar></EmployeePrivateRoute>}
+          />
+          <Route
+            path='/employee/invoices'
+            element={<EmployeePrivateRoute><EmployeeSidebar><ManualInvoice /></EmployeeSidebar></EmployeePrivateRoute>}
+          />
+          <Route
+            path='/employee/invoices/create'
+            element={<EmployeePrivateRoute><EmployeeSidebar><CreateManualInvoice /></EmployeeSidebar></EmployeePrivateRoute>}
+          />
+          <Route
+            path='/employee/invoices/:id/edit'
+            element={<EmployeePrivateRoute><EmployeeSidebar><CreateManualInvoice /></EmployeeSidebar></EmployeePrivateRoute>}
+          />
+          <Route
+            path='/employee/invoices/:id'
+            element={<EmployeePrivateRoute><EmployeeSidebar><ManualInvoiceDetail /></EmployeeSidebar></EmployeePrivateRoute>}
+          />
+          <Route
+            path='/employee/chat-support'
+            element={<EmployeePrivateRoute><EmployeeSidebar><TelecallerChatSupport /></EmployeeSidebar></EmployeePrivateRoute>}
           />
 
           {/* Vendor Page and Routes  */}

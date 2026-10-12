@@ -238,10 +238,10 @@ export function resolveWhatsAppRecipients(employee, settings) {
 // (the button value is the URL-encoded "lat,lng", e.g. 28.6139%2C77.2090)
 
 export const ATTENDANCE_EVENTS = {
-    check_in:    { template: "employee_attendancemarked", label: "Attendance marked" },
-    break_start: { template: "employee_breakstarted",     label: "Break started" },
-    break_end:   { template: "employee_break_ended",      label: "Break ended" },
-    check_out:   { template: "employee_signed_out",       label: "Signed out" },
+    check_in: { template: "employee_attendancemarked", label: "Attendance marked" },
+    break_start: { template: "employee_breakstarted", label: "Break started" },
+    break_end: { template: "employee_break_ended", label: "Break ended" },
+    check_out: { template: "employee_signed_out", label: "Signed out" },
 };
 
 export const ATTENDANCE_WA_LANGUAGE = "en_US";   // "English (US)"

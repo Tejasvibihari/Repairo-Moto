@@ -8,6 +8,10 @@ import {
     HandCoins,
     User,
     MapPin,
+    PhoneCall,
+    CalendarDays,
+    Receipt,
+    MessageCircle,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -24,6 +28,7 @@ const EmployeeSidebar = ({ children }) => {
 
     const highmenuItems = [
         { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
+        { id: 'leads', path: '/employee/leads', label: 'Leads', icon: <PhoneCall size={20} />, roles: ['telecaller'] },
         // { id: 'invoice', path: '/employee/invoice', label: 'Invoice', icon: <QrCode size={20} /> },
         { id: 'live-tracking', path: '/employee/live-tracking', label: 'Live Tracking', icon: <MapPin size={20} />, roles: ['operational manager'] },
         { id: 'model', path: '/employee/model', label: 'Bike Model', icon: <Bike size={20} /> },
@@ -33,6 +38,14 @@ const EmployeeSidebar = ({ children }) => {
         { id: 'all-user', path: '/employee/all-user', label: 'All User', icon: <User size={20} /> },
         { id: 'add-blog', path: '/employee/add-blog', label: 'Add Blog', icon: <FileText size={20} /> },
         { id: 'manage-blog', path: '/employee/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={20} /> },
+    ];
+    const telecallerMenuItems = [
+        { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
+        { id: 'leads', path: '/employee/leads', label: 'Leads', icon: <PhoneCall size={20} /> },
+        { id: 'attendance', path: '/employee/attendance', label: 'Attendance', icon: <CalendarDays size={20} /> },
+        { id: 'invoices-create', path: '/employee/invoices/create', label: 'Create Invoice', icon: <Receipt size={20} /> },
+        { id: 'invoices', path: '/employee/invoices', label: 'Invoices', icon: <FileText size={20} /> },
+        { id: 'chat-support', path: '/employee/chat-support', label: 'Chat Support', icon: <MessageCircle size={20} /> },
     ];
     const lowmenuItems = [
         { id: 'employee/dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
@@ -90,7 +103,7 @@ const EmployeeSidebar = ({ children }) => {
                 <nav className="mt-6">
                     <ul>
                         {(position === "operational manager" || position === "telecaller") ?
-                            highmenuItems.filter((item) => !item.roles || item.roles.includes(position)).map((item) => (
+                            (position === 'telecaller' ? telecallerMenuItems : highmenuItems.filter((item) => !item.roles || item.roles.includes(position))).map((item) => (
                                 <li key={item.id}>
                                     <button
                                         onClick={() => handleNavigation(item.path)}
@@ -152,7 +165,7 @@ const EmployeeSidebar = ({ children }) => {
                     <div className="px-6 py-4 flex items-center justify-between">
                         <h2 className="text-xl font-semibold text-gray-800">
                             {(position === "operational manager" || position === "telecaller") ?
-                                highmenuItems.find(item => item.id === currentPath)?.label || 'Dashboard'
+                                (position === 'telecaller' ? telecallerMenuItems : highmenuItems).find(item => item.id === currentPath)?.label || 'Dashboard'
                                 :
                                 lowmenuItems.find(item => item.id === currentPath)?.label || 'Dashboard'
                             }

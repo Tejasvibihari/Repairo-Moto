@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Search, Eye, Pencil, Trash2, FileText, RotateCcw } from 'lucide-react';
 import AlertSnackBar from '../../components/ui/AlertSnackBar';
 import CircularLoading from '../../components/ui/CircularLoading';
@@ -18,6 +18,8 @@ const EMPTY_FILTERS = { search: '', status: '', startDate: '', endDate: '', sort
 
 export default function ManualInvoice() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const invoiceBase = location.pathname.startsWith('/employee/') ? '/employee/invoices' : '/manual-invoice';
 
     const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' });
     const [invoices, setInvoices] = useState([]);
@@ -210,14 +212,14 @@ export default function ManualInvoice() {
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
-                                                        onClick={() => navigate(`/manual-invoice/${inv._id}`)}
+                                                        onClick={() => navigate(`${invoiceBase}/${inv._id}`)}
                                                         title="View"
                                                         className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-600"
                                                     >
                                                         <Eye size={16} />
                                                     </button>
                                                     <button
-                                                        onClick={() => navigate(`/manual-invoice/${inv._id}/edit`)}
+                                                        onClick={() => navigate(`${invoiceBase}/${inv._id}/edit`)}
                                                         title="Edit"
                                                         className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-600"
                                                     >

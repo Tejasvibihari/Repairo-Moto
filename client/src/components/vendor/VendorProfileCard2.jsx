@@ -1,18 +1,18 @@
 import { User, MapPin, Phone, Mail, Star, Copy, CheckCheck, Briefcase, FileText, MapPinned } from "lucide-react";
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { setVendorLogout } from "../../app/slice/vendorAuth";
-import { setLogOut } from "../../app/slice/authSlice";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { clearWebSession } from "../../utils/clearWebSession";
 
 
 export default function VendorProfileCard2() {
     const [copied, setCopied] = useState(false);
     const vendor = useSelector((state) => state.vendorAuth.vendor);
-    const dispatch = useDispatch();
+    const navigate = useNavigate();
 
     const vendorLogout = () => {
-        dispatch(setVendorLogout());
-        dispatch(setLogOut());
+        clearWebSession();
+        navigate('/vendor/sign-in', { replace: true });
     };
 
     const copyReferralCode = () => {

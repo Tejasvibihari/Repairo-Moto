@@ -13,11 +13,12 @@ const axiosClient = axios.create({
 // 🔐 Add token to headers before each request
 axiosClient.interceptors.request.use((config) => {
     const state = store.getState();
-    const token =
-        state.auth.adminToken ||
-        state.auth.employeeToken ||
-        state.auth.vendorToken ||
-        state.auth.userToken;
+    // The same browser can have persisted tokens from different account types.
+    // Prefer the token belonging to the active employee session so an old admin
+    // token cannot be sent to employee endpoints and fail JWT verification.
+    const token = state.employeeAuth?.isAuthenticated
+        ? state.auth.employeeToken
+        : state.auth.adminToken || state.auth.vendorToken || state.auth.userToken || state.auth.employeeToken;
 
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;

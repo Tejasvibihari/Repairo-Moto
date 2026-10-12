@@ -1,4 +1,4 @@
-import { Eye, EyeClosed, Lock, Mail } from 'lucide-react';
+import { Eye, EyeClosed, Lock, Mail, MessageCircle, ArrowLeft } from 'lucide-react';
 import React, { useState } from 'react';
 import axiosClient from '../../service/axiosClient';
 import AlertSnackBar from '../ui/AlertSnackBar';
@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import CircularLoading from '../ui/CircularLoading';
 import { setEmployeeSignIn, setLoading } from '../../app/slice/employeeAuth';
 import { setEmployeeToken } from '../../app/slice/authSlice';
+import { clearWebSession } from '../../utils/clearWebSession';
 
 export default function EmployeeSignInForm() {
     const loading = useSelector((state) => state.employeeAuth.loading);
@@ -18,6 +19,10 @@ export default function EmployeeSignInForm() {
         email: '',
         password: ''
     });
+    const [mode, setMode] = useState('otp');
+    const [otp, setOtp] = useState('');
+    const [otpSent, setOtpSent] = useState(false);
+    const [resendIn, setResendIn] = useState(0);
     const [showPassword, setShowPassword] = useState(false);
     const [snackBarOpen, setSnackBarOpen] = useState(false);
     const [snackBarMessage, setSnackBarMessage] = useState('');
@@ -51,6 +56,7 @@ export default function EmployeeSignInForm() {
 
         try {
             const response = await axiosClient.post('api/employee/auth/employee-sign-in', formData);
+            clearWebSession();
             dispatch(setEmployeeSignIn(response.data.employee));
             dispatch(setEmployeeToken(response.data.token));
             setSnackBarMessage(response.data.message || 'Login successful.');
@@ -67,6 +73,63 @@ export default function EmployeeSignInForm() {
             setSnackBarMessage(err.response?.data?.message || 'Login failed.');
             setSnackBarSeverity('error');
             setSnackBarOpen(true);
+            dispatch(setLoading(false));
+        }
+    };
+
+    const cleanPhone = (value) => String(value || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '').replace(/^0(?=\d{10}$)/, '').slice(0, 10);
+    const validPhone = /^[6-9]\d{9}$/.test(cleanPhone(formData.email));
+
+    const sendOtp = async () => {
+        if (!validPhone || resendIn > 0) {
+            setSnackBarMessage('Enter a valid 10-digit mobile number.');
+            setSnackBarSeverity('warning');
+            setSnackBarOpen(true);
+            return;
+        }
+        dispatch(setLoading(true));
+        try {
+            const response = await axiosClient.post('/api/employee/auth/send-otp', { phone: cleanPhone(formData.email) });
+            setOtpSent(true);
+            setResendIn(response.data.resendIn || 60);
+            setSnackBarMessage('OTP sent to your WhatsApp number.');
+            setSnackBarSeverity('success');
+            setSnackBarOpen(true);
+        } catch (err) {
+            setResendIn(err.response?.data?.retryAfter || 0);
+            setSnackBarMessage(err.response?.data?.message || 'Could not send OTP.');
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+        } finally {
+            dispatch(setLoading(false));
+        }
+    };
+
+    React.useEffect(() => {
+        if (!resendIn) return undefined;
+        const timer = window.setInterval(() => setResendIn((value) => Math.max(0, value - 1)), 1000);
+        return () => window.clearInterval(timer);
+    }, [resendIn]);
+
+    const verifyOtp = async () => {
+        if (!/^\d{6}$/.test(otp)) {
+            setSnackBarMessage('Enter the 6-digit OTP.');
+            setSnackBarSeverity('warning');
+            setSnackBarOpen(true);
+            return;
+        }
+        dispatch(setLoading(true));
+        try {
+            const response = await axiosClient.post('/api/employee/auth/verify-otp', { phone: cleanPhone(formData.email), otp });
+            clearWebSession();
+            dispatch(setEmployeeSignIn(response.data.employee));
+            dispatch(setEmployeeToken(response.data.token));
+            navigate('/employee/dashboard');
+        } catch (err) {
+            setSnackBarMessage(err.response?.data?.message || 'OTP verification failed.');
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+        } finally {
             dispatch(setLoading(false));
         }
     };
@@ -97,7 +160,29 @@ export default function EmployeeSignInForm() {
                         </p>
                     </div>
 
-                    <div className="flex flex-col w-full space-y-5">
+                    <div className="flex w-full rounded-lg bg-gray-100 p-1">
+                        <button type="button" onClick={() => { setMode('otp'); setOtpSent(false); }} className={`flex-1 rounded-md py-2 text-xs font-bold tracking-wide ${mode === 'otp' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>MOBILE OTP</button>
+                        <button type="button" onClick={() => setMode('password')} className={`flex-1 rounded-md py-2 text-xs font-bold tracking-wide ${mode === 'password' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>PASSWORD</button>
+                    </div>
+
+                    {mode === 'otp' ? <div className="flex flex-col w-full space-y-5">
+                        <div>
+                            <label className="text-sm font-medium text-gray-700">Registered mobile number</label>
+                            <div className="relative mt-1">
+                                <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#78dcca]" />
+                                <input type="tel" value={formData.email} onChange={(e) => { setFormData((p) => ({ ...p, email: cleanPhone(e.target.value) })); setOtp(''); }} placeholder="98765 43210" className="pl-10 pr-4 py-2.5 w-full border rounded-lg text-sm" maxLength={10} />
+                            </div>
+                        </div>
+                        {otpSent && <div>
+                            <label className="text-sm font-medium text-gray-700">6-digit WhatsApp OTP</label>
+                            <input type="text" inputMode="numeric" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Enter OTP" className="mt-1 px-4 py-2.5 w-full border rounded-lg text-sm tracking-[0.4em]" maxLength={6} />
+                        </div>}
+                        <button type="button" onClick={otpSent ? verifyOtp : sendOtp} disabled={loading || (otpSent ? otp.length !== 6 : !validPhone)} className="py-2.5 w-full rounded-lg font-semibold text-white bg-[#e2a731] disabled:opacity-50">
+                            {loading ? <CircularLoading size={20} color="inherit" /> : otpSent ? 'Verify & Sign In' : resendIn ? `Resend in ${resendIn}s` : 'Send OTP on WhatsApp'}
+                        </button>
+                        {otpSent && <button type="button" onClick={() => { setOtpSent(false); setOtp(''); }} className="flex items-center justify-center gap-2 text-sm text-gray-500"><ArrowLeft size={15} /> Change number</button>}
+                        <p className="text-center text-xs text-gray-500">Only mobile numbers registered by the admin can sign in.</p>
+                    </div> : <div className="flex flex-col w-full space-y-5">
                         <div>
                             <label className="text-sm font-medium" style={{ fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#292929' }}>Email</label>
                             <div className="relative mt-1">
@@ -157,7 +242,7 @@ export default function EmployeeSignInForm() {
                         >
                             {loading ? <CircularLoading size={20} color="inherit" /> : 'Sign In'}
                         </button>
-                    </div>
+                    </div>}
                     <div className="text-center">
                         <p className="text-sm" style={{ fontFamily: 'Nunito, Roboto, Inter, sans-serif', color: '#292929' }}>
                             Are you a Vendor?{' '}

@@ -1,17 +1,17 @@
 import { User, MapPin, Phone, Mail, Star, Copy, CheckCheck } from "lucide-react";
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { setEmployeeLogout } from "../../app/slice/employeeAuth";
-import { setEmployeeSignOut } from "../../app/slice/authSlice";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { clearWebSession } from "../../utils/clearWebSession";
 
 export default function EmployeeProfileCard() {
     const [copied, setCopied] = useState(false);
     const employee = useSelector((state) => state.employeeAuth.employee)
-    const dispatch = useDispatch()
+    const navigate = useNavigate();
 
     const employeeLogout = () => {
-        dispatch(setEmployeeLogout())
-        dispatch(setEmployeeSignOut())
+        clearWebSession();
+        navigate('/employee/sign-in', { replace: true });
     }
     const copyReferralCode = () => {
         navigator.clipboard.writeText(employee.referralCode);

@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
     User, Bike, Package, Wrench, Plus, Pencil, Trash2,
-    Receipt, CreditCard, Building2, ArrowLeft, Save,
+    Receipt, CreditCard, Building2, ArrowLeft, Save, Search, Link2, X,
 } from 'lucide-react';
 import AlertSnackBar from '../../components/ui/AlertSnackBar';
 import CircularLoading from '../../components/ui/CircularLoading';
@@ -11,6 +11,7 @@ import {
     calcTotals, createManualInvoice, formatMoney, getManualInvoice,
     lineTotal, PAYMENT_METHODS, toNumber, updateManualInvoice,
 } from '../../service/manualInvoiceApi';
+import { leadApi, leadError } from '../../service/leadApi';
 
 const SectionCard = ({ title, icon, children, action }) => (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
@@ -65,12 +66,19 @@ const ItemRow = ({ item, nameKey, onEdit, onRemove }) => (
 export default function CreateManualInvoice() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const invoiceBase = location.pathname.startsWith('/employee/') ? '/employee/invoices' : '/manual-invoice';
     const isEditing = Boolean(id);
 
     const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' });
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(isEditing);
     const [existing, setExisting] = useState(null);
+    const [selectedLead, setSelectedLead] = useState(null);
+    const [leadSearch, setLeadSearch] = useState('');
+    const [leads, setLeads] = useState([]);
+    const [leadLoading, setLeadLoading] = useState(false);
+    const [leadErrorMessage, setLeadErrorMessage] = useState('');
 
     const [customer, setCustomer] = useState({ name: '', email: '', contactNo: '', address: '', city: '' });
     const [vehicle, setVehicle] = useState({ brand: '', model: '', modelName: '', cc: '', bs: '' });
@@ -83,6 +91,25 @@ export default function CreateManualInvoice() {
     const [parts, setParts] = useState([]);
     const [services, setServices] = useState([]);
     const [dialog, setDialog] = useState({ open: false, type: 'part', index: null });
+
+    useEffect(() => {
+        let active = true;
+        const timer = setTimeout(async () => {
+            setLeadLoading(true);
+            try {
+                const response = await leadApi.list({ limit: 20, hasInvoice: 'false', search: leadSearch });
+                if (active) {
+                    setLeads(response.data || []);
+                    setLeadErrorMessage('');
+                }
+            } catch (error) {
+                if (active) setLeadErrorMessage(leadError(error, 'Could not load leads.'));
+            } finally {
+                if (active) setLeadLoading(false);
+            }
+        }, 250);
+        return () => { active = false; clearTimeout(timer); };
+    }, [leadSearch]);
 
     const [discount, setDiscount] = useState('');
     const [discountType, setDiscountType] = useState('flat');
@@ -164,6 +191,24 @@ export default function CreateManualInvoice() {
         setter((list) => (index !== null ? list.map((x, i) => (i === index ? item : x)) : [...list, item]));
     };
 
+    const chooseLead = (lead) => {
+        setSelectedLead(lead);
+        setCustomer((current) => ({
+            ...current,
+            name: lead.customer?.name || current.name,
+            contactNo: lead.customer?.phone || current.contactNo,
+            address: lead.location?.address || current.address,
+            city: lead.location?.city || current.city,
+        }));
+        setVehicle((current) => ({
+            ...current,
+            brand: lead.vehicle?.brand || current.brand,
+            model: lead.vehicle?.model || current.model,
+            modelName: lead.vehicle?.model || current.modelName,
+            bs: current.bs,
+        }));
+    };
+
     const editingItem = dialog.index !== null
         ? (dialog.type === 'part' ? parts : services)[dialog.index]
         : null;
@@ -193,6 +238,7 @@ export default function CreateManualInvoice() {
         const payload = {
             invoiceNumber: isEditing ? existing.invoiceNumber : `INV-${Date.now()}`,
             invoiceDate: isEditing ? existing.invoiceDate : new Date().toISOString(),
+            leadId: selectedLead?._id || existing?.leadId || null,
             customerDetails: {
                 name: customer.name.trim(),
                 email: customer.email.trim() || undefined,
@@ -248,7 +294,7 @@ export default function CreateManualInvoice() {
                 : await createManualInvoice(payload);
             const saved = res.data?.data || res.data;
             showSnack(isEditing ? 'Invoice updated.' : `Invoice ${saved.invoiceNumber} created.`);
-            setTimeout(() => navigate(`/manual-invoice/${saved._id}`), 800);
+            setTimeout(() => navigate(`${invoiceBase}/${saved._id}`), 800);
         } catch (error) {
             showSnack(error.response?.data?.message || 'Could not save the invoice.', 'error');
         } finally {
@@ -283,7 +329,7 @@ export default function CreateManualInvoice() {
 
             <div className="max-w-6xl mx-auto px-4 py-6">
                 <button
-                    onClick={() => navigate('/manual-invoice')}
+                    onClick={() => navigate(invoiceBase)}
                     className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-4"
                 >
                     <ArrowLeft size={16} /> Back to invoices
@@ -298,6 +344,40 @@ export default function CreateManualInvoice() {
 
                 <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
+                        <SectionCard title="Link to a Lead" icon={Link2}>
+                            {selectedLead ? (
+                                <div className="flex items-start justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                    <div>
+                                        <p className="font-bold text-gray-900">{selectedLead.customer?.name}</p>
+                                        <p className="mt-1 text-sm text-gray-600">{selectedLead.customer?.phone}</p>
+                                        <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-amber-700">{selectedLead.status?.replace('_', ' ')} lead</p>
+                                    </div>
+                                    {!isEditing && (
+                                        <button type="button" onClick={() => setSelectedLead(null)} className="rounded-lg p-1.5 text-gray-500 hover:bg-white" aria-label="Remove linked lead">
+                                            <X size={17} />
+                                        </button>
+                                    )}
+                                </div>
+                            ) : existing?.leadId ? (
+                                <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-600">This invoice is already linked to lead <span className="font-semibold">{existing.leadId}</span>.</p>
+                            ) : (
+                                <>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
+                                        <input value={leadSearch} onChange={(event) => setLeadSearch(event.target.value)} placeholder="Search unlinked leads by name, phone or vehicle" className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-amber-500" />
+                                    </div>
+                                    {leadErrorMessage && <p className="mt-3 text-sm text-red-600">{leadErrorMessage}</p>}
+                                    <div className="mt-3 max-h-56 space-y-2 overflow-y-auto">
+                                        {leadLoading ? <p className="py-4 text-center text-sm text-gray-400">Loading leads...</p> : leads.length ? leads.map((lead) => (
+                                            <button type="button" key={lead._id} onClick={() => chooseLead(lead)} className="flex w-full items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3 text-left transition hover:border-amber-300 hover:bg-amber-50">
+                                                <span><span className="block font-semibold text-gray-800">{lead.customer?.name}</span><span className="mt-1 block text-xs text-gray-500">{lead.customer?.phone} · {[lead.vehicle?.brand, lead.vehicle?.model].filter(Boolean).join(' ') || 'Vehicle not added'}</span></span>
+                                                <Link2 size={16} className="text-amber-600" />
+                                            </button>
+                                        )) : <p className="py-4 text-center text-sm text-gray-400">No unlinked leads found.</p>}
+                                    </div>
+                                </>
+                            )}
+                        </SectionCard>
                         <SectionCard title="Customer Details" icon={User}>
                             <div className="grid md:grid-cols-2 gap-4">
                                 <Field label="Name *" value={customer.name} onChange={(v) => setCustomer({ ...customer, name: v })} placeholder="Customer name" />

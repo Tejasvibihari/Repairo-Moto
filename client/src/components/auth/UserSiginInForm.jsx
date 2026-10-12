@@ -8,6 +8,7 @@ import { setLoading, setUserSignIn } from '../../app/slice/userSlice';
 import { Link } from 'react-router-dom';
 import CircularLoading from '../ui/CircularLoading';
 import { setUserToken } from '../../app/slice/authSlice';
+import { clearWebSession } from '../../utils/clearWebSession';
 
 export default function UserSignInForm() {
     const loading = useSelector((state) => state.user.loading);
@@ -51,6 +52,7 @@ export default function UserSignInForm() {
 
         try {
             const response = await axiosClient.post('api/user/auth/user-sign-in', formData);
+            clearWebSession();
             dispatch(setUserSignIn(response.data));
             dispatch(setUserToken(response.data.token));
             setSnackBarMessage(response.data.message);

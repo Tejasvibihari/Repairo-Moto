@@ -6,6 +6,7 @@ import BikeRepairCard from '../../components/empolyee/BikeRepairCard';
 import axiosClient from '../../service/axiosClient';
 import CircularLoading from '../../components/ui/CircularLoading';
 import Dashboard from '../dashboard/Dashboard';
+import TelecallerDashboard from './TelecallerDashboard';
 
 
 export default function EmployeeDashboard() {
@@ -39,7 +40,10 @@ export default function EmployeeDashboard() {
         setCompletedOrders(fetchOrder.filter(order => order.status === "Invoice Generated"));
         setTodayCompletedOrders(fetchOrder.filter(order => order.status === "Invoice Generated" && new Date(order.invoiceDate).toDateString() === new Date().toDateString()))
     }, [fetchOrder])
-    if (employee.position === "telecaller" || employee.position === "operational manager") {
+    if (employee.position === "telecaller") {
+        return <TelecallerDashboard />;
+    }
+    if (employee.position === "operational manager") {
         return <Dashboard />;
     }
     return (

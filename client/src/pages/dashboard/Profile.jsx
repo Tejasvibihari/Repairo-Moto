@@ -1,13 +1,12 @@
 import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { LogOut, User, Mail, Calendar, ShieldCheck } from 'lucide-react';
-import { setAdminLogout } from '../../app/slice/adminAuthSlice';
-import { setLogOut } from '../../app/slice/authSlice';
-import { setEmployeeSignOut } from '../../app/slice/employeeSlice';
+import { clearWebSession } from '../../utils/clearWebSession';
 
 export default function Profile() {
     const user = useSelector((state) => state.admin.admin.user);
-    const dispatch = useDispatch()
+    const navigate = useNavigate();
     const profileImageUrl = `${import.meta.env.VITE_API_URL}/uploads/${user.profilePicture}`; // Adjust the path based on your backend setup
     console.log(user)
     // Format date properly with a fallback
@@ -20,13 +19,8 @@ export default function Profile() {
     };
 
     const handleLogout = () => {
-        // ✅ Clear Redux state (if using Redux Toolkit)
-        dispatch(setAdminLogout());
-        dispatch(setLogOut())
-        dispatch(setEmployeeSignOut());
-
-        // ✅ Clear all localStorage values (including tokens)
-        localStorage.clear();
+        clearWebSession();
+        navigate('/admin-sign-in', { replace: true });
     };
 
     return (

@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import CircularLoading from '../ui/CircularLoading';
 import { setVendorSignIn, setLoading } from '../../app/slice/vendorAuth';
 import { setVendorToken } from '../../app/slice/authSlice';
+import { clearWebSession } from '../../utils/clearWebSession';
 
 export default function VendorSignInForm() {
     const loading = useSelector((state) => state.vendorAuth.loading);
@@ -51,6 +52,7 @@ export default function VendorSignInForm() {
 
         try {
             const response = await axiosClient.post('api/vendor/auth/vendor-sign-in', formData);
+            clearWebSession();
             dispatch(setVendorSignIn(response.data.vendor));
             dispatch(setVendorToken(response.data.token));
             setSnackBarMessage(response.data.message || 'Login successful.');

@@ -6,6 +6,7 @@ import axiosClient from '../../service/axiosClient';
 import AlertSnackBar from '../ui/AlertSnackBar';
 import { useNavigate } from 'react-router-dom';
 import { setAdminToken } from '../../app/slice/authSlice';
+import { clearWebSession } from '../../utils/clearWebSession';
 import { Link } from 'react-router-dom';
 import CircularLoading from '../ui/CircularLoading';
 
@@ -51,6 +52,7 @@ export default function AdminSignInForm() {
 
         try {
             const response = await axiosClient.post('/api/admin/adminsignin', formData);
+            clearWebSession();
             dispatch(setAdminToken(response.data.token));
             dispatch(setAdminSignIn(response.data));
             dispatch(setLoading(false));

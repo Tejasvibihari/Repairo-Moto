@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Printer, Pencil } from 'lucide-react';
 import AlertSnackBar from '../../components/ui/AlertSnackBar';
 import CircularLoading from '../../components/ui/CircularLoading';
@@ -17,6 +17,8 @@ const Line = ({ label, value, bold }) => (
 export default function ManualInvoiceDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const invoiceBase = location.pathname.startsWith('/employee/') ? '/employee/invoices' : '/manual-invoice';
 
     const [invoice, setInvoice] = useState(null);
     const [company, setCompany] = useState(null);
@@ -54,7 +56,7 @@ export default function ManualInvoiceDetail() {
         return (
             <div className="text-center py-20">
                 <p className="text-gray-500">Invoice not found.</p>
-                <button onClick={() => navigate('/manual-invoice')} className="mt-3 text-amber-600 hover:underline">
+                <button onClick={() => navigate(invoiceBase)} className="mt-3 text-amber-600 hover:underline">
                     Back to invoices
                 </button>
             </div>
@@ -92,14 +94,14 @@ export default function ManualInvoiceDetail() {
             <div className="max-w-4xl mx-auto px-4 py-6">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-5 no-print">
                     <button
-                        onClick={() => navigate('/manual-invoice')}
+                        onClick={() => navigate(invoiceBase)}
                         className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800"
                     >
                         <ArrowLeft size={16} /> Back to invoices
                     </button>
                     <div className="flex gap-3">
                         <button
-                            onClick={() => navigate(`/manual-invoice/${id}/edit`)}
+                            onClick={() => navigate(`${invoiceBase}/${id}/edit`)}
                             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
                             <Pencil size={16} /> Edit
