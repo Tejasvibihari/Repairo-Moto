@@ -17,7 +17,7 @@ import { istDateKey } from "../Utils/attendanceUtils.js";
 export async function recordDutyPoints(employeeId, role, rawPoints, nowMs = Date.now()) {
     const date = istDateKey(new Date(nowMs));
     const doc = await DutyDistance.findOne({ employeeId, date })
-        .select("last lastT lastAcc distanceMeters lastMoveAt")
+        .select("last lastT lastAcc distanceMeters lastMoveAt anchorResetAt")
         .lean();
 
     const current = doc?.distanceMeters || 0;
@@ -27,7 +27,9 @@ export async function recordDutyPoints(employeeId, role, rawPoints, nowMs = Date
         ? { lat: doc.last.lat, lng: doc.last.lng, t: doc.lastT, acc: doc.lastAcc }
         : null;
 
-    const r = measureDuty(anchor, normalizePoints(rawPoints, nowMs));
+    const points = normalizePoints(rawPoints, nowMs)
+        .filter((point) => !doc?.anchorResetAt || point.t > doc.anchorResetAt);
+    const r = measureDuty(anchor, points);
     if (!r.accepted && !r.gaps && !r.jumps && !r.mocked) {
         return { moving: recentlyMoved, distanceMeters: current };
     }
@@ -73,8 +75,9 @@ export async function recordDutyPoints(employeeId, role, rawPoints, nowMs = Date
  * a break and the next resume (or a different place after a sign-out) is never joined by a line.
  */
 export async function resetDutyAnchor(employeeId) {
+    const resetAt = Date.now();
     await DutyDistance.updateOne(
         { employeeId, date: istDateKey() },
-        { $set: { lastT: null, lastMoveAt: null }, $unset: { last: "" } }
+        { $set: { lastT: null, lastMoveAt: null, anchorResetAt: resetAt }, $unset: { last: "" } }
     );
 }

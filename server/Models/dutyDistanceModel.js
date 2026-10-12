@@ -26,6 +26,7 @@ const dutyDistanceSchema = new mongoose.Schema({
     lastT: { type: Number, default: null },                     // its time (ms) — also the optimistic lock for racing pings
     lastAcc: { type: Number },
     lastMoveAt: { type: Number, default: null },                // when distance last grew (ms) → "is he moving?"
+    anchorResetAt: { type: Number, default: null },             // buffered fixes before a break/sign-out are discarded
 
     // audit
     pointCount: { type: Number, default: 0 },

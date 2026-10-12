@@ -90,8 +90,11 @@ export const MAX_REPORT_DAYS = 62;
  * - "absent"         only generated for a single-day report, for every employee who had
  *                    already joined by that day and has no record
  */
-export function buildReportRows({ employees = [], records = [], from, to, today, now = new Date() }) {
+export function buildReportRows({ employees = [], records = [], distances = [], from, to, today, now = new Date() }) {
     const byId = new Map(employees.map((e) => [String(e._id), e]));
+    const distanceByKey = new Map(
+        distances.map((d) => [`${String(d.employeeId)}|${d.date}`, Number(d.distanceMeters) || 0])
+    );
     const person = (e, id) => ({
         employeeId: String(id),
         name: e ? employeeName(e) : "Deleted employee",
@@ -117,6 +120,7 @@ export function buildReportRows({ employees = [], records = [], from, to, today,
             checkOut: out ? r.checkOut : null,
             // net of breaks; while on a break the figure is naturally frozen at break start
             minutes: out ? (r.workedMinutes || 0) : live ? netWorkedMinutes(r.checkIn.at, now, r.breaks) : 0,
+            distanceMeters: distanceByKey.get(`${String(r.employeeId)}|${r.date}`) || 0,
             breaks: (r.breaks || []).map((b) => ({ start: b.start, end: b.end || null })),
             breakMinutes: closedBreakMinutes(r.breaks),          // finished breaks only
             onBreakSince: open ? open.start : null,              // the app ticks the running one itself
@@ -149,6 +153,7 @@ export function summarizeRows(rows, { singleDay, employeeCount }) {
     const present = rows.filter((r) => r.status !== "absent");
     const completed = rows.filter((r) => r.status === "completed");
     const totalMinutes = present.reduce((sum, r) => sum + r.minutes, 0);
+    const totalDistanceMeters = present.reduce((sum, r) => sum + (r.distanceMeters || 0), 0);
     return {
         employees: employeeCount,
         presentEmployees: new Set(present.map((r) => r.employeeId)).size,
@@ -158,6 +163,7 @@ export function summarizeRows(rows, { singleDay, employeeCount }) {
         completed: completed.length,
         missedSignOut: rows.filter((r) => r.status === "missed_signout").length,
         totalMinutes,
+        totalDistanceMeters,
         avgMinutes: completed.length ? Math.round(completed.reduce((s, r) => s + r.minutes, 0) / completed.length) : 0,
     };
 }

@@ -2,6 +2,7 @@
 import Attendance from "../Models/attendanceModel.js";
 import AttendanceSettings from "../Models/attendanceSettings.js";
 import Employee from "../Models/employeeModel.js";
+import DutyDistance from "../Models/dutyDistanceModel.js";
 import { createNotification, getAdminRecipients } from "../services/notificationService.js";
 import { setPresence } from "../services/mechanicPresenceService.js";
 import { isTrackable } from "../services/trackingService.js";
@@ -373,8 +374,17 @@ export const getAttendanceReport = async (req, res) => {
             Attendance.find({ date: { $gte: from, $lte: to } }).lean(),
         ]);
 
+        const trackableIds = employees
+            .filter((e) => isTrackable(e.position))
+            .map((e) => e._id);
+        const distances = trackableIds.length
+            ? await DutyDistance.find({ employeeId: { $in: trackableIds }, date: { $gte: from, $lte: to } })
+                .select("employeeId date distanceMeters")
+                .lean()
+            : [];
+
         const singleDay = from === to;
-        const rows = buildReportRows({ employees, records, from, to, today, now: new Date() });
+        const rows = buildReportRows({ employees, records, distances, from, to, today, now: new Date() });
         const summary = summarizeRows(rows, { singleDay, employeeCount: employees.length });
 
         res.json({ success: true, from, to, today, singleDay, summary, rows });

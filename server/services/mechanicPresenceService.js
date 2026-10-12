@@ -97,7 +97,7 @@ export async function setPresence(employeeId, online, { reason = "manual", notif
 
     // Online/offline changed → forget the last GPS point, so the ground covered between a break
     // and the resume (phone off, lift in a car, ...) is never counted as distance.
-    resetDutyAnchor(emp._id).catch((e) => console.error("[mechanicPresence] duty anchor reset failed:", e.message));
+    await resetDutyAnchor(emp._id).catch((e) => console.error("[mechanicPresence] duty anchor reset failed:", e.message));
 
     const name = fullName(emp);
     const role = ROLE_LABEL[emp.position] || "Staff";
