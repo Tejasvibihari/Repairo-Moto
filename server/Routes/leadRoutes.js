@@ -10,7 +10,7 @@ import {
 } from "../Controllers/leadController.js";
 
 import authAdmin from "../Middleware/authAdmin.js";
-import requireAdminRole from "../Middleware/requireAdminRole.js";
+import requireAdminOrManager from "../Middleware/requireAdminOrManager.js";
 
 const router = express.Router();
 
@@ -26,7 +26,7 @@ router.post(
 router.get(
     "/overview",
     authAdmin,
-    requireAdminRole,
+    requireAdminOrManager,
     getLeadOverview
 );
 

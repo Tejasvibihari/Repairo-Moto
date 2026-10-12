@@ -73,13 +73,17 @@ const authAdmin = async (req, res, next) => {
             .lean();
 
         if (employee) {
+            const position = String(employee.position || '')
+                .trim()
+                .toLowerCase()
+                .replace(/_/g, ' ');
             const allowedPositions = [
                 'telecaller',
                 'operational manager',
                 'manager',
             ];
 
-            if (!allowedPositions.includes(employee.position)) {
+            if (!allowedPositions.includes(position)) {
                 return res.status(403).json({
                     success: false,
                     message: 'Unauthorized employee role',
