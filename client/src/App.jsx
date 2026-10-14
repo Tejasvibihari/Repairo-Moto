@@ -49,6 +49,7 @@ import Blog from './pages/landing/Blog';
 import Careers from './pages/landing/Careers';
 import CareerDetail from './pages/landing/CareerDetail';
 import ManageCareers from './pages/dashboard/ManageCareers';
+import ScrollToTop from './components/routes/ScrollToTop';
 import BlogDetail from './pages/landing/BlogDetail';
 import Gallery from './pages/landing/Gallery';
 import Services from './pages/landing/Service';
@@ -99,6 +100,7 @@ export default function App() {
     <>
 
       <BrowserRouter>
+        <ScrollToTop />
         <ChatNotifier />
         <Routes>
           {/* Landing Route without Sidebar */}

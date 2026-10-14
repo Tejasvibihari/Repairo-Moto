@@ -65,7 +65,7 @@ export default function ApplyForm({ jobId }) {
     return (
         <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input className={input} placeholder="Full name *" value={form.name} onChange={set('name')} required aria-label="Full name" />
-            <input className={input} type="email" placeholder="Email *" value={form.email} onChange={set('email')} required aria-label="Email" />
+            <input className={input} type="email" placeholder="Email (optional)" value={form.email} onChange={set('email')} aria-label="Email" />
             <input className={input} type="tel" placeholder="Phone *" value={form.phone} onChange={set('phone')} required aria-label="Phone" />
             <input className={input} placeholder="Current city" value={form.city} onChange={set('city')} aria-label="Current city" />
             <input className={input} placeholder="Total experience (e.g. 2 years)" value={form.experience} onChange={set('experience')} aria-label="Experience" />

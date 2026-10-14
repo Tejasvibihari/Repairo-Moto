@@ -140,7 +140,7 @@ export default function ApplicationsPanel({ notify, jobFilter, setJobFilter }) {
                                     <tr key={app._id} className="hover:bg-gray-50 cursor-pointer" onClick={() => open(app)}>
                                         <td className="px-4 py-3">
                                             <p className="font-medium text-gray-900">{app.name}</p>
-                                            <p className="text-xs text-gray-500">{app.email}</p>
+                                            <p className="text-xs text-gray-500">{app.email || app.phone}</p>
                                         </td>
                                         <td className="px-4 py-3 text-gray-700">{app.jobTitle}</td>
                                         <td className="px-4 py-3 text-gray-600">{app.experience || '—'}</td>
@@ -181,7 +181,7 @@ export default function ApplicationsPanel({ notify, jobFilter, setJobFilter }) {
                         </div>
 
                         <ul className="space-y-2 text-sm text-gray-700 mb-5">
-                            <li className="flex items-center gap-2"><Mail size={15} className="text-gray-400" /><a className="hover:underline" href={`mailto:${selected.email}`}>{selected.email}</a></li>
+                            {selected.email && <li className="flex items-center gap-2"><Mail size={15} className="text-gray-400" /><a className="hover:underline" href={`mailto:${selected.email}`}>{selected.email}</a></li>}
                             <li className="flex items-center gap-2"><Phone size={15} className="text-gray-400" /><a className="hover:underline" href={`tel:${selected.phone}`}>{selected.phone}</a></li>
                             {selected.city && <li className="flex items-center gap-2"><MapPin size={15} className="text-gray-400" />{selected.city}</li>}
                             {selected.currentCompany && <li className="flex items-center gap-2"><Building2 size={15} className="text-gray-400" />{selected.currentCompany}</li>}

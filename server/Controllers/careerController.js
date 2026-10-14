@@ -108,15 +108,20 @@ export const applyToJob = async (req, res) => {
 
         const name = String(req.body.name || "").trim();
         const email = String(req.body.email || "").trim().toLowerCase();
-        const phone = String(req.body.phone || "").trim();
+        // Normalise so "99999 99999" and "9999999999" count as the same number.
+        const phone = String(req.body.phone || "").replace(/[\s-]/g, "");
 
         if (!name) return fail(400, "Name is required.");
-        if (!EMAIL_RE.test(email)) return fail(400, "A valid email is required.");
+        if (email && !EMAIL_RE.test(email)) return fail(400, "Please enter a valid email address or leave it blank.");
         if (!PHONE_RE.test(phone)) return fail(400, "A valid phone number is required.");
         if (!file) return fail(400, "Please attach your resume (PDF, DOC or DOCX).");
 
-        const duplicate = await JobApplication.exists({ job: job._id, email });
-        if (duplicate) return fail(409, "You have already applied for this position with this email.");
+        // Email is optional, so the phone number is the main duplicate check; email is also checked when given.
+        const duplicate = await JobApplication.exists({
+            job: job._id,
+            $or: [{ phone }, ...(email ? [{ email }] : [])],
+        });
+        if (duplicate) return fail(409, "You have already applied for this position with this phone number or email.");
 
         await JobApplication.create({
             job: job._id,
@@ -138,7 +143,7 @@ export const applyToJob = async (req, res) => {
 
         res.status(201).json({ success: true, message: "Application submitted. We will get in touch if you are shortlisted." });
     } catch (error) {
-        if (error?.code === 11000) return fail(409, "You have already applied for this position with this email.");
+        if (error?.code === 11000) return fail(409, "You have already applied for this position with this phone number or email.");
         console.error("applyToJob:", error);
         return fail(500, "Failed to submit application. Please try again.");
     }

@@ -28,9 +28,9 @@ const jobApplicationSchema = new mongoose.Schema(
         },
         email: {
             type: String,
-            required: true,
             trim: true,
             lowercase: true,
+            default: "",
         },
         phone: {
             type: String,
@@ -78,9 +78,18 @@ const jobApplicationSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// One application per email per job.
-jobApplicationSchema.index({ job: 1, email: 1 }, { unique: true });
+// One application per phone number per job, and per email when an email was given (email is optional).
+jobApplicationSchema.index({ job: 1, phone: 1 }, { unique: true });
+jobApplicationSchema.index(
+    { job: 1, email: 1 },
+    { unique: true, partialFilterExpression: { email: { $gt: "" } } }
+);
 jobApplicationSchema.index({ status: 1, createdAt: -1 });
 
 const JobApplication = mongoose.model("JobApplication", jobApplicationSchema);
+
+// Drops the old unique {job, email} index (which made a blank email collide) and builds the new ones.
+// Only touches this collection.
+JobApplication.syncIndexes().catch((err) => console.error("JobApplication.syncIndexes:", err.message));
+
 export default JobApplication;
