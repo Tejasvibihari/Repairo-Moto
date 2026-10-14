@@ -8,6 +8,7 @@ import {
     getAdminMessages,
     sendAdminMessage,
     getUnreadCounts,
+    getReplySuggestions,
 } from "../Controllers/chatController.js";
 
 const router = express.Router();
@@ -21,5 +22,6 @@ router.get("/admin/orders", authAdmin, getChatOrdersList);
 router.get("/admin/:orderId/messages", authAdmin, getAdminMessages);
 router.post("/admin/:orderId/messages", authAdmin, sendAdminMessage);
 router.get("/admin/unread-counts", authAdmin, getUnreadCounts);
+router.get("/admin/:orderId/suggestions", authAdmin, getReplySuggestions);
 
-export default router;
+export default router;

@@ -1,5 +1,6 @@
 import ChatMessage from "../Models/chatModel.js";
 import Order from "../Models/orderModel.js";
+import { generateReplySuggestions, GeminiError } from "../services/geminiService.js";
 import { handleChatPushNotification, markChatNotificationsRead } from "../services/chatNotification.js";
 
 // ------------------- User Helpers -------------------
@@ -191,6 +192,27 @@ export const getUnreadCounts = async (req, res) => {
         unreadAgg.forEach((item) => (result[item._id] = item.count));
         res.json(result);
     } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// AI quick-reply suggestions (3) for the agent, based on the order + recent chat.
+// Gemini is called from here so the API key never reaches the browser.
+export const getReplySuggestions = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const order = await Order.findById(orderId);
+        if (!order) return res.status(404).json({ message: "Order not found" });
+
+        const recent = await ChatMessage.find({ orderId }).sort({ createdAt: -1 }).limit(12);
+        const messages = recent.reverse();
+        if (!messages.length) return res.json({ suggestions: [], language: null });
+
+        const { suggestions, language } = await generateReplySuggestions({ order, messages });
+        res.json({ suggestions, language });
+    } catch (error) {
+        if (error instanceof GeminiError) return res.status(error.status).json({ message: error.message });
         console.error(error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
