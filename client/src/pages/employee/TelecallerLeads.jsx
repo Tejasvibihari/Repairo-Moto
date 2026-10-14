@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Eye, LoaderCircle, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { leadApi, leadError, leadStatuses } from '../../service/leadApi';
 
-const badge = { new: 'bg-blue-50 text-blue-700', called: 'bg-gray-100 text-gray-700', interested: 'bg-violet-50 text-violet-700', follow_up: 'bg-amber-50 text-amber-700', booked: 'bg-emerald-50 text-emerald-700', not_reachable: 'bg-orange-50 text-orange-700', not_interested: 'bg-red-50 text-red-700' };
+const badge = { new: 'bg-blue-50 text-blue-700', called: 'bg-gray-100 text-gray-700', interested: 'bg-violet-50 text-violet-700', follow_up: 'bg-amber-50 text-amber-700', booked: 'bg-emerald-50 text-emerald-700', completed: 'bg-green-100 text-green-800', not_reachable: 'bg-orange-50 text-orange-700', not_interested: 'bg-red-50 text-red-700' };
 export default function TelecallerLeads() {
     const [params] = useSearchParams();
     const [items, setItems] = useState([]); const [total, setTotal] = useState(0); const [page, setPage] = useState(1); const [search, setSearch] = useState(''); const [status, setStatus] = useState(params.get('status') || ''); const [loading, setLoading] = useState(true); const [error, setError] = useState('');

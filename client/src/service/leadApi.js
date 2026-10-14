@@ -17,6 +17,7 @@ export const leadStatuses = [
     ['interested', 'Interested'],
     ['follow_up', 'Follow up'],
     ['booked', 'Booked'],
+    ['completed', 'Completed'],
     ['not_reachable', 'Not reachable'],
     ['not_interested', 'Not interested'],
 ];
