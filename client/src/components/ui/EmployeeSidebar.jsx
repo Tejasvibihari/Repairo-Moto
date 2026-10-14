@@ -8,8 +8,20 @@ import {
     Truck, Share2, UserCog,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
+import { useChatUnreadTotal } from '../../utils/chatAlerts';
 
 const S = 18;
+const CHAT_ITEM_IDS = ['chat-support', 'manager-chat'];
+
+// Soft pulsing green glow AROUND the Chat Support menu entry while customer messages are unread
+const CHAT_GLOW_CSS = `
+@keyframes chat-menu-glow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(34,197,94,.85), 0 0 6px 1px rgba(34,197,94,.45); }
+  50%      { box-shadow: 0 0 0 1px rgba(74,222,128,1), 0 0 13px 4px rgba(34,197,94,.75); }
+}
+.chat-glow { position: relative; z-index: 1; animation: chat-menu-glow 1.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .chat-glow { animation: none; box-shadow: 0 0 0 1px rgba(34,197,94,.9), 0 0 10px 3px rgba(34,197,94,.6); } }
+`;
 
 /* ------------------------------------------------------------------
    Menus. An entry is either a plain item { id, path, label, icon }
@@ -85,6 +97,7 @@ const EmployeeSidebar = ({ children }) => {
     const [openGroups, setOpenGroups] = useState(() => readOpenGroups() || { orders: true });
     const navigate = useNavigate();
     const location = useLocation();
+    const chatUnread = useChatUnreadTotal(); // unread customer messages -> menu glows
 
     /* ---------- pick menu by role (restriction preserved) ---------- */
     const menu =
@@ -143,6 +156,7 @@ const EmployeeSidebar = ({ children }) => {
     /* ---------- item ---------- */
     const renderItem = (item, nested = false) => {
         const isActive = activeItem?.id === item.id;
+        const glow = CHAT_ITEM_IDS.includes(item.id) && chatUnread > 0;
         return (
             <li key={item.id}>
                 <button
@@ -151,7 +165,8 @@ const EmployeeSidebar = ({ children }) => {
                     title={isCollapsed ? item.label : undefined}
                     aria-current={isActive ? 'page' : undefined}
                     className={`
-                        group flex items-center w-full py-2.5 text-sm rounded-lg transition-colors duration-200
+                        group relative flex items-center w-full py-2.5 text-sm rounded-lg transition-colors duration-200
+                        ${glow ? 'chat-glow' : ''}
                         ${isCollapsed ? 'justify-center px-2' : nested ? 'px-3' : 'px-3'}
                         ${isActive ? 'bg-primary text-secondary' : 'text-white hover:bg-white/10'}
                     `}
@@ -160,7 +175,7 @@ const EmployeeSidebar = ({ children }) => {
                         {item.icon}
                     </span>
                     {!isCollapsed && (
-                        <span className="ml-3 font-nunito font-medium whitespace-nowrap truncate">{item.label}</span>
+                        <span className={`ml-3 font-nunito whitespace-nowrap truncate ${glow ? 'font-bold' : 'font-medium'}`}>{item.label}</span>
                     )}
                 </button>
             </li>
@@ -170,6 +185,7 @@ const EmployeeSidebar = ({ children }) => {
     /* ---------- group ---------- */
     const renderGroup = (g) => {
         const hasActive = g.group === activeGroup;
+        const groupGlow = chatUnread > 0 && g.items.some((i) => CHAT_ITEM_IDS.includes(i.id));
 
         if (isCollapsed) {
             return (
@@ -190,7 +206,7 @@ const EmployeeSidebar = ({ children }) => {
                     onClick={() => toggleGroup(g.group)}
                     aria-expanded={isOpen}
                     aria-controls={panelId}
-                    className={`flex items-center w-full px-3 py-2 rounded-lg text-sm font-semibold font-nunito transition-colors duration-200 hover:bg-white/10 ${hasActive ? 'text-white' : 'text-gray-300'}`}
+                    className={`flex items-center w-full px-3 py-2 rounded-lg text-sm font-semibold font-nunito transition-colors duration-200 hover:bg-white/10 ${hasActive ? 'text-white' : 'text-gray-300'} ${!isOpen && groupGlow ? 'chat-glow' : ''}`}
                 >
                     <span className="flex-shrink-0">{g.icon}</span>
                     <span className="ml-3 flex-1 text-left truncate">{g.label}</span>
@@ -207,7 +223,7 @@ const EmployeeSidebar = ({ children }) => {
                     className={`grid transition-[grid-template-rows] duration-200 ease-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
                 >
                     <div className="overflow-hidden">
-                        <ul className="mt-1 mb-1 ml-4 pl-2 space-y-1 border-l border-white/10">
+                        <ul className="my-1 ml-4 py-1 pl-2 pr-2 space-y-1 border-l border-white/10">
                             {g.items.map((i) => renderItem(i, true))}
                         </ul>
                     </div>
@@ -218,6 +234,7 @@ const EmployeeSidebar = ({ children }) => {
 
     return (
         <div className="flex h-screen relative bg-gray-100">
+            <style>{CHAT_GLOW_CSS}</style>
             {/* Mobile overlay */}
             <div
                 className={`fixed inset-0 bg-black/40 z-30 transition-opacity duration-300 ${isMobile && isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}

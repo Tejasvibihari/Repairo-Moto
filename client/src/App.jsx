@@ -87,6 +87,7 @@ import AdminStaffOverview from './pages/dashboard/AdminStaffOverview';
 import { AdminShopStatus, AdminWhatsappAlerts, AdminAttendanceAlerts, AdminCoupons } from './pages/dashboard/AdminOperationsSettings';
 import AdminNotificationsHistory from './pages/dashboard/AdminNotificationsHistory';
 import AdminCouponsManager from './pages/dashboard/AdminCouponsManager';
+import ChatNotifier from './components/ChatNotifier';
 
 
 export default function App() {
@@ -95,6 +96,7 @@ export default function App() {
     <>
 
       <BrowserRouter>
+        <ChatNotifier />
         <Routes>
           {/* Landing Route without Sidebar */}
 

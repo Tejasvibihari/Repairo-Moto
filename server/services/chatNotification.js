@@ -100,6 +100,20 @@ export const handleChatPushNotification = async (io, chatMessage) => {
 
         const brief = briefOf(chatMessage.message);
         const viewers = getViewerIds(io, orderIdStr);
+
+        // Live alert for staff browsers that have the dashboard open (desktop notification + sound).
+        // Each browser decides locally whether to show it (it stays silent for the chat being viewed).
+        if (chatMessage.senderType === "user") {
+            io.of("/chat").to("admin-global").emit("admin-new-message", {
+                orderId: orderIdStr,
+                screenOrderId: order.orderId,
+                customerName: order.name,
+                messageId: chatMessage._id.toString(),
+                senderType: chatMessage.senderType,
+                message: brief,
+                createdAt: chatMessage.createdAt,
+            });
+        }
         const baseData = {
             orderId: orderIdStr,
             screenOrderId: order.orderId,

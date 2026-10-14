@@ -80,7 +80,18 @@ export const sendUserMessage = async (req, res) => {
 export const getChatOrdersList = async (req, res) => {
     try {
         const chatOrders = await ChatMessage.aggregate([
-            { $group: { _id: "$orderId", lastMessageAt: { $max: "$createdAt" } } },
+            {
+                $group: {
+                    _id: "$orderId",
+                    lastMessageAt: { $max: "$createdAt" },
+                    // customer messages no staff member has opened yet (drives the highlight + badge)
+                    unreadCount: {
+                        $sum: {
+                            $cond: [{ $and: [{ $eq: ["$senderType", "user"] }, { $eq: ["$isRead", false] }] }, 1, 0],
+                        },
+                    },
+                },
+            },
             { $sort: { lastMessageAt: -1 } },
             {
                 $lookup: {
@@ -99,6 +110,7 @@ export const getChatOrdersList = async (req, res) => {
                     customerPhone: "$orderDetails.contactNo",
                     status: "$orderDetails.status",
                     lastMessageAt: 1,
+                    unreadCount: 1,
                 },
             },
         ]);
@@ -125,14 +137,18 @@ export const getAdminMessages = async (req, res) => {
             .limit(limit);
         const total = await ChatMessage.countDocuments({ orderId });
 
-        // Mark user messages as read
-        await ChatMessage.updateMany(
-            { orderId, senderType: "user", isRead: false },
-            { $set: { isRead: true, readAt: new Date() } }
-        );
+        // Mark user messages as read. The web chat page sends ?markRead=false and calls
+        // POST /admin/:orderId/read itself, only while the chat is really on screen.
+        // Older clients send nothing and keep the previous "fetching = read" behaviour.
+        if (req.query.markRead !== "false") {
+            await ChatMessage.updateMany(
+                { orderId, senderType: "user", isRead: false },
+                { $set: { isRead: true, readAt: new Date() } }
+            );
 
-        // Staff opened the conversation → their "new message" notifications are seen
-        if (page === 1) markChatNotificationsRead(order._id, req.user._id);
+            // Staff opened the conversation → their "new message" notifications are seen
+            if (page === 1) markChatNotificationsRead(order._id, req.user._id);
+        }
 
         res.json({
             messages,
@@ -176,6 +192,32 @@ export const sendAdminMessage = async (req, res) => {
         handleChatPushNotification(io, chatMessage);
 
         res.status(201).json(chatMessage);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Staff are actually looking at this conversation → its customer messages are read.
+export const markAdminMessagesRead = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const order = await Order.findById(orderId).select("_id");
+        if (!order) return res.status(404).json({ message: "Order not found" });
+
+        const result = await ChatMessage.updateMany(
+            { orderId, senderType: "user", isRead: false },
+            { $set: { isRead: true, readAt: new Date() } }
+        );
+        markChatNotificationsRead(order._id, req.user._id);
+
+        // Every staff tab refreshes its unread badges / highlights
+        if (result.modifiedCount > 0) {
+            const io = req.app.get("io");
+            io?.of("/chat").to("admin-global").emit("admin-list-refresh", String(order._id));
+        }
+
+        res.json({ success: true, marked: result.modifiedCount });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error", error: error.message });

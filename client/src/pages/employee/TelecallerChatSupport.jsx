@@ -1,10 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { LoaderCircle, MessageCircle, Pencil, RefreshCw, Send, Sparkles } from 'lucide-react';
+import { Bell, LoaderCircle, MessageCircle, Pencil, RefreshCw, Send, Sparkles } from 'lucide-react';
 import { useSelector } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { chatApi } from '../../service/chatApi';
+import {
+    chatPresence,
+    notificationBlockedReason,
+    notificationPermission,
+    notifyNewMessage,
+    requestNotificationPermission,
+    unlockChatSound,
+} from '../../utils/chatAlerts';
 
 const errMsg = (err, fallback) => err.response?.data?.message || fallback;
+
+// The agent is really looking at the page: tab in front AND browser window focused
+const isWindowActive = () => document.visibilityState === 'visible' && document.hasFocus();
 
 const SOCKET_URL = import.meta.env.VITE_API_URL;
 const POLL_MS = 10000; // fallback refresh while the live connection is down
@@ -85,6 +97,16 @@ export default function TelecallerChatSupport() {
     const socketRef = useRef(null);
     const editedFromSuggestion = useRef(false);
 
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // Unread tracking (WhatsApp style)
+    const [windowActive, setWindowActive] = useState(isWindowActive);
+    const windowActiveRef = useRef(windowActive);
+    windowActiveRef.current = windowActive;
+    const [alertPerm, setAlertPerm] = useState(notificationPermission());
+    const [alertHint, setAlertHint] = useState('');
+
     // True while the agent is sending suggested messages one after another (follow-up mode)
     const [chain, setChain] = useState(false);
 
@@ -111,7 +133,8 @@ export default function TelecallerChatSupport() {
             const data = await chatApi.orders();
             setOrders(data || []);
             setSelected((current) => {
-                if (!current) return data?.[0] || null;
+                // Don't auto-open the first chat: opening it would silently mark its messages as read
+                if (!current) return null;
                 const fresh = (data || []).find((o) => o.orderId === current.orderId);
                 // keep the same object when nothing changed so effects don't re-run
                 return fresh && (fresh.status !== current.status || fresh.customerName !== current.customerName) ? { ...current, ...fresh } : current;
@@ -154,7 +177,45 @@ export default function TelecallerChatSupport() {
         }
     };
 
+    // Tell the server whether this chat is on screen -> it skips its own push for people who are reading
+    const reportVisibility = (orderId, visible) => {
+        const s = socketRef.current;
+        if (s?.connected && orderId) s.emit('chat-visibility', { orderId, visible }, () => {});
+    };
+
     useEffect(() => { loadOrders(); }, []);
+
+    // Track tab visibility + window focus
+    useEffect(() => {
+        const update = () => setWindowActive(isWindowActive());
+        window.addEventListener('focus', update);
+        window.addEventListener('blur', update);
+        document.addEventListener('visibilitychange', update);
+        return () => {
+            window.removeEventListener('focus', update);
+            window.removeEventListener('blur', update);
+            document.removeEventListener('visibilitychange', update);
+        };
+    }, []);
+
+    // This chat is open and in front of the agent -> no sound / desktop popup for it (see ChatNotifier)
+    useEffect(() => {
+        chatPresence.set(selected && windowActive ? selected.orderId : null);
+        return () => chatPresence.set(null);
+    }, [selected?.orderId, windowActive]);
+
+    useEffect(() => { reportVisibility(selected?.orderId, windowActive); }, [windowActive]);
+
+    // Opened from a desktop notification -> jump straight to that conversation
+    useEffect(() => {
+        const wanted = location.state?.orderId;
+        if (!wanted) return;
+        const match = orders.find((o) => o.orderId === wanted);
+        if (match) {
+            setSelected(match);
+            navigate(location.pathname, { replace: true, state: null });
+        }
+    }, [location.state, orders]);
 
     useEffect(() => {
         setMessages([]);
@@ -163,9 +224,25 @@ export default function TelecallerChatSupport() {
         setChain(false);
         editedFromSuggestion.current = false;
         if (selected) loadMessages(selected);
-        // join the socket room of the chat that is now open
-        if (selected && socketRef.current?.connected) socketRef.current.emit('join-order', selected.orderId, () => {});
+        // join the socket room of the chat that is now open, then say whether it is on screen
+        if (selected && socketRef.current?.connected) {
+            socketRef.current.emit('join-order', selected.orderId, () => reportVisibility(selected.orderId, windowActiveRef.current));
+        }
     }, [selected?.orderId]);
+
+    // Chat is open AND the agent is looking at it -> its customer messages are now read.
+    // (Background reloads never mark anything as read, so unread chats stay highlighted.)
+    useEffect(() => {
+        if (!chatLoaded || !windowActive) return;
+        if (!messages.some((m) => m.senderType === 'user' && !m.isRead)) return;
+        const orderId = selected.orderId;
+        chatApi.markRead(orderId)
+            .then(() => {
+                if (selectedIdRef.current !== orderId) return;
+                setMessages((current) => current.map((m) => (m.senderType === 'user' && !m.isRead ? { ...m, isRead: true } : m)));
+            })
+            .catch(() => {}); // retried on the next message / when the window gets focus again
+    }, [chatLoaded, windowActive, messages, selected?.orderId]);
 
     // Live updates: new messages and list changes arrive over Socket.IO, no manual refresh needed
     useEffect(() => {
@@ -182,7 +259,7 @@ export default function TelecallerChatSupport() {
         socket.on('connect', () => {
             setLive(true);
             const id = selectedIdRef.current;
-            if (id) socket.emit('join-order', id, () => resync()); // (re)join, then catch up on anything missed
+            if (id) socket.emit('join-order', id, () => { reportVisibility(id, windowActiveRef.current); resync(); }); // (re)join, then catch up on anything missed
             else loadOrders(true);
         });
         socket.on('disconnect', () => setLive(false));
@@ -263,6 +340,22 @@ export default function TelecallerChatSupport() {
 
     const send = (event) => { event.preventDefault(); sendMessage(text, editedFromSuggestion.current); };
 
+    // Header bell: ask for permission, or fire a test alert so the agent can check sound + popup
+    const alertLabel = alertPerm === 'granted' ? 'Test alert' : alertPerm === 'denied' ? 'Alerts blocked' : alertPerm === 'unsupported' ? 'Alerts unavailable' : 'Enable alerts';
+    const handleAlertButton = async () => {
+        unlockChatSound();
+        setAlertHint('');
+        let permission = notificationPermission();
+        if (permission === 'default') {
+            permission = await requestNotificationPermission();
+            setAlertPerm(permission);
+        }
+        const blocked = notificationBlockedReason();
+        if (blocked) setAlertHint(blocked);
+        // test: same sound + popup a real customer message would trigger
+        notifyNewMessage({ orderId: 'test', title: 'Test alert', body: 'New message alerts are working.', onClick: () => window.focus() });
+    };
+
     // Pencil: drop the suggestion into the input so it can be edited before sending.
     const editSuggestion = (value) => {
         editedFromSuggestion.current = true;
@@ -295,17 +388,25 @@ export default function TelecallerChatSupport() {
                     <div className="sticky top-0 z-10 border-b border-gray-100 bg-white px-4 py-4 font-bold text-secondary">Conversations</div>
                     {loading ? (
                         <div className="flex justify-center p-8"><LoaderCircle className="animate-spin text-primary" /></div>
-                    ) : orders.map((order) => (
-                        <button
-                            key={order.orderId}
-                            onClick={() => setSelected(order)}
-                            className={`w-full border-b border-gray-100 px-4 py-4 text-left ${selected?.orderId === order.orderId ? 'bg-amber-50' : 'hover:bg-gray-50'}`}
-                        >
-                            <p className="font-bold text-secondary">{order.customerName || 'Customer'}</p>
-                            <p className="mt-1 text-xs text-gray-500">Order #{order.orderNumber || order.orderId.slice(-6)}</p>
-                            <div className="mt-1.5"><StatusChip status={order.status} /></div>
-                        </button>
-                    ))}
+                    ) : orders.map((order) => {
+                        const isOpen = selected?.orderId === order.orderId;
+                        // the chat the agent is reading right now counts as read
+                        const unread = isOpen && windowActive ? 0 : order.unreadCount || 0;
+                        return (
+                            <button
+                                key={order.orderId}
+                                onClick={() => setSelected(order)}
+                                className={`w-full border-b border-gray-100 px-4 py-4 text-left ${isOpen ? 'bg-amber-50' : 'hover:bg-gray-50'}`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <p className={`min-w-0 flex-1 truncate text-secondary ${unread > 0 ? 'font-extrabold' : 'font-bold'}`}>{order.customerName || 'Customer'}</p>
+                                    {unread > 0 && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-500" aria-label="Unread messages" />}
+                                </div>
+                                <p className="mt-1 text-xs text-gray-500">Order #{order.orderNumber || order.orderId.slice(-6)}</p>
+                                <div className="mt-1.5"><StatusChip status={order.status} /></div>
+                            </button>
+                        );
+                    })}
                     {!loading && !orders.length && <p className="p-6 text-sm text-gray-500">No conversations yet.</p>}
                 </aside>
 
@@ -316,11 +417,19 @@ export default function TelecallerChatSupport() {
                                 <div className="flex flex-wrap items-center gap-2">
                                     <p className="font-bold text-secondary">{selected.customerName}</p>
                                     <StatusChip status={selected.status} />
-                                    <span className={`ml-auto inline-flex items-center gap-1 text-[10px] font-medium ${live ? 'text-green-600' : 'text-gray-400'}`} title={live ? 'Live updates on' : 'Reconnecting - refreshing automatically'}>
+                                    <button
+                                        type="button"
+                                        onClick={handleAlertButton}
+                                        className={`ml-auto inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${alertPerm === 'granted' ? 'border-green-200 text-green-700 hover:bg-green-50' : 'border-amber-300 text-amber-700 hover:bg-amber-50'}`}
+                                    >
+                                        <Bell size={11} /> {alertLabel}
+                                    </button>
+                                    <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${live ? 'text-green-600' : 'text-gray-400'}`} title={live ? 'Live updates on' : 'Reconnecting - refreshing automatically'}>
                                         <span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-green-500' : 'bg-gray-300'}`} />{live ? 'Live' : 'Offline'}
                                     </span>
                                 </div>
                                 <p className="text-xs text-gray-500">Order #{selected.orderNumber || selected.orderId.slice(-6)}</p>
+                                {alertHint && <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{alertHint}</p>}
                             </div>
 
                             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gray-50 p-5">

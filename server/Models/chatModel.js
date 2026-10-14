@@ -41,6 +41,8 @@ const chatMessageSchema = new mongoose.Schema(
 );
 
 chatMessageSchema.index({ orderId: 1, createdAt: 1 });
+// unread badge lookups (customer messages nobody has opened yet)
+chatMessageSchema.index({ senderType: 1, isRead: 1 });
 
 const ChatMessage = mongoose.model("ChatMessage", chatMessageSchema);
 export default ChatMessage;

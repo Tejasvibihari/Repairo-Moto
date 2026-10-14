@@ -8,6 +8,7 @@ import {
     getAdminMessages,
     sendAdminMessage,
     getUnreadCounts,
+    markAdminMessagesRead,
     getReplySuggestions,
 } from "../Controllers/chatController.js";
 
@@ -22,6 +23,7 @@ router.get("/admin/orders", authAdmin, getChatOrdersList);
 router.get("/admin/:orderId/messages", authAdmin, getAdminMessages);
 router.post("/admin/:orderId/messages", authAdmin, sendAdminMessage);
 router.get("/admin/unread-counts", authAdmin, getUnreadCounts);
+router.post("/admin/:orderId/read", authAdmin, markAdminMessagesRead);
 router.get("/admin/:orderId/suggestions", authAdmin, getReplySuggestions);
 
 export default router;
