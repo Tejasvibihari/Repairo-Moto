@@ -46,6 +46,9 @@ import EmployeeManageQr from './pages/employee/EmployeeManageQr';
 import EmployeeInvoice from './pages/employee/EmployeeInvoice';
 import AboutUs from './pages/landing/AboutUs';
 import Blog from './pages/landing/Blog';
+import Careers from './pages/landing/Careers';
+import CareerDetail from './pages/landing/CareerDetail';
+import ManageCareers from './pages/dashboard/ManageCareers';
 import BlogDetail from './pages/landing/BlogDetail';
 import Gallery from './pages/landing/Gallery';
 import Services from './pages/landing/Service';
@@ -105,6 +108,8 @@ export default function App() {
           <Route path='/about' element={<AboutUs />} />
           <Route path='/blog' element={<Blog />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
+          <Route path='/careers' element={<Careers />} />
+          <Route path='/careers/:id' element={<CareerDetail />} />
           <Route path='/gallery' element={<Gallery />} />
           <Route path='/services' element={<Services />} />
           <Route path='/terms' element={<Terms />} />
@@ -432,6 +437,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Sidebar><ManageBlog /></Sidebar>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/manage-careers'
+            element={
+              <PrivateRoute>
+                <Sidebar><ManageCareers /></Sidebar>
               </PrivateRoute>
             }
           />

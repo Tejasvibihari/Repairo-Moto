@@ -1,7 +1,7 @@
 import {
     ContactRound, House, Store, Wrench,
     Facebook, Instagram, Twitter,
-    Phone, Mail, MapPin, ShieldUser, PersonStanding
+    Phone, Mail, MapPin, ShieldUser, PersonStanding, Briefcase
 } from 'lucide-react';
 import { Link } from "react-router-dom";
 import React from 'react';
@@ -82,6 +82,7 @@ export default function Footer() {
                         <ul className="space-y-4 text-gray-300">
                             <li><Link to="/" title="Go to Home" className="flex items-center hover:text-primary"><House className="mr-3" size={20} /> Home</Link></li>
                             <li><Link to="/services" title="Our Services" className="flex items-center hover:text-primary"><Wrench className="mr-3" size={20} /> Services</Link></li>
+                            <li><Link to="/careers" title="Careers" className="flex items-center hover:text-primary"><Briefcase className="mr-3" size={20} /> Careers</Link></li>
                             <li><Link to="/dashboard" title="Admin Panel" className="flex items-center hover:text-primary"><ShieldUser className="mr-3" size={20} /> Admin</Link></li>
                             <li><Link to="/employee/dashboard" title="Employee Dashboard" className="flex items-center hover:text-primary"><Wrench className="mr-3" size={20} /> Employee</Link></li>
                             <li><Link to="/vendor/dashboard" title="Vendor Panel" className="flex items-center hover:text-primary"><PersonStanding className="mr-3" size={20} /> Vendor</Link></li>

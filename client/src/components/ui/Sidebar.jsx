@@ -5,7 +5,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Home, Bike, FileText, NotebookPen, User2, Briefcase,
     ShoppingCart, QrCode, Menu, ChevronLeft, ChevronRight,
-    User, DollarSign, X, Receipt, Smartphone, MapPin, Users, CalendarDays, BarChart3, Store, Megaphone, BellRing, MessageCircle, Image
+    User, DollarSign, X, Receipt, Smartphone, MapPin, Users, CalendarDays, BarChart3, Store, Megaphone, BellRing, MessageCircle, Image, UserPlus
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -43,6 +43,7 @@ const Sidebar = ({ children }) => {
         { section: 'Content', id: 'banners', path: '/banners', label: 'Banners', icon: <Image size={18} /> },
         { section: 'Content', id: 'add-blog', path: '/add-blog', label: 'Add Blog', icon: <FileText size={18} /> },
         { section: 'Content', id: 'manage-blog', path: '/manage-blog', label: 'Manage Blog', icon: <NotebookPen size={18} /> },
+        { section: 'Content', id: 'manage-careers', path: '/manage-careers', label: 'Careers', icon: <UserPlus size={18} /> },
         { section: 'Settings', id: 'model', path: '/model', label: 'Bike Model', icon: <Bike size={18} /> },
         { section: 'Settings', id: 'manage-service-area', path: '/manage-service-area', label: 'Manage Service Area', icon: <Briefcase size={18} /> },
         { section: 'Settings', id: 'manage-qr', path: '/manage-qr', label: 'Manage QR', icon: <QrCode size={18} /> },
