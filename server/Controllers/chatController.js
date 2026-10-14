@@ -1,6 +1,6 @@
 import ChatMessage from "../Models/chatModel.js";
 import Order from "../Models/orderModel.js";
-import { generateReplySuggestions, GeminiError } from "../services/geminiService.js";
+import { generateReplySuggestions, trailingAgentCount, GeminiError } from "../services/geminiService.js";
 import { handleChatPushNotification, markChatNotificationsRead } from "../services/chatNotification.js";
 
 // ------------------- User Helpers -------------------
@@ -113,7 +113,7 @@ export const getAdminMessages = async (req, res) => {
     try {
         const { orderId } = req.params;
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 50;
+        const limit = parseInt(req.query.limit) || 500; // staff view: default must not hide the newest messages in long chats
         const skip = (page - 1) * limit;
 
         const order = await Order.findById(orderId);
@@ -205,9 +205,12 @@ export const getReplySuggestions = async (req, res) => {
         const order = await Order.findById(orderId);
         if (!order) return res.status(404).json({ message: "Order not found" });
 
+        // Last 12 messages from BOTH sides (customer + agent) so the AI sees the whole recent conversation
         const recent = await ChatMessage.find({ orderId }).sort({ createdAt: -1 }).limit(12);
         const messages = recent.reverse();
         if (!messages.length) return res.json({ suggestions: [], language: null });
+        // Agent already sent 3 messages in a row after the customer: stop suggesting more follow-ups
+        if (trailingAgentCount(messages) >= 3) return res.json({ suggestions: [], language: null });
 
         const { suggestions, language } = await generateReplySuggestions({ order, messages });
         res.json({ suggestions, language });

@@ -1,8 +1,38 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LoaderCircle, MessageCircle, Pencil, RefreshCw, Send, Sparkles } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { io } from 'socket.io-client';
 import { chatApi } from '../../service/chatApi';
 
 const errMsg = (err, fallback) => err.response?.data?.message || fallback;
+
+const SOCKET_URL = import.meta.env.VITE_API_URL;
+const POLL_MS = 10000; // fallback refresh while the live connection is down
+const MAX_AGENT_CHAIN = 3; // follow-up suggestions stop after this many agent messages in a row
+
+// Colored chip per order status
+const STATUS_STYLES = {
+    'pending': 'bg-gray-100 text-gray-700 ring-gray-200',
+    'mechanic assigned': 'bg-blue-100 text-blue-700 ring-blue-200',
+    'mechanic start': 'bg-indigo-100 text-indigo-700 ring-indigo-200',
+    'mechanic arrived': 'bg-cyan-100 text-cyan-700 ring-cyan-200',
+    'in progress': 'bg-amber-100 text-amber-800 ring-amber-200',
+    'completion requested': 'bg-orange-100 text-orange-700 ring-orange-200',
+    'work completed': 'bg-teal-100 text-teal-700 ring-teal-200',
+    'invoice generated': 'bg-purple-100 text-purple-700 ring-purple-200',
+    'completed': 'bg-green-100 text-green-700 ring-green-200',
+    'cancelled': 'bg-red-100 text-red-700 ring-red-200',
+};
+
+function StatusChip({ status }) {
+    const label = status || 'Pending';
+    const style = STATUS_STYLES[label.toLowerCase()] || 'bg-slate-100 text-slate-700 ring-slate-200';
+    return (
+        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${style}`}>
+            {label}
+        </span>
+    );
+}
 
 // Animated gradient + twinkle styles for the "AI generated" badge (motion is disabled for reduced-motion users).
 const AI_BADGE_CSS = `
@@ -51,32 +81,57 @@ export default function TelecallerChatSupport() {
     const endRef = useRef(null);
     const inputRef = useRef(null);
     const suggestReq = useRef(0); // ignores stale responses when the chat/message changes
+    const selectedIdRef = useRef(null);
+    const socketRef = useRef(null);
+    const editedFromSuggestion = useRef(false);
+
+    // True while the agent is sending suggested messages one after another (follow-up mode)
+    const [chain, setChain] = useState(false);
+
+    // Same token choice as axiosClient: the employee session wins, otherwise admin
+    const token = useSelector((s) => (s.employeeAuth?.isAuthenticated ? s.auth.employeeToken : s.auth.adminToken || s.auth.employeeToken));
+    const [live, setLive] = useState(false);
+
+    selectedIdRef.current = selected?.orderId || null;
 
     const lastMessage = messages[messages.length - 1];
-    // Only suggest when the customer spoke last — nothing to answer otherwise.
-    const needsReply = !!selected && messagesOrderId === selected.orderId && lastMessage?.senderType === 'user';
+    const chatLoaded = !!selected && messagesOrderId === selected.orderId;
+    // Number of agent messages sent in a row after the customer's last message
+    let agentRun = 0;
+    for (let i = messages.length - 1; i >= 0 && messages[i].senderType !== 'user'; i--) agentRun++;
+    // Suggest when the customer spoke last, or (follow-up mode) after the agent sent a suggested message.
+    const needsReply = chatLoaded && lastMessage?.senderType === 'user';
+    const wantsFollowUp = chatLoaded && chain && !!lastMessage && lastMessage.senderType !== 'user' && agentRun < MAX_AGENT_CHAIN;
+    const wantsSuggestions = needsReply || wantsFollowUp;
 
-    const loadOrders = async () => {
-        setLoading(true);
+    // silent = background refresh (no spinner, keeps the current selection)
+    const loadOrders = async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const data = await chatApi.orders();
             setOrders(data || []);
-            if (!selected && data?.[0]) setSelected(data[0]);
-            setError('');
+            setSelected((current) => {
+                if (!current) return data?.[0] || null;
+                const fresh = (data || []).find((o) => o.orderId === current.orderId);
+                // keep the same object when nothing changed so effects don't re-run
+                return fresh && (fresh.status !== current.status || fresh.customerName !== current.customerName) ? { ...current, ...fresh } : current;
+            });
+            if (!silent) setError('');
         } catch (err) {
-            setError(errMsg(err, 'Could not load conversations.'));
+            if (!silent) setError(errMsg(err, 'Could not load conversations.'));
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
-    const loadMessages = async (order) => {
+    const loadMessages = async (order, silent = false) => {
         try {
             const data = await chatApi.messages(order.orderId);
+            if (selectedIdRef.current !== order.orderId) return; // user switched chats meanwhile
             setMessages(data.messages || []);
             setMessagesOrderId(order.orderId);
         } catch (err) {
-            setError(errMsg(err, 'Could not load messages.'));
+            if (!silent) setError(errMsg(err, 'Could not load messages.'));
         }
     };
 
@@ -105,29 +160,99 @@ export default function TelecallerChatSupport() {
         setMessages([]);
         setMessagesOrderId(null);
         setText('');
+        setChain(false);
+        editedFromSuggestion.current = false;
         if (selected) loadMessages(selected);
+        // join the socket room of the chat that is now open
+        if (selected && socketRef.current?.connected) socketRef.current.emit('join-order', selected.orderId, () => {});
     }, [selected?.orderId]);
+
+    // Live updates: new messages and list changes arrive over Socket.IO, no manual refresh needed
+    useEffect(() => {
+        if (!token) return undefined;
+        const socket = io(`${SOCKET_URL}/chat`, { auth: { token }, transports: ['websocket'], reconnection: true });
+        socketRef.current = socket;
+
+        const resync = () => {
+            const id = selectedIdRef.current;
+            loadOrders(true);
+            if (id) loadMessages({ orderId: id }, true);
+        };
+
+        socket.on('connect', () => {
+            setLive(true);
+            const id = selectedIdRef.current;
+            if (id) socket.emit('join-order', id, () => resync()); // (re)join, then catch up on anything missed
+            else loadOrders(true);
+        });
+        socket.on('disconnect', () => setLive(false));
+        socket.on('connect_error', () => setLive(false));
+
+        socket.on('new-message', (msg) => {
+            if (String(msg.orderId) !== selectedIdRef.current) return;
+            setMessages((current) => (current.some((m) => m._id === msg._id) ? current : [...current, msg]));
+        });
+        // any chat got a message -> refresh the conversation list (order, status)
+        socket.on('admin-list-refresh', () => loadOrders(true));
+
+        return () => { socket.disconnect(); socketRef.current = null; };
+    }, [token]);
+
+    // Safety net: if the live connection is down (or blocked), poll so the page still updates itself
+    useEffect(() => {
+        if (live) return undefined;
+        const t = setInterval(() => {
+            if (document.visibilityState !== 'visible') return;
+            loadOrders(true);
+            if (selectedIdRef.current) loadMessages({ orderId: selectedIdRef.current }, true);
+        }, POLL_MS);
+        return () => clearInterval(t);
+    }, [live]);
+
+    // Order status changes (mechanic assigned, completed...) don't send chat events, so refresh the list now and then
+    useEffect(() => {
+        const t = setInterval(() => { if (document.visibilityState === 'visible') loadOrders(true); }, 30000);
+        return () => clearInterval(t);
+    }, []);
+
+    // Coming back to the tab -> catch up immediately
+    useEffect(() => {
+        const onVisible = () => {
+            if (document.visibilityState !== 'visible') return;
+            loadOrders(true);
+            if (selectedIdRef.current) loadMessages({ orderId: selectedIdRef.current }, true);
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
+    }, []);
 
     useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [messages, selected?.orderId]);
 
-    // New customer message (or switched chat) -> ask Gemini for 3 replies.
+    // New customer message (or switched chat, or follow-up after a sent suggestion) -> ask Gemini for 3 replies.
     useEffect(() => {
         suggestReq.current++; // invalidate anything in flight
         setSuggestions([]);
         setSuggestError('');
         setSuggestLang('');
         setSuggesting(false);
-        if (needsReply) loadSuggestions(selected.orderId);
-    }, [selected?.orderId, needsReply, lastMessage?._id]);
+        if (wantsSuggestions) loadSuggestions(selected.orderId);
+    }, [selected?.orderId, wantsSuggestions, lastMessage?._id]);
 
-    const sendMessage = async (body) => {
+    // Customer spoke again -> a new round starts, follow-up mode ends
+    useEffect(() => { if (needsReply) setChain(false); }, [needsReply]);
+
+    // fromSuggestion: keep suggesting follow-ups so the agent can send 2-3 messages one by one
+    const sendMessage = async (body, fromSuggestion = false) => {
         const value = body.trim();
         if (!value || !selected || sending) return;
         setSending(true);
         try {
             const message = await chatApi.send(selected.orderId, value);
-            setMessages((current) => [...current, message]);
+            // the socket echo may already have added it
+            setMessages((current) => (current.some((m) => m._id === message._id) ? current : [...current, message]));
+            setChain(fromSuggestion);
             setText('');
+            editedFromSuggestion.current = false;
             setError('');
         } catch (err) {
             setError(errMsg(err, 'Could not send message.'));
@@ -136,10 +261,11 @@ export default function TelecallerChatSupport() {
         }
     };
 
-    const send = (event) => { event.preventDefault(); sendMessage(text); };
+    const send = (event) => { event.preventDefault(); sendMessage(text, editedFromSuggestion.current); };
 
     // Pencil: drop the suggestion into the input so it can be edited before sending.
     const editSuggestion = (value) => {
+        editedFromSuggestion.current = true;
         setText(value);
         requestAnimationFrame(() => {
             const el = inputRef.current;
@@ -149,7 +275,7 @@ export default function TelecallerChatSupport() {
         });
     };
 
-    const showSuggestionBar = needsReply && (suggesting || suggestions.length > 0 || suggestError);
+    const showSuggestionBar = wantsSuggestions && (suggesting || suggestions.length > 0 || suggestError);
 
     return (
         <div className="space-y-5">
@@ -177,7 +303,7 @@ export default function TelecallerChatSupport() {
                         >
                             <p className="font-bold text-secondary">{order.customerName || 'Customer'}</p>
                             <p className="mt-1 text-xs text-gray-500">Order #{order.orderNumber || order.orderId.slice(-6)}</p>
-                            <p className="mt-1 text-xs text-gray-400">{order.status}</p>
+                            <div className="mt-1.5"><StatusChip status={order.status} /></div>
                         </button>
                     ))}
                     {!loading && !orders.length && <p className="p-6 text-sm text-gray-500">No conversations yet.</p>}
@@ -187,7 +313,13 @@ export default function TelecallerChatSupport() {
                     {selected ? (
                         <>
                             <div className="shrink-0 border-b border-gray-100 px-5 py-4">
-                                <p className="font-bold text-secondary">{selected.customerName}</p>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <p className="font-bold text-secondary">{selected.customerName}</p>
+                                    <StatusChip status={selected.status} />
+                                    <span className={`ml-auto inline-flex items-center gap-1 text-[10px] font-medium ${live ? 'text-green-600' : 'text-gray-400'}`} title={live ? 'Live updates on' : 'Reconnecting - refreshing automatically'}>
+                                        <span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-green-500' : 'bg-gray-300'}`} />{live ? 'Live' : 'Offline'}
+                                    </span>
+                                </div>
                                 <p className="text-xs text-gray-500">Order #{selected.orderNumber || selected.orderId.slice(-6)}</p>
                             </div>
 
@@ -208,7 +340,7 @@ export default function TelecallerChatSupport() {
                                 <div className="shrink-0 border-t border-gray-100 bg-white px-4 pt-3">
                                     <div className="mb-2 flex items-center justify-between">
                                         <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-                                            <Sparkles size={13} className="text-primary" /> Suggested replies
+                                            <Sparkles size={13} className="text-primary" /> {needsReply ? 'Suggested replies' : 'Suggested next message'}
                                             {suggestLang && !suggesting && (
                                                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-secondary">{suggestLang}</span>
                                             )}
@@ -241,7 +373,7 @@ export default function TelecallerChatSupport() {
                                                 <div key={i} className="flex flex-1 items-stretch overflow-hidden rounded-xl border border-amber-200 bg-amber-50 text-xs text-secondary">
                                                     <button
                                                         type="button"
-                                                        onClick={() => sendMessage(suggestion)}
+                                                        onClick={() => sendMessage(suggestion, true)}
                                                         disabled={sending}
                                                         title="Send this reply"
                                                         className="flex-1 px-3 py-2 text-left leading-snug hover:bg-amber-100 disabled:opacity-50"
@@ -284,4 +416,4 @@ export default function TelecallerChatSupport() {
             </div>
         </div>
     );
-}
+}

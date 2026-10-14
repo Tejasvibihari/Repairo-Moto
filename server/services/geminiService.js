@@ -2,14 +2,20 @@ import axios from "axios";
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const DEFAULT_MODEL = "gemini-3.5-flash-lite";
-const MAX_HISTORY = 12; // last N messages sent as context
+const MAX_HISTORY = 12; // last N messages (customer + agent) sent as context
+const RECENT_FOCUS = 3; // the last N messages are highlighted as the "current exchange"
 const MAX_SUGGESTION_LEN = 400;
 
 const SYSTEM_PROMPT = `You are a reply assistant for the customer-support team of Repairo Moto, a doorstep motorcycle repair and service company in India.
 You are shown a support chat about one service order. Write 3 different replies that the SUPPORT AGENT could send next to the CUSTOMER.
 
+You are given the recent conversation from BOTH sides (CUSTOMER and AGENT), oldest to newest, with the last few messages marked as the current exchange.
+
 Rules:
-- Reply to what the customer actually asked in their latest message(s).
+- Read the whole recent conversation, not just the last customer message. Answer what the customer is asking now in context of what was already said.
+- If the customer sent several messages in a row, answer all of them together.
+- Never repeat or contradict something the AGENT already said. Do not greet or introduce yourself again if the agent already did.
+- If the LAST message is from the AGENT, the agent is sending a follow-up in the same flow: write the next short message that naturally continues (next step, a useful detail, a check-in question or a polite close). Do not re-answer what was already answered.
 - Use the order details (status, bike, services) when relevant. Never invent refunds, prices, dates, mechanic names or policies that are not in the order details.
 - If the order is "Cancelled", do not behave as if it is active. Acknowledge it and offer to clarify the reason, help rebook, or escalate to a senior team member.
 - Make the 3 replies genuinely different in approach (e.g. direct answer, ask a clarifying question, offer next step / escalation).
@@ -94,11 +100,23 @@ function describeOrder(order) {
         .join("\n");
 }
 
+const line = (m) => `${m.senderType === "user" ? "CUSTOMER" : "AGENT"}: ${clean(m.message, 600)}`;
+
 function describeChat(messages) {
-    return messages
-        .slice(-MAX_HISTORY)
-        .map((m) => `${m.senderType === "user" ? "CUSTOMER" : "AGENT"}: ${clean(m.message, 600)}`)
-        .join("\n");
+    const recent = messages.slice(-MAX_HISTORY);
+    const split = Math.max(0, recent.length - RECENT_FOCUS);
+    const earlier = recent.slice(0, split).map(line).join("\n");
+    const current = recent.slice(split).map(line).join("\n");
+    return [earlier && `EARLIER MESSAGES\n${earlier}`, `CURRENT EXCHANGE (last ${recent.length - split} messages)\n${current}`]
+        .filter(Boolean)
+        .join("\n\n");
+}
+
+// How many agent messages in a row end the chat (used to cap follow-up suggestions).
+export function trailingAgentCount(messages) {
+    let n = 0;
+    for (let i = messages.length - 1; i >= 0 && messages[i].senderType !== "user"; i--) n++;
+    return n;
 }
 
 // Pulls the 3 strings out of the model output, tolerating ```json fences / stray text.
@@ -134,7 +152,7 @@ export async function generateReplySuggestions({ order, messages }) {
     const url = `${GEMINI_BASE}/${model}:generateContent`;
 
     const hint = detectLanguage(customerTextForDetection(messages));
-    const prompt = `ORDER DETAILS\n${describeOrder(order)}\n\nCHAT (oldest to newest)\n${describeChat(messages)}\n\nDETECTOR HINT: customer language looks like ${hint}.\n\nWrite the 3 suggested agent replies.`;
+    const prompt = `ORDER DETAILS\n${describeOrder(order)}\n\nCHAT (oldest to newest, both customer and agent)\n${describeChat(messages)}\n\nDETECTOR HINT: customer language looks like ${hint}.\n\n${messages[messages.length - 1]?.senderType === "user" ? "Write the 3 suggested agent replies." : "The agent just replied; write the 3 suggested follow-up messages the agent could send next."}`;
 
     const body = {
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },

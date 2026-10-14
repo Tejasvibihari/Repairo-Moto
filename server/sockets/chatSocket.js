@@ -80,8 +80,9 @@ export const setupChatSockets = (io) => {
                     return;
                 }
 
-                // Leave previous rooms (except the default)
-                const previousRooms = Array.from(socket.rooms).filter((r) => r !== socket.id);
+                // Leave previous order rooms (keep the socket's own room and the staff "admin-global" channel,
+                // otherwise staff stop receiving live list updates after opening the first chat)
+                const previousRooms = Array.from(socket.rooms).filter((r) => r !== socket.id && r !== "admin-global");
                 previousRooms.forEach((room) => socket.leave(room));
 
                 socket.join(orderId);
@@ -164,4 +165,4 @@ export const setupChatSockets = (io) => {
             console.log(`❌ ${socket.user.type} ${socket.user.id} disconnected`);
         });
     });
-};
+};
