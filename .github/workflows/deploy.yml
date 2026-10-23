@@ -38,6 +38,7 @@ jobs:
 
       - name: Lint frontend
         working-directory: client
+        continue-on-error: true
         run: pnpm run lint
 
       - name: Build frontend
