@@ -1,5 +1,5 @@
 
-name: Repairo Moto CI
+name: Repairo Moto CI/CD
 
 on:
   push:
@@ -30,7 +30,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          
 
       - name: Install frontend dependencies
         working-directory: client
@@ -44,6 +43,14 @@ jobs:
       - name: Build frontend
         working-directory: client
         run: pnpm run build
+
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: client/dist/
+          if-no-files-found: error
+          retention-days: 1
 
   backend:
     name: Backend validation
@@ -63,7 +70,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          
 
       - name: Install backend dependencies
         working-directory: server
@@ -78,3 +84,69 @@ jobs:
             -path './private_uploads' -prune -o \
             -type f -name '*.js' -print0 |
             xargs -0 -r -n1 node --check
+
+  deploy-frontend:
+    name: Deploy frontend to VPS
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+
+    # Deploy only after a push to main, never on pull requests.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -eu
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/repairo_deploy
+          chmod 600 ~/.ssh/repairo_deploy
+
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Test SSH and destination permissions
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -eu
+          ssh \
+            -i ~/.ssh/repairo_deploy \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            'test -w /var/www/repairomoto.in'
+
+      - name: Deploy frontend
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -eu
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/repairo_deploy -o BatchMode=yes -o StrictHostKeyChecking=yes" \
+            dist/ \
+            "$DEPLOY_USER@$DEPLOY_HOST:/var/www/repairomoto.in/"
+
+      - name: Verify deployed frontend
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh \
+            -i ~/.ssh/repairo_deploy \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            'test -s /var/www/repairomoto.in/index.html'
