@@ -131,7 +131,7 @@ export default function Footer() {
                 {/* Bottom Footer */}
                 <div className="mt-12 border-t border-gray-700 pt-6 text-center text-gray-500 text-sm">
                     © {new Date().getFullYear()} Designed and Developed by{' '}
-                    <a className='text-primary' href='https://tejasvi.vercel.app/' target='_blank' rel="noopener noreferrer">Tejasvi Bihari</a>
+                    <a className='text-primary' href='https://roottechnology.in' target='_blank' rel="noopener noreferrer">Root Technology</a>
                 </div>
             </div>
         </footer>
