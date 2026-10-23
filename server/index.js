@@ -105,7 +105,7 @@ app.use("/api/admin/staff-overview", staffOverviewRouter);
 app.use("/api/employee/attendance", attendanceRouter);
 app.use("/api/admin/attendance", attendanceAdminRouter);
 app.get("/", (req, res) => {
-    res.send("Welcome to the Repairo Moto Admin API");
+    res.send("Welcome to the Repairo Admin API");
 });
 
 // MongoDB connection
