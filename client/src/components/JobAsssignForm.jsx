@@ -13,6 +13,16 @@ import SelectMechanicDialog from './ui/SelectMechanicDialog';
 import SelectDeliveryDialog from './ui/SelectDeliveryDialog';
 import SelectVendorDialog from './ui/SelectVendorDialog';
 import { Link } from 'react-router-dom';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+
+// Must match MIN_CANCEL_REASON / MAX_CANCEL_REASON in server/Controllers/orderController.js
+const MIN_CANCEL_REASON = 5;
+const MAX_CANCEL_REASON = 300;
 
 export default function JobAsssignForm({ id }) {
     const [snackBarOpen, setSnackBarOpen] = useState(false);
@@ -34,6 +44,14 @@ export default function JobAsssignForm({ id }) {
     const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
 
     const [currentMechanics, setCurrentMechanics] = useState([]);
+
+    // Status as stored on the server (orderById.status changes as soon as the dropdown changes)
+    const [savedStatus, setSavedStatus] = useState('');
+
+    // Cancellation reason dialog
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [cancelReason, setCancelReason] = useState('');
+    const [cancelReasonError, setCancelReasonError] = useState('');
 
     const handleMechanicDialogOpen = () => setMechanicDialogOpen(true);
     const handleMechanicDialogClose = () => {
@@ -70,6 +88,7 @@ export default function JobAsssignForm({ id }) {
             console.log(orderDetail);
             if (orderDetail) {
                 setOrderById(orderDetail);
+                setSavedStatus(orderDetail.status || '');
                 setCurrentMechanics(orderDetail.assignedMechanics || []);
             } else {
                 setSnackBarMessage("Failed to fetch order details.");
@@ -95,23 +114,21 @@ export default function JobAsssignForm({ id }) {
         setSnackBarOpen(false);
     };
 
-    const updateOrderStatus = async () => {
+    // Sends the status change. `reason` is required by the backend when status is "Cancelled".
+    const submitStatusUpdate = async (reason) => {
         try {
             setLoading(true);
-            if (!orderById.status) {
-                setSnackBarMessage("Please select a valid status.");
-                setSnackBarSeverity('warning');
-                setSnackBarOpen(true);
-                setLoading(false);
-                return;
-            }
-            const response = await axiosClient.put(`/api/admin/order/updateStatus/${orderById._id}`, {
-                status: orderById.status,
-            });
+            const payload = { status: orderById.status };
+            if (orderById.status === 'Cancelled') payload.reason = reason;
+
+            const response = await axiosClient.put(`/api/admin/order/updateStatus/${orderById._id}`, payload);
             if (response.status === 200) {
-                setSnackBarMessage("Order status updated successfully!");
+                setSnackBarMessage(orderById.status === 'Cancelled' ? "Order cancelled successfully!" : "Order status updated successfully!");
                 setSnackBarSeverity('success');
                 setSnackBarOpen(true);
+                setCancelDialogOpen(false);
+                setCancelReason('');
+                setCancelReasonError('');
                 fetchDetails();
             } else {
                 setSnackBarMessage("Failed to update status.");
@@ -125,6 +142,48 @@ export default function JobAsssignForm({ id }) {
         } finally {
             setLoading(false);
         }
+    };
+
+    const updateOrderStatus = () => {
+        if (!orderById.status) {
+            setSnackBarMessage("Please select a valid status.");
+            setSnackBarSeverity('warning');
+            setSnackBarOpen(true);
+            return;
+        }
+        // Moving to Cancelled -> ask for the reason first
+        if (orderById.status === 'Cancelled') {
+            if (savedStatus === 'Cancelled') {
+                setSnackBarMessage("Order is already cancelled.");
+                setSnackBarSeverity('info');
+                setSnackBarOpen(true);
+                return;
+            }
+            setCancelReason('');
+            setCancelReasonError('');
+            setCancelDialogOpen(true);
+            return;
+        }
+        submitStatusUpdate();
+    };
+
+    const closeCancelDialog = () => {
+        if (loading) return;
+        setCancelDialogOpen(false);
+        setCancelReasonError('');
+    };
+
+    const confirmCancel = () => {
+        const cleaned = cancelReason.trim();
+        if (cleaned.length < MIN_CANCEL_REASON) {
+            setCancelReasonError(`Please enter a reason (at least ${MIN_CANCEL_REASON} characters).`);
+            return;
+        }
+        if (cleaned.length > MAX_CANCEL_REASON) {
+            setCancelReasonError(`Reason must be ${MAX_CANCEL_REASON} characters or fewer.`);
+            return;
+        }
+        submitStatusUpdate(cleaned);
     };
 
     const updatePaymentStatus = async () => {
@@ -609,6 +668,44 @@ export default function JobAsssignForm({ id }) {
                     </div>
                 </div>
             )}
+
+            {/* Cancellation reason dialog */}
+            <Dialog open={cancelDialogOpen} onClose={closeCancelDialog} maxWidth="xs" fullWidth>
+                <DialogTitle>Cancel Order</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Reason for cancellation"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        value={cancelReason}
+                        onChange={(e) => {
+                            setCancelReason(e.target.value);
+                            if (cancelReasonError) setCancelReasonError('');
+                        }}
+                        placeholder="Why is this order being cancelled?"
+                        error={Boolean(cancelReasonError)}
+                        helperText={cancelReasonError || `${cancelReason.trim().length}/${MAX_CANCEL_REASON}`}
+                        slotProps={{ htmlInput: { maxLength: MAX_CANCEL_REASON } }}
+                        disabled={loading}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeCancelDialog} disabled={loading}>
+                        Back
+                    </Button>
+                    <Button
+                        onClick={confirmCancel}
+                        variant="contained"
+                        color="error"
+                        disabled={loading}
+                    >
+                        {loading ? 'Cancelling...' : 'Confirm Cancellation'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 }

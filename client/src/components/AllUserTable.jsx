@@ -64,10 +64,10 @@ const AllUsersTable = ({ users, onStatusUpdate }) => {
     const exportToExcel = () => {
         const excelData = users.map((user, index) => ({
             "S.No": index + 1,
-            "Name": `${user.firstName} ${user.lastName}`,
+            "Name": `${user.firstName || ''} ${user.lastName || ''}`.trim(),
             "Email": user.email,
             "Phone": user.phone,
-            "Account Type": user.accountType.toUpperCase(),
+            "Account Type": (user.accountType || 'N/A').toUpperCase(),
             "Business Name": user.businessName || "-",
             "Address": user.address || "-",
             "City": user.city || "-",
@@ -164,7 +164,7 @@ const AllUsersTable = ({ users, onStatusUpdate }) => {
                                                 ) : (
                                                     <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                                                         <span className="text-white font-semibold text-sm">
-                                                            {user.firstName[0]}{user.lastName[0]}
+                                                            {(user.firstName?.[0] || user.email?.[0] || '?').toUpperCase()}{user.lastName?.[0]?.toUpperCase() || ''}
                                                         </span>
                                                     </div>
                                                 )}
@@ -186,7 +186,7 @@ const AllUsersTable = ({ users, onStatusUpdate }) => {
                                     </td>
                                     <td className="px-6 py-4 capitalize">
                                         <span className={`px-2 py-1 rounded text-xs font-medium ${user.accountType === 'personal' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                                            {user.accountType.toUpperCase()}
+                                            {(user.accountType || 'N/A').toUpperCase()}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">{user?.businessName ? user?.businessName : "-"}</td>
