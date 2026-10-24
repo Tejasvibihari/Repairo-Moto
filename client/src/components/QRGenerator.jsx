@@ -5,7 +5,9 @@ import AlertSnackBar from "./ui/AlertSnackBar";
 import { useSelector } from "react-redux";
 import axiosClient from "../service/axiosClient";
 
-const QRGenerator = ({ text }) => {
+// requireApproval: true on the customer's own QR page (their account must be approved).
+// Admin / employee pages generate QR codes for OTHER people, so they pass requireApproval={false}.
+const QRGenerator = ({ text, requireApproval = true }) => {
     const qrRef = useRef();
     const [snackBarOpen, setSnackBarOpen] = useState(false);
     const [snackBarMessage, setSnackBarMessage] = useState('');
@@ -13,6 +15,8 @@ const QRGenerator = ({ text }) => {
     const profile = useSelector((state) => state.user?.user?.user);
     const [user, setUser] = useState({});
     useEffect(() => {
+        // Nothing to check when approval isn't required (admin/employee pages) or nobody is logged in as a user
+        if (!requireApproval || !profile?._id) return;
         // fetch user from backend 
         const getUser = async () => {
             try {
@@ -24,10 +28,10 @@ const QRGenerator = ({ text }) => {
             }
         };
         getUser();
-    }, [])
+    }, [requireApproval, profile?._id])
 
     const handleDownload = () => {
-        if (user?.status !== "approved") return;
+        if (!isApproved) return;
 
         const canvas = qrRef.current.querySelector("canvas");
         const pngUrl = canvas
@@ -47,7 +51,7 @@ const QRGenerator = ({ text }) => {
     };
 
     const handleCopy = () => {
-        if (user?.status !== "approved") return;
+        if (!isApproved) return;
 
         navigator.clipboard.writeText(text);
         setSnackBarMessage("Link Copied to Clipboard!");
@@ -63,7 +67,7 @@ const QRGenerator = ({ text }) => {
     };
 
     // const isApproved = user?.status === "approved";
-const isApproved = !user || user.status === "approved";
+    const isApproved = !requireApproval || !user || user.status === "approved";
 
     return (
         <>

@@ -16,7 +16,7 @@ export default function EmployeeManageQr() {
                     <QrTable onGenerateQR={handleGenerateQR} />
                 </div>
                 <div className="col-span-1">
-                    <QRGenerator text={qrText} />
+                    <QRGenerator text={qrText} requireApproval={false} />
                 </div>
             </div>
         </>
