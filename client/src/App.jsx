@@ -1,4 +1,5 @@
 import ShopStatusPage from './pages/dashboard/ShopStatusPage';
+import BookingSlots from './pages/dashboard/BookingSlots';
 import React from 'react'
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
@@ -315,6 +316,7 @@ export default function App() {
           <Route path='/employee/manager-attendance' element={<EmployeePrivateRoute><EmployeeSidebar><TelecallerAttendance /></EmployeeSidebar></EmployeePrivateRoute>} />
           <Route path='/employee/manager-staff' element={<EmployeePrivateRoute><EmployeeSidebar><AdminStaffOverview /></EmployeeSidebar></EmployeePrivateRoute>} />
           <Route path='/employee/manager-shop' element={<EmployeePrivateRoute><EmployeeSidebar><ShopStatusPage /></EmployeeSidebar></EmployeePrivateRoute>} />
+          <Route path='/employee/manager-slots' element={<EmployeePrivateRoute><EmployeeSidebar><BookingSlots /></EmployeeSidebar></EmployeePrivateRoute>} />
           <Route path='/employee/manager-whatsapp' element={<EmployeePrivateRoute><EmployeeSidebar><AdminWhatsappAlerts /></EmployeeSidebar></EmployeePrivateRoute>} />
           <Route path='/employee/manager-referrals' element={<EmployeePrivateRoute><EmployeeSidebar><EmployeeReferral /></EmployeeSidebar></EmployeePrivateRoute>} />
           <Route path='/employee/manager-settings' element={<EmployeePrivateRoute><EmployeeSidebar><EmpolyeeProfile /></EmployeeSidebar></EmployeePrivateRoute>} />
@@ -505,6 +507,7 @@ export default function App() {
           <Route path='/employee-attendance' element={<PrivateRoute><Sidebar><AdminAttendance /></Sidebar></PrivateRoute>} />
           <Route path='/staff-overview' element={<PrivateRoute><Sidebar><AdminStaffOverview /></Sidebar></PrivateRoute>} />
           <Route path='/shop-status' element={<PrivateRoute><Sidebar><ShopStatusPage /></Sidebar></PrivateRoute>} />
+          <Route path='/booking-slots' element={<PrivateRoute><Sidebar><BookingSlots /></Sidebar></PrivateRoute>} />
           <Route path='/attendance-alerts' element={<PrivateRoute><Sidebar><AdminAttendanceAlerts /></Sidebar></PrivateRoute>} />
           <Route path='/whatsapp-alerts' element={<PrivateRoute><Sidebar><AdminWhatsappAlerts /></Sidebar></PrivateRoute>} />
           <Route path='/send-notification' element={<PrivateRoute><Sidebar><AdminNotificationsHistory /></Sidebar></PrivateRoute>} />

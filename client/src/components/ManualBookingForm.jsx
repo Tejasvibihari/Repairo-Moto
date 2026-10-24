@@ -17,7 +17,7 @@ import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import SlotSelect from './ui/SlotSelect';
 import axiosClient from '../service/axiosClient';
 import { Divider } from '@mui/material';
 import CircularLoading from './ui/CircularLoading';
@@ -44,7 +44,7 @@ export default function ManualBookingForm({ coupon }) {
         serviceType: 'Schedule Repair', // default
         otherService: '',
         preferredDate: null,
-        preferredTime: null,
+        preferredTime: '',
         issues: '',
     });
 
@@ -89,8 +89,9 @@ export default function ManualBookingForm({ coupon }) {
             // Convert dayjs objects to ISO strings or as needed
             const payload = {
                 ...formData,
-                preferredDate: formData.preferredDate ? formData.preferredDate.toISOString() : null,
-                preferredTime: formData.preferredTime ? formData.preferredTime.format('HH:mm') : null,
+                // Calendar date as picked (YYYY-MM-DD) so it lines up with the booking-slot day.
+                preferredDate: formData.preferredDate ? formData.preferredDate.format('YYYY-MM-DD') : null,
+                preferredTime: formData.preferredTime || null,
             };
             console.log(payload);
             const response = await axiosClient.post('/api/admin/order/manualorder', payload);
@@ -115,7 +116,7 @@ export default function ManualBookingForm({ coupon }) {
                 serviceType: 'Schedule Repair',
                 otherService: '',
                 preferredDate: null,
-                preferredTime: null,
+                preferredTime: '',
                 issues: '',
             });
         } catch (error) {
@@ -390,17 +391,11 @@ export default function ManualBookingForm({ coupon }) {
                                 />
                             </DemoContainer>
                         </LocalizationProvider>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DemoContainer components={['TimePicker']}>
-                                <TimePicker
-                                    label="Preferred Time"
-                                    value={formData.preferredTime}
-                                    onChange={(newValue) => setFormData((prev) => ({ ...prev, preferredTime: newValue }))}
-                                    required
-                                    className="w-full"
-                                />
-                            </DemoContainer>
-                        </LocalizationProvider>
+                        <SlotSelect
+                            date={formData.preferredDate}
+                            value={formData.preferredTime}
+                            onChange={(slot) => setFormData((prev) => ({ ...prev, preferredTime: slot }))}
+                        />
                     </div>
 
                     <div className='mb-6'>

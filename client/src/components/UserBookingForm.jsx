@@ -14,7 +14,7 @@ import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import SlotSelect from './ui/SlotSelect';
 import axiosClient from '../service/axiosClient';
 import { Divider } from '@mui/material';
 import CircularLoading from './ui/CircularLoading';
@@ -69,7 +69,7 @@ export default function UserBookingForm() {
         services: [],
         otherService: '',
         preferredDate: null,
-        preferredTime: null,
+        preferredTime: '',
         issues: '',
     });
 
@@ -195,13 +195,12 @@ export default function UserBookingForm() {
             // Format preferred date and time
             let formattedDate = null;
             if (formData.preferredDate) {
-                formattedDate = dayjs(formData.preferredDate).toISOString();
+                // Calendar date as picked (YYYY-MM-DD) so it lines up with the booking-slot day.
+                formattedDate = dayjs(formData.preferredDate).format('YYYY-MM-DD');
             }
 
-            let formattedTime = '';
-            if (formData.preferredTime) {
-                formattedTime = dayjs(formData.preferredTime).format('hh:mm A');
-            }
+            // Already "08:00 AM" style - picked from the admin's slots (or the free picker if none are set).
+            const formattedTime = formData.preferredTime || '';
 
             // Build payload according to backend expectations
             const payload = {
@@ -245,7 +244,7 @@ export default function UserBookingForm() {
                 services: [],
                 otherService: '',
                 preferredDate: null,
-                preferredTime: null,
+                preferredTime: '',
                 issues: '',
             });
             setBike('');
@@ -561,19 +560,11 @@ export default function UserBookingForm() {
                             </LocalizationProvider>
                         </div>
                         <div>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DemoContainer components={['TimePicker']}>
-                                    <TimePicker
-                                        label="Preferred Time"
-                                        value={formData.preferredTime}
-                                        onChange={(newValue) =>
-                                            setFormData((prev) => ({ ...prev, preferredTime: newValue }))
-                                        }
-                                        required
-                                        className="w-full"
-                                    />
-                                </DemoContainer>
-                            </LocalizationProvider>
+                            <SlotSelect
+                                date={formData.preferredDate}
+                                value={formData.preferredTime}
+                                onChange={(slot) => setFormData((prev) => ({ ...prev, preferredTime: slot }))}
+                            />
                         </div>
                     </div>
 

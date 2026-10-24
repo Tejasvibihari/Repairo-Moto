@@ -39,6 +39,7 @@ import { publicCareerRouter, adminCareerRouter } from "./Routes/careerRoutes.js"
 import adminSettingsRoutes from "./Routes/adminSettingsRoutes.js";
 import trackingAdminRouter from "./Routes/trackingAdminRoutes.js";
 import tripRouter from "./Routes/tripRoutes.js";
+import { adminBookingSlotRouter, publicBookingSlotRouter } from "./Routes/bookingSlotRoutes.js";
 import staffOverviewRouter from "./Routes/staffOverviewRoutes.js";
 import { attendanceRouter, attendanceAdminRouter } from "./Routes/attendanceRoutes.js";
 import { ensureUserIndexes } from "./Utils/userIndexes.js";
@@ -99,6 +100,8 @@ app.use("/api/coupons", userCouponRouter);
 app.use("/api/admin/banner", bannerRouter);
 app.use("/api/app-version", appVersionRoutes);
 app.use("/api/admin-settings", adminSettingsRoutes);
+app.use("/api/admin/booking-slots", adminBookingSlotRouter);
+app.use("/api/booking-slots", publicBookingSlotRouter);
 app.use("/api/admin/tracking", trackingAdminRouter);
 app.use("/api/employee/trips", tripRouter);
 app.use("/api/admin/staff-overview", staffOverviewRouter);

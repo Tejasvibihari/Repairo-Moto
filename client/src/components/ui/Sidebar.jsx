@@ -5,7 +5,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Home, Bike, FileText, NotebookPen, User2, Briefcase,
     ShoppingCart, QrCode, Menu, ChevronLeft, ChevronRight,
-    User, DollarSign, X, Receipt, Smartphone, MapPin, Users, CalendarDays, BarChart3, Store, Megaphone, BellRing, MessageCircle, Image, UserPlus
+    User, DollarSign, X, Receipt, Smartphone, MapPin, Users, CalendarDays, BarChart3, Store, Megaphone, BellRing, MessageCircle, Image, UserPlus, Clock3
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -31,6 +31,7 @@ const Sidebar = ({ children }) => {
         { section: 'Operations', id: 'employee-attendance', path: '/employee-attendance', label: 'Employee Attendance', icon: <CalendarDays size={18} /> },
         { section: 'Operations', id: 'staff-overview', path: '/staff-overview', label: 'Staff Overview', icon: <BarChart3 size={18} /> },
         { section: 'Operations', id: 'shop-status', path: '/shop-status', label: 'Shop Status', icon: <Store size={18} /> },
+        { section: 'Operations', id: 'booking-slots', path: '/booking-slots', label: 'Booking Slots', icon: <Clock3 size={18} /> },
         { section: 'Communication & Growth', id: 'leads', path: '/leads', label: 'Leads', icon: <Users size={18} /> },
         { section: 'Communication & Growth', id: 'coupons', path: '/coupons', label: 'Coupons', icon: <DollarSign size={18} /> },
         { section: 'Communication & Growth', id: 'send-notification', path: '/send-notification', label: 'Send Notification', icon: <Megaphone size={18} /> },

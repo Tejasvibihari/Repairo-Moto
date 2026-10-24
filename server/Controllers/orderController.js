@@ -26,6 +26,7 @@ import {
     releaseBookingDate,
 } from "../Utils/bookingPolicy.js";
 import { arriveAtCustomer, closeTripsForOrder } from "../services/tripService.js";
+import { assertSlotBookable } from "../Utils/bookingSlots.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const deleteUploadedFile = (filePath) => {
@@ -405,6 +406,10 @@ export const userOrder = async (req, res) => {
 
         const bookingDate = normalizeBookingDate(preferredDate);
         if (!bookingDate) return res.status(400).json({ code: 'INVALID_DATE', message: 'Booking date must use YYYY-MM-DD format.' });
+
+        // Admin-managed time slots: the time must be an enabled slot with room left.
+        // Checked before reserving the date so a rejected slot never holds a booking count.
+        const slotCheck = await assertSlotBookable({ ymd: bookingDate, preferredTime, serviceType });
         reservation = await reserveBookingDate(bookingDate);
 
         const user = await User.findById(userId);
@@ -441,7 +446,7 @@ export const userOrder = async (req, res) => {
             services: services || [],
             otherService: otherService || '',
             preferredDate: new Date(preferredDate),
-            preferredTime,
+            preferredTime: slotCheck.value || preferredTime, // canonical "08:00 AM" when a slot matched
             issues: issues || '',
             status: status || 'Pending',
             referralProcessed: referralProcessed ?? false,
@@ -487,7 +492,7 @@ export const userOrder = async (req, res) => {
         return res.status(201).json({ message: 'Order Confirmed!', data: savedOrder });
     } catch (error) {
         if (reservation?.reserved) await releaseBookingDate(reservation.date).catch(() => { });
-        if (error.code === 'STORE_CLOSED' || error.code === 'DAILY_LIMIT_REACHED' || error.code === 'INVALID_DATE') {
+        if (error.code === 'STORE_CLOSED' || error.code === 'DAILY_LIMIT_REACHED' || error.code === 'INVALID_DATE' || String(error.code).startsWith('SLOT_')) {
             return res.status(error.status || 409).json({ success: false, code: error.code, message: error.message, ...(error.details || {}) });
         }
         console.error("Error Creating Order:", error);
@@ -2146,6 +2151,14 @@ const applyReschedule = async (req, res, actorRole) => {
             return res.status(400).json({ message: 'The booking is already scheduled for this date and time.' });
         }
 
+        // Customers can only move to an enabled slot with room left (staff may override).
+        if (isUser) {
+            await assertSlotBookable({
+                ymd: parsed.ymd, preferredTime: parsed.slot.label,
+                serviceType: order.serviceType, excludeOrderId: order._id,
+            });
+        }
+
         const movedToDifferentDay = currentYmd !== parsed.ymd;
         reservation = movedToDifferentDay ? await reserveBookingDate(parsed.ymd) : null;
 
@@ -2227,7 +2240,7 @@ const applyReschedule = async (req, res, actorRole) => {
         return res.status(200).json({ message: 'Booking rescheduled successfully.', order: updated });
     } catch (error) {
         if (reservation?.reserved) await releaseBookingDate(reservation.date).catch(() => { });
-        if (error.code === 'STORE_CLOSED' || error.code === 'DAILY_LIMIT_REACHED' || error.code === 'INVALID_DATE') {
+        if (error.code === 'STORE_CLOSED' || error.code === 'DAILY_LIMIT_REACHED' || error.code === 'INVALID_DATE' || String(error.code).startsWith('SLOT_')) {
             return res.status(error.status || 409).json({ success: false, code: error.code, message: error.message, ...(error.details || {}) });
         }
         console.error('Reschedule order error:', error);

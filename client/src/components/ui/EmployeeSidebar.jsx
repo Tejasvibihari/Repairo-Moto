@@ -5,7 +5,7 @@ import {
     Menu, X, ChevronLeft, ChevronRight, ChevronDown,
     HandCoins, User, MapPin, PhoneCall, Users, Store, CalendarDays,
     Receipt, FilePlus, MessageCircle, Ticket, Image, Megaphone, Settings,
-    Truck, Share2, UserCog,
+    Truck, Share2, UserCog, Clock3,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useChatUnreadTotal } from '../../utils/chatAlerts';
@@ -66,6 +66,7 @@ const MANAGER_MENU = [
             { id: 'manager-attendance', path: '/employee/manager-attendance', label: 'My Attendance', icon: <CalendarDays size={S} /> },
             { id: 'manager-staff', path: '/employee/manager-staff', label: 'Staff Overview', icon: <Users size={S} /> },
             { id: 'manager-shop', path: '/employee/manager-shop', label: 'Shop Status', icon: <Store size={S} /> },
+            { id: 'manager-slots', path: '/employee/manager-slots', label: 'Booking Slots', icon: <Clock3 size={S} /> },
         ],
     },
     { id: 'manager-settings', path: '/employee/manager-settings', label: 'Settings', icon: <Settings size={S} /> },
