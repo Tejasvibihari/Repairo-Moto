@@ -3,8 +3,12 @@ import { LoaderCircle, Pencil, Plus, RefreshCw, Search, Trash2, Wrench, X } from
 import { serviceApi, formatDuration, formatPrice } from '../../service/serviceApi';
 import { apiError } from '../../service/adminOperationsApi';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
+import ServiceDescriptionEditor from '../../components/ServiceDescriptionEditor';
+import { descriptionToHtml, htmlToLine, normalizeDescription } from '../../utils/richText';
 
 const inputCls = 'mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-primary';
+// Matches the server limit. The description is stored as HTML, so tags count too.
+const MAX_DESCRIPTION = 2000;
 const emptyForm = { name: '', description: '', price: '', priority: '', estimatedMinutes: '' };
 
 const byPriority = (a, b) => (a.priority - b.priority) || a.name.localeCompare(b.name);
@@ -46,7 +50,7 @@ export default function ManageServices() {
     const visible = useMemo(() => {
         const q = query.trim().toLowerCase();
         if (!q) return services;
-        return services.filter((s) => s.name.toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q));
+        return services.filter((s) => s.name.toLowerCase().includes(q) || htmlToLine(s.description).toLowerCase().includes(q));
     }, [services, query]);
 
     // ── add / edit ─────────────────────────────────────────────────────────
@@ -57,7 +61,7 @@ export default function ManageServices() {
             id: s._id,
             form: {
                 name: s.name,
-                description: s.description || '',
+                description: descriptionToHtml(s.description),
                 price: s.price,
                 priority: s.priority,
                 estimatedMinutes: s.estimatedMinutes,
@@ -75,9 +79,12 @@ export default function ManageServices() {
         if (f.estimatedMinutes === '' || Number(f.estimatedMinutes) < 1) { setDialogError('Approx. time must be at least 1 minute.'); return; }
         if (f.priority !== '' && (!Number.isInteger(Number(f.priority)) || Number(f.priority) < 0)) { setDialogError('Priority must be a whole number (0 or more).'); return; }
 
+        const description = normalizeDescription(f.description);
+        if (description.length > MAX_DESCRIPTION) { setDialogError(`Description is too long (${description.length}/${MAX_DESCRIPTION} characters including formatting). Please shorten it.`); return; }
+
         const payload = {
             name,
-            description: f.description.trim(),
+            description,
             price: Number(f.price),
             estimatedMinutes: Number(f.estimatedMinutes),
         };
@@ -172,7 +179,7 @@ export default function ManageServices() {
                                         <td className="px-6 py-4 font-bold text-secondary">{s.priority}</td>
                                         <td className="px-4 py-4">
                                             <p className="font-bold text-secondary">{s.name}</p>
-                                            {s.description && <p className="mt-0.5 max-w-md truncate text-xs text-gray-500" title={s.description}>{s.description}</p>}
+                                            {s.description && <p className="mt-0.5 max-w-md truncate text-xs text-gray-500" title={htmlToLine(s.description)}>{htmlToLine(s.description)}</p>}
                                         </td>
                                         <td className="px-4 py-4 font-semibold">{formatPrice(s.price)}</td>
                                         <td className="px-4 py-4">{formatDuration(s.estimatedMinutes)}</td>
@@ -194,7 +201,7 @@ export default function ManageServices() {
             {dialog && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
                     <div className="absolute inset-0 bg-black/50" onClick={() => !saving && setDialog(null)} />
-                    <form onSubmit={saveDialog} className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+                    <form onSubmit={saveDialog} className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold text-secondary">{dialog.id ? 'Edit service' : 'Add service'}</h2>
                             <button type="button" onClick={() => setDialog(null)} className="rounded-lg p-1 text-gray-400 hover:text-gray-700"><X size={18} /></button>
@@ -203,9 +210,22 @@ export default function ManageServices() {
                         <label className="mt-5 block text-sm font-semibold text-gray-600">Service name
                             <input required maxLength={120} value={dialog.form.name} onChange={(e) => setForm({ name: e.target.value })} placeholder="e.g. General service" className={inputCls} />
                         </label>
-                        <label className="mt-4 block text-sm font-semibold text-gray-600">Description <span className="font-normal text-gray-400">(optional)</span>
-                            <textarea rows={3} maxLength={2000} value={dialog.form.description} onChange={(e) => setForm({ description: e.target.value })} placeholder="What is included in this service?" className={inputCls} />
-                        </label>
+                        <div className="mt-4">
+                            <div className="flex items-center justify-between text-sm font-semibold text-gray-600">
+                                <span>Description <span className="font-normal text-gray-400">(optional)</span></span>
+                                {(() => {
+                                    const len = normalizeDescription(dialog.form.description).length;
+                                    return <span className={`text-xs font-medium ${len > MAX_DESCRIPTION ? 'text-red-600' : 'text-gray-400'}`}>{len}/{MAX_DESCRIPTION}</span>;
+                                })()}
+                            </div>
+                            {/* keyed so opening another service loads its own text */}
+                            <ServiceDescriptionEditor
+                                key={dialog.id || 'new'}
+                                initialValue={dialog.form.description}
+                                onChange={(html) => setForm({ description: html })}
+                            />
+                            <p className="mt-1.5 text-xs text-gray-500">Use bold, bullet points or links to explain what is included. The full text is shown here; lists and invoice pickers show a one-line preview.</p>
+                        </div>
 
                         <div className="mt-4 grid gap-4 sm:grid-cols-3">
                             <label className="text-sm font-semibold text-gray-600">Price (₹)

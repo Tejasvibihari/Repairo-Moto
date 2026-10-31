@@ -3,8 +3,7 @@ import Dialog from '@mui/material/Dialog';
 import { LoaderCircle, X } from 'lucide-react';
 import { effectiveUnitPrice, formatMoney, toNumber } from '../../service/manualInvoiceApi';
 import { serviceApi, formatDuration } from '../../service/serviceApi';
-
-const MANUAL = '__manual__';
+import { htmlToLine } from '../../utils/richText';
 
 /**
  * Add / edit a single part or service line on a manual invoice.
@@ -12,7 +11,9 @@ const MANUAL = '__manual__';
  * saved object uses, so the payload matches the ManualInvoice schema.
  *
  * When adding a service, the saved services (Manage Services) are fetched
- * first and offered in a dropdown; "Other" lets the user type any name.
+ * first and offered as checkboxes, so several can be added at once (each
+ * becomes its own line, quantity 1, at its saved price). "Other" lets the
+ * user type any service name instead.
  */
 export default function LineItemDialog({ open, onClose, onSave, type = 'part', editItem = null }) {
     const nameKey = type === 'part' ? 'partName' : 'serviceName';
@@ -30,7 +31,8 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
     const [catalog, setCatalog] = useState([]);
     const [catalogLoading, setCatalogLoading] = useState(false);
     const [catalogError, setCatalogError] = useState('');
-    const [choice, setChoice] = useState(''); // '' | service _id | MANUAL
+    const [selectedIds, setSelectedIds] = useState([]); // ticked saved services
+    const [manual, setManual] = useState(false);          // "Other (enter manually)"
 
     // Fetch the saved services every time the "Add Service" dialog opens.
     useEffect(() => {
@@ -44,38 +46,55 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
                 const list = res.data?.services || [];
                 setCatalog(list);
                 // nothing saved yet -> go straight to manual entry
-                setChoice(list.length ? '' : MANUAL);
+                setSelectedIds([]);
+                setManual(!list.length);
             })
             .catch(() => {
                 if (cancelled) return;
                 setCatalog([]);
                 setCatalogError('Could not load saved services. You can still enter one manually.');
-                setChoice(MANUAL);
+                setSelectedIds([]);
+                setManual(true);
             })
             .finally(() => { if (!cancelled) setCatalogLoading(false); });
         return () => { cancelled = true; };
     }, [open, usesCatalog]);
 
-    const handleChoice = (value) => {
-        setChoice(value);
+    const selectedServices = catalog.filter((svc) => selectedIds.includes(svc._id));
+    const multi = usesCatalog && selectedServices.length > 1;
+    const showNameInput = !usesCatalog || manual;
+    // quantity / price / discount are edited for one line at a time
+    const showDetails = !usesCatalog || manual || selectedServices.length === 1;
+
+    const toggleService = (svc) => {
         setError('');
-        if (value === MANUAL) {
-            setName('');
-            setPrice('');
-            return;
-        }
-        const svc = catalog.find((s) => s._id === value);
-        if (svc) {
-            setName(svc.name);
-            setPrice(String(svc.price ?? ''));
+        setManual(false);
+        const next = selectedIds.includes(svc._id)
+            ? selectedIds.filter((id) => id !== svc._id)
+            : [...selectedIds, svc._id];
+        setSelectedIds(next);
+        if (next.length === 1) {
+            const only = catalog.find((c) => c._id === next[0]);
+            setName(only?.name || '');
+            setPrice(String(only?.price ?? ''));
         } else {
             setName('');
             setPrice('');
         }
     };
 
-    const selectedService = catalog.find((s) => s._id === choice);
-    const showNameInput = !usesCatalog || choice === MANUAL;
+    const toggleManual = () => {
+        setError('');
+        if (manual) {
+            setManual(false);
+        } else {
+            // "Other" is used on its own, so clear the ticked services
+            setManual(true);
+            setSelectedIds([]);
+        }
+        setName('');
+        setPrice('');
+    };
 
     useEffect(() => {
         if (!open) return;
@@ -91,7 +110,8 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
             setPrice('');
             setDiscountPrice('');
             setDiscountType('flat');
-            setChoice('');
+            setSelectedIds([]);
+            setManual(false);
         }
         setError('');
     }, [open, editItem, nameKey]);
@@ -107,8 +127,24 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
     const showPreview = toNumber(price) > 0 && toNumber(quantity) > 0;
 
     const handleSave = () => {
-        if (usesCatalog && !choice) {
-            setError('Please select a service, or choose "Other" to enter one manually.');
+        if (usesCatalog && !manual && selectedServices.length === 0) {
+            setError('Please select at least one service, or choose "Other" to enter one manually.');
+            return;
+        }
+        // Several saved services ticked -> add each as its own line (qty 1, saved price)
+        if (multi) {
+            selectedServices.forEach((svc) => {
+                const unitPrice = toNumber(svc.price);
+                onSave({
+                    [nameKey]: svc.name,
+                    quantity: 1,
+                    price: unitPrice,
+                    discountPrice: 0,
+                    discountType: undefined,
+                    effectivePrice: unitPrice,
+                });
+            });
+            onClose();
             return;
         }
         if (!name.trim()) {
@@ -145,31 +181,62 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
                 <div className="space-y-4">
                     {usesCatalog && (
                         <div>
-                            <label className="block text-sm text-gray-600 mb-1">Select Service</label>
+                            <label className="block text-sm text-gray-600 mb-1">
+                                Select Services <span className="text-gray-400">(tick one or more)</span>
+                            </label>
                             {catalogLoading ? (
                                 <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-500">
                                     <LoaderCircle size={16} className="animate-spin text-amber-500" /> Loading services...
                                 </div>
                             ) : (
-                                <select
-                                    value={choice}
-                                    onChange={(e) => handleChoice(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-amber-500 focus:border-amber-500"
-                                >
-                                    <option value="">Select a service...</option>
-                                    {catalog.map((s) => (
-                                        <option key={s._id} value={s._id}>
-                                            {s.name} — ₹{Number(s.price).toLocaleString('en-IN')}
-                                        </option>
-                                    ))}
-                                    <option value={MANUAL}>Other (enter manually)</option>
-                                </select>
+                                <div className="max-h-60 overflow-y-auto rounded-lg border border-gray-200 divide-y divide-gray-100">
+                                    {catalog.map((svc) => {
+                                        const checked = selectedIds.includes(svc._id);
+                                        return (
+                                            <label
+                                                key={svc._id}
+                                                className={`flex cursor-pointer items-start gap-3 px-3 py-2.5 hover:bg-amber-50 ${checked ? 'bg-amber-50' : ''}`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    onChange={() => toggleService(svc)}
+                                                    className="mt-1 h-4 w-4 accent-amber-500"
+                                                />
+                                                <span className="flex-1">
+                                                    <span className="block text-sm font-medium text-gray-800">{svc.name}</span>
+                                                    <span className="line-clamp-2 block text-xs text-gray-500">
+                                                        {svc.description ? `${htmlToLine(svc.description)} · ` : ''}Approx. {formatDuration(svc.estimatedMinutes)}
+                                                    </span>
+                                                </span>
+                                                <span className="text-sm font-semibold text-gray-800">₹{Number(svc.price).toLocaleString('en-IN')}</span>
+                                            </label>
+                                        );
+                                    })}
+                                    <label className={`flex cursor-pointer items-start gap-3 px-3 py-2.5 hover:bg-amber-50 ${manual ? 'bg-amber-50' : ''}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={manual}
+                                            onChange={toggleManual}
+                                            className="mt-1 h-4 w-4 accent-amber-500"
+                                        />
+                                        <span className="flex-1">
+                                            <span className="block text-sm font-medium text-gray-800">Other (enter manually)</span>
+                                            <span className="block text-xs text-gray-500">Type your own service name and price</span>
+                                        </span>
+                                    </label>
+                                </div>
                             )}
-                            {selectedService && (
-                                <p className="mt-1 text-xs text-gray-500">
-                                    {selectedService.description ? `${selectedService.description} · ` : ''}
-                                    Approx. {formatDuration(selectedService.estimatedMinutes)}
-                                </p>
+                            {multi && (
+                                <div className="mt-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-sm">
+                                    <div className="flex justify-between font-semibold text-gray-800">
+                                        <span>{selectedServices.length} services selected</span>
+                                        <span>{formatMoney(selectedServices.reduce((sum, svc) => sum + toNumber(svc.price), 0))}</span>
+                                    </div>
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Each is added as a separate line (quantity 1). Edit a line afterwards to change its quantity or add a discount.
+                                    </p>
+                                </div>
                             )}
                             {catalogError && <p className="mt-1 text-xs text-amber-700">{catalogError}</p>}
                         </div>
@@ -187,6 +254,7 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
                         </div>
                     )}
 
+                    {showDetails && (<>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm text-gray-600 mb-1">Quantity</label>
@@ -253,6 +321,7 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
                             </div>
                         </div>
                     )}
+                    </>)}
 
                     {error && <p className="text-sm text-red-600">{error}</p>}
                 </div>
@@ -268,7 +337,7 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
                         onClick={handleSave}
                         className="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-medium"
                     >
-                        {editItem ? 'Save Changes' : `Add ${label}`}
+                        {editItem ? 'Save Changes' : multi ? `Add ${selectedServices.length} Services` : `Add ${label}`}
                     </button>
                 </div>
             </div>
