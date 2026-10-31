@@ -41,6 +41,7 @@ import trackingAdminRouter from "./Routes/trackingAdminRoutes.js";
 import tripRouter from "./Routes/tripRoutes.js";
 import { adminBookingSlotRouter, publicBookingSlotRouter } from "./Routes/bookingSlotRoutes.js";
 import staffOverviewRouter from "./Routes/staffOverviewRoutes.js";
+import serviceRouter from "./Routes/serviceRoutes.js";
 import { attendanceRouter, attendanceAdminRouter } from "./Routes/attendanceRoutes.js";
 import { ensureUserIndexes } from "./Utils/userIndexes.js";
 import { ensureAuthIndexes } from "./Utils/authIndexes.js";
@@ -105,6 +106,7 @@ app.use("/api/booking-slots", publicBookingSlotRouter);
 app.use("/api/admin/tracking", trackingAdminRouter);
 app.use("/api/employee/trips", tripRouter);
 app.use("/api/admin/staff-overview", staffOverviewRouter);
+app.use("/api/admin/services", serviceRouter);
 app.use("/api/employee/attendance", attendanceRouter);
 app.use("/api/admin/attendance", attendanceAdminRouter);
 app.get("/", (req, res) => {

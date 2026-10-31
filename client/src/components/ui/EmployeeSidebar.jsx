@@ -5,7 +5,7 @@ import {
     Menu, X, ChevronLeft, ChevronRight, ChevronDown,
     HandCoins, User, MapPin, PhoneCall, Users, Store, CalendarDays,
     Receipt, FilePlus, MessageCircle, Ticket, Image, Megaphone, Settings,
-    Truck, Share2, UserCog, Clock3,
+    Truck, Share2, UserCog, Clock3, Wrench,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useChatUnreadTotal } from '../../utils/chatAlerts';
@@ -67,6 +67,7 @@ const MANAGER_MENU = [
             { id: 'manager-staff', path: '/employee/manager-staff', label: 'Staff Overview', icon: <Users size={S} /> },
             { id: 'manager-shop', path: '/employee/manager-shop', label: 'Shop Status', icon: <Store size={S} /> },
             { id: 'manager-slots', path: '/employee/manager-slots', label: 'Booking Slots', icon: <Clock3 size={S} /> },
+            { id: 'manager-services', path: '/employee/manager-services', label: 'Services', icon: <Wrench size={S} /> },
         ],
     },
     { id: 'manager-settings', path: '/employee/manager-settings', label: 'Settings', icon: <Settings size={S} /> },
@@ -76,6 +77,12 @@ const DEFAULT_MENU = [
     { id: 'dashboard', path: '/employee/dashboard', label: 'Dashboard', icon: <Home size={S} /> },
     { id: 'all-booking', path: '/employee/all-booking', label: 'All Booking', icon: <ShoppingCart size={S} /> },
     { id: 'referral', path: '/employee/referral', label: 'Referral & Earnings', icon: <HandCoins size={S} /> },
+];
+
+// "manager" keeps the default menu and only gains the Services page.
+const MANAGER_POSITION_MENU = [
+    ...DEFAULT_MENU,
+    { id: 'manager-services', path: '/employee/manager-services', label: 'Services', icon: <Wrench size={S} /> },
 ];
 
 const STORAGE_KEY = 'employee-sidebar-open-groups';
@@ -104,7 +111,8 @@ const EmployeeSidebar = ({ children }) => {
     const menu =
         position === 'telecaller' ? TELECALLER_MENU
             : position === 'operational manager' ? MANAGER_MENU
-                : DEFAULT_MENU;
+                : position === 'manager' ? MANAGER_POSITION_MENU
+                    : DEFAULT_MENU;
 
     const flatItems = useMemo(
         () => menu.flatMap((e) => (e.group ? e.items : [e])),
