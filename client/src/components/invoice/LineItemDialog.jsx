@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import Dialog from '@mui/material/Dialog';
-import { X } from 'lucide-react';
+import { LoaderCircle, X } from 'lucide-react';
 import { effectiveUnitPrice, formatMoney, toNumber } from '../../service/manualInvoiceApi';
+import { serviceApi, formatDuration } from '../../service/serviceApi';
+
+const MANUAL = '__manual__';
 
 /**
  * Add / edit a single part or service line on a manual invoice.
  * `type` is either 'part' or 'service' and decides which name key the
  * saved object uses, so the payload matches the ManualInvoice schema.
+ *
+ * When adding a service, the saved services (Manage Services) are fetched
+ * first and offered in a dropdown; "Other" lets the user type any name.
  */
 export default function LineItemDialog({ open, onClose, onSave, type = 'part', editItem = null }) {
     const nameKey = type === 'part' ? 'partName' : 'serviceName';
@@ -18,6 +24,58 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
     const [discountPrice, setDiscountPrice] = useState('');
     const [discountType, setDiscountType] = useState('flat');
     const [error, setError] = useState('');
+
+    // Service catalogue (only used when adding a new service line)
+    const usesCatalog = type === 'service' && !editItem;
+    const [catalog, setCatalog] = useState([]);
+    const [catalogLoading, setCatalogLoading] = useState(false);
+    const [catalogError, setCatalogError] = useState('');
+    const [choice, setChoice] = useState(''); // '' | service _id | MANUAL
+
+    // Fetch the saved services every time the "Add Service" dialog opens.
+    useEffect(() => {
+        if (!open || !usesCatalog) return undefined;
+        let cancelled = false;
+        setCatalogLoading(true);
+        setCatalogError('');
+        serviceApi.list()
+            .then((res) => {
+                if (cancelled) return;
+                const list = res.data?.services || [];
+                setCatalog(list);
+                // nothing saved yet -> go straight to manual entry
+                setChoice(list.length ? '' : MANUAL);
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setCatalog([]);
+                setCatalogError('Could not load saved services. You can still enter one manually.');
+                setChoice(MANUAL);
+            })
+            .finally(() => { if (!cancelled) setCatalogLoading(false); });
+        return () => { cancelled = true; };
+    }, [open, usesCatalog]);
+
+    const handleChoice = (value) => {
+        setChoice(value);
+        setError('');
+        if (value === MANUAL) {
+            setName('');
+            setPrice('');
+            return;
+        }
+        const svc = catalog.find((s) => s._id === value);
+        if (svc) {
+            setName(svc.name);
+            setPrice(String(svc.price ?? ''));
+        } else {
+            setName('');
+            setPrice('');
+        }
+    };
+
+    const selectedService = catalog.find((s) => s._id === choice);
+    const showNameInput = !usesCatalog || choice === MANUAL;
 
     useEffect(() => {
         if (!open) return;
@@ -33,6 +91,7 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
             setPrice('');
             setDiscountPrice('');
             setDiscountType('flat');
+            setChoice('');
         }
         setError('');
     }, [open, editItem, nameKey]);
@@ -48,6 +107,10 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
     const showPreview = toNumber(price) > 0 && toNumber(quantity) > 0;
 
     const handleSave = () => {
+        if (usesCatalog && !choice) {
+            setError('Please select a service, or choose "Other" to enter one manually.');
+            return;
+        }
         if (!name.trim()) {
             setError(`Please enter a ${label.toLowerCase()} name.`);
             return;
@@ -80,15 +143,49 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
                 </div>
 
                 <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm text-gray-600 mb-1">{label} Name</label>
-                        <input
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder={type === 'part' ? 'e.g. Brake Pad Set' : 'e.g. General Service'}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500"
-                        />
-                    </div>
+                    {usesCatalog && (
+                        <div>
+                            <label className="block text-sm text-gray-600 mb-1">Select Service</label>
+                            {catalogLoading ? (
+                                <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-500">
+                                    <LoaderCircle size={16} className="animate-spin text-amber-500" /> Loading services...
+                                </div>
+                            ) : (
+                                <select
+                                    value={choice}
+                                    onChange={(e) => handleChoice(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-amber-500 focus:border-amber-500"
+                                >
+                                    <option value="">Select a service...</option>
+                                    {catalog.map((s) => (
+                                        <option key={s._id} value={s._id}>
+                                            {s.name} — ₹{Number(s.price).toLocaleString('en-IN')}
+                                        </option>
+                                    ))}
+                                    <option value={MANUAL}>Other (enter manually)</option>
+                                </select>
+                            )}
+                            {selectedService && (
+                                <p className="mt-1 text-xs text-gray-500">
+                                    {selectedService.description ? `${selectedService.description} · ` : ''}
+                                    Approx. {formatDuration(selectedService.estimatedMinutes)}
+                                </p>
+                            )}
+                            {catalogError && <p className="mt-1 text-xs text-amber-700">{catalogError}</p>}
+                        </div>
+                    )}
+
+                    {showNameInput && (
+                        <div>
+                            <label className="block text-sm text-gray-600 mb-1">{label} Name</label>
+                            <input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder={type === 'part' ? 'e.g. Brake Pad Set' : 'e.g. General Service'}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500"
+                            />
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>

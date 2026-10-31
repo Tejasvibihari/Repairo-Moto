@@ -10,15 +10,21 @@ import {
 } from '../Controllers/serviceController.js';
 
 // Mount at /api/admin/services
-// Only Admin, Manager and Operational Manager may use these routes
-// (authAdmin also lets telecallers in, so requireAdminOrManager narrows it).
+//
+// authAdmin lets Admin, Manager, Operational Manager and Telecaller in.
+//  - READ (list / get one): everyone authAdmin lets in, because anyone who can
+//    create a manual invoice (including telecallers) must be able to pick a
+//    saved service while doing so.
+//  - WRITE (create / update / delete): Admin, Manager and Operational Manager
+//    only (requireAdminOrManager).
 const router = express.Router();
-router.use(authAdmin, requireAdminOrManager);
+router.use(authAdmin);
 
 router.get('/', listServices);
 router.get('/:id', getService);
-router.post('/', createService);
-router.put('/:id', updateService);
-router.delete('/:id', deleteService);
+
+router.post('/', requireAdminOrManager, createService);
+router.put('/:id', requireAdminOrManager, updateService);
+router.delete('/:id', requireAdminOrManager, deleteService);
 
 export default router;
