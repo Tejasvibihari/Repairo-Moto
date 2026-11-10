@@ -27,6 +27,7 @@ import {
 } from "../Utils/bookingPolicy.js";
 import { arriveAtCustomer, closeTripsForOrder } from "../services/tripService.js";
 import { assertSlotBookable } from "../Utils/bookingSlots.js";
+import { buildEstimatedCost } from "../Utils/estimatedCost.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const deleteUploadedFile = (filePath) => {
@@ -311,12 +312,16 @@ export const createManualOrder = async (req, res) => {
             modelName, cc, bs, services, serviceType, otherService,
             preferredDate, preferredTime, issues, coupon, address,
             userLocation, isWithinServiceArea, distanceFromCenter,
-            referralProcessed, status,
+            referralProcessed, status, serviceIds,
         } = req.body;
 
         if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services?.length || !preferredDate || !preferredTime) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
+
+        // Optional: same server-side estimate as a customer booking when service ids are sent.
+        const { estimatedCost, error: estimateError } = await buildEstimatedCost({ serviceIds, selectedBrand, selectedModel });
+        if (estimateError) return res.status(400).json({ code: 'SERVICE_UNAVAILABLE', message: estimateError });
 
         const now = new Date();
         const dd = String(now.getDate()).padStart(2, '0');
@@ -359,6 +364,11 @@ export const createManualOrder = async (req, res) => {
             orderData.distanceFromCenter = distanceFromCenter || 0;
         }
 
+        if (estimatedCost) {
+            orderData.estimatedCost = estimatedCost;
+            orderData.estimatedBudget = String(estimatedCost.total);
+        }
+
         // ── Optional coupon at booking time ────────────────────────────────
         // Only the intent is stored here; the actual discount amount is
         // resolved once real pricing exists (invoice generation).
@@ -395,7 +405,7 @@ export const userOrder = async (req, res) => {
             modelName, cc, bs, services, serviceType, otherService,
             preferredDate, preferredTime, issues, coupon,
             userLocation, isWithinServiceArea, distanceFromCenter,
-            status, referralProcessed,
+            status, referralProcessed, serviceIds,
         } = req.body;
 
         const userId = req.user._id;
@@ -403,6 +413,12 @@ export const userOrder = async (req, res) => {
         if (!name || !contactNo || !city || !selectedBrand || !selectedModel || !cc || !services?.length || !preferredDate || !preferredTime) {
             return res.status(400).json({ message: 'Please fill all required fields.' });
         }
+
+        // Estimated cost from the admin-managed brand + model price list. Computed server side
+        // (the app only sends the chosen service ids) and BEFORE the date is reserved below, so a
+        // rejected request never holds a booking count.
+        const { estimatedCost, error: estimateError } = await buildEstimatedCost({ serviceIds, selectedBrand, selectedModel });
+        if (estimateError) return res.status(400).json({ code: 'SERVICE_UNAVAILABLE', message: estimateError });
 
         const bookingDate = normalizeBookingDate(preferredDate);
         if (!bookingDate) return res.status(400).json({ code: 'INVALID_DATE', message: 'Booking date must use YYYY-MM-DD format.' });
@@ -451,6 +467,11 @@ export const userOrder = async (req, res) => {
             status: status || 'Pending',
             referralProcessed: referralProcessed ?? false,
         };
+
+        if (estimatedCost) {
+            orderPayload.estimatedCost = estimatedCost;
+            orderPayload.estimatedBudget = String(estimatedCost.total);
+        }
 
         // ── Optional coupon at booking time ────────────────────────────────
         // Only the intent is stored here; the actual discount amount is

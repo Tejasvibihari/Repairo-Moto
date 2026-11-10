@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Service from '../Models/serviceModel.js';
 import Brand from '../Models/brandModel.js';
+import { listServicesForBike } from '../Utils/estimatedCost.js';
 
 const fail = (res, status, message) => res.status(status).json({ success: false, message });
 const CASE_INSENSITIVE = { locale: 'en', strength: 2 };
@@ -212,6 +213,33 @@ export const deleteService = async (req, res) => {
         return res.status(200).json({ success: true, message: 'Service deleted successfully.' });
     } catch (error) {
         console.error('deleteService error:', error);
+        return fail(res, 500, 'Server error');
+    }
+};
+
+// GET /api/services/pricing  — customer-facing price list for ONE bike, used by the booking flow.
+// Query: ?brand=Hero&model=Splendor   (names, case-insensitive)
+//    or: ?brandId=<id>&modelId=<id>
+// A bike that is not in the catalogue (or has no services yet) answers 200 with an empty list,
+// so the app can fall back to its generic service list instead of failing.
+export const getServicePricing = async (req, res) => {
+    try {
+        const { brand, model, brandId, modelId } = req.query;
+        if (!(brandId && modelId) && !(brand && model)) {
+            return fail(res, 400, 'Brand and model are required.');
+        }
+        const { resolved, services } = await listServicesForBike({
+            brandId, modelId, brandName: brand, modelName: model,
+        });
+        return res.status(200).json({
+            success: true,
+            brand: resolved ? { _id: resolved.brand._id, name: resolved.brand.brandName } : null,
+            model: resolved ? { _id: resolved.model._id, name: resolved.model.name } : null,
+            count: services.length,
+            services,
+        });
+    } catch (error) {
+        console.error('getServicePricing error:', error);
         return fail(res, 500, 'Server error');
     }
 };

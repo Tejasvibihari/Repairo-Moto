@@ -44,6 +44,23 @@ const orderSchema = new mongoose.Schema({
     preferredDate: { type: Date, required: true },
     preferredTime: { type: String, required: true },
     estimatedBudget: { type: String, trim: true },
+    // Estimate shown to the customer while booking, from the admin-managed per-brand/model
+    // service prices (Models/serviceModel.js). A SNAPSHOT: later price changes do not touch it.
+    // It is NOT the bill — the final amount (`total`) is generated after the repair and may be
+    // higher or lower. `estimatedBudget` above mirrors estimatedCost.total for the emails.
+    estimatedCost: {
+        total: { type: Number, min: 0 },
+        estimatedMinutes: { type: Number, min: 0 },
+        items: [{
+            _id: false,
+            serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
+            name: { type: String, trim: true },
+            price: { type: Number, min: 0 },
+            estimatedMinutes: { type: Number, min: 0 },
+        }],
+        isEstimate: { type: Boolean, default: true },
+        calculatedAt: { type: Date },
+    },
     issues: { type: String, default: '', trim: true },
     reminderSent: { type: Boolean, default: false },
 
