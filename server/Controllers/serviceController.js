@@ -1,13 +1,31 @@
 import mongoose from 'mongoose';
 import Service from '../Models/serviceModel.js';
+import Brand from '../Models/brandModel.js';
 
 const fail = (res, status, message) => res.status(status).json({ success: false, message });
 const CASE_INSENSITIVE = { locale: 'en', strength: 2 };
 
 // Validates the editable fields. Returns { error } or { data } holding only what was sent.
-// partial=false (create): name, price and estimatedMinutes are required.
-const parseServiceBody = (body = {}, { partial = false } = {}) => {
+// partial=false (create): brand, model, name, price and estimatedMinutes are required.
+// Brand and model are always sent together (a model only makes sense under its brand);
+// their names are looked up here and stored as a snapshot.
+// createMany=true (create): brand/model are NOT read here; resolveTargets() handles the
+// list of brands and models instead.
+const parseServiceBody = async (body = {}, { partial = false, createMany = false } = {}) => {
     const data = {};
+
+    if (!createMany && (body.brand !== undefined || body.model !== undefined || !partial)) {
+        if (!mongoose.isValidObjectId(body.brand)) return { error: 'Brand is required.' };
+        if (!mongoose.isValidObjectId(body.model)) return { error: 'Model is required.' };
+        const brand = await Brand.findById(body.brand).lean();
+        if (!brand) return { error: 'The selected brand no longer exists.' };
+        const model = (brand.models || []).find((m) => String(m._id) === String(body.model));
+        if (!model) return { error: `The selected model does not belong to ${brand.brandName}.` };
+        data.brand = brand._id;
+        data.brandName = brand.brandName;
+        data.model = model._id;
+        data.modelName = model.name;
+    }
 
     if (body.name !== undefined || !partial) {
         const name = String(body.name ?? '').trim();
@@ -49,12 +67,55 @@ const parseServiceBody = (body = {}, { partial = false } = {}) => {
     return { data };
 };
 
+// Turns the create request's brand/model selection into a flat list of { brand, brandName, model, modelName }.
+// Accepts targets: [{ brand, models: [modelId, ...] }, ...]  (or a single brand + model).
+const resolveTargets = async (body = {}) => {
+    let targets = body.targets;
+    if (targets === undefined && body.brand !== undefined) targets = [{ brand: body.brand, models: [body.model] }];
+    if (!Array.isArray(targets) || targets.length === 0) return { error: 'Select at least one brand and model.' };
+
+    const brandIds = [...new Set(targets.map((t) => String(t?.brand ?? '')))];
+    if (brandIds.some((id) => !mongoose.isValidObjectId(id))) return { error: 'Brand is required.' };
+    const brands = await Brand.find({ _id: { $in: brandIds } }).lean();
+    const brandMap = new Map(brands.map((b) => [String(b._id), b]));
+
+    const seen = new Set();
+    const list = [];
+    for (const t of targets) {
+        const brand = brandMap.get(String(t.brand));
+        if (!brand) return { error: 'A selected brand no longer exists.' };
+        const modelIds = Array.isArray(t.models) ? t.models : [];
+        if (modelIds.length === 0) return { error: `Select at least one model for ${brand.brandName}.` };
+        for (const modelId of modelIds) {
+            const model = (brand.models || []).find((m) => String(m._id) === String(modelId));
+            if (!model) return { error: `A selected model does not belong to ${brand.brandName}.` };
+            const key = `${brand._id}:${model._id}`;
+            if (seen.has(key)) continue; // same pair picked twice -> once
+            seen.add(key);
+            list.push({ brand: brand._id, brandName: brand.brandName, model: model._id, modelName: model.name });
+        }
+    }
+    if (list.length > 500) return { error: 'Too many brand/model combinations at once (max 500).' };
+    return { data: list };
+};
+
 const isDuplicateKey = (err) => err?.code === 11000;
 
-// GET /  — all services, ordered by priority (lowest first), then name.
+// GET /  — services ordered by priority (lowest first), then name.
+// Optional filters: ?brandId=  and  ?brandId=&modelId=  (a model needs its brand).
 export const listServices = async (req, res) => {
     try {
-        const services = await Service.find()
+        const { brandId, modelId } = req.query;
+        const filter = {};
+        if (brandId) {
+            if (!mongoose.isValidObjectId(brandId)) return fail(res, 400, 'Invalid brand id.');
+            filter.brand = brandId;
+        }
+        if (modelId) {
+            if (!mongoose.isValidObjectId(modelId)) return fail(res, 400, 'Invalid model id.');
+            filter.model = modelId;
+        }
+        const services = await Service.find(filter)
             .collation(CASE_INSENSITIVE)
             .sort({ priority: 1, name: 1 })
             .lean();
@@ -79,23 +140,38 @@ export const getService = async (req, res) => {
     }
 };
 
-// POST /
+// POST /  — creates the service once for EVERY selected brand + model (same name, price,
+// description, time and priority). Body: { targets: [{ brand, models: [modelId, ...] }], name, price, ... }
+// Combinations that already have a service with this name are skipped and reported.
 export const createService = async (req, res) => {
     try {
-        const { error, data } = parseServiceBody(req.body);
+        const { error, data } = await parseServiceBody(req.body, { createMany: true });
         if (error) return fail(res, 400, error);
+        const { error: targetError, data: targets } = await resolveTargets(req.body);
+        if (targetError) return fail(res, 400, targetError);
 
-        const service = await Service.create({
-            ...data,
-            createdBy: {
-                id: req.user?._id,
-                model: req.user?.model,
-                name: req.user?.leadBy,
-            },
-        });
-        return res.status(201).json({ success: true, message: 'Service created successfully.', service });
+        const existing = await Service.find({
+            name: data.name,
+            $or: targets.map((t) => ({ brand: t.brand, model: t.model })),
+        }).collation(CASE_INSENSITIVE).select('brand model').lean();
+        const taken = new Set(existing.map((e) => `${e.brand}:${e.model}`));
+        const fresh = targets.filter((t) => !taken.has(`${t.brand}:${t.model}`));
+        const skipped = targets
+            .filter((t) => taken.has(`${t.brand}:${t.model}`))
+            .map((t) => `${t.brandName} ${t.modelName}`);
+
+        if (fresh.length === 0) {
+            return fail(res, 409, `“${data.name}” already exists for ${skipped.length === 1 ? skipped[0] : 'all the selected brands and models'}.`);
+        }
+
+        const createdBy = { id: req.user?._id, model: req.user?.model, name: req.user?.leadBy };
+        const services = await Service.insertMany(fresh.map((t) => ({ ...data, ...t, createdBy })));
+
+        let message = services.length === 1 ? 'Service created successfully.' : `Service created for ${services.length} brand/model combinations.`;
+        if (skipped.length) message += ` Skipped ${skipped.length} that already had it: ${skipped.join(', ')}.`;
+        return res.status(201).json({ success: true, message, services, service: services[0], skipped });
     } catch (error) {
-        if (isDuplicateKey(error)) return fail(res, 409, 'A service with this name already exists.');
+        if (isDuplicateKey(error)) return fail(res, 409, 'This service already exists for one of the selected brands and models.');
         if (error.name === 'ValidationError') return fail(res, 400, error.message);
         console.error('createService error:', error);
         return fail(res, 500, 'Server error');
@@ -108,7 +184,7 @@ export const updateService = async (req, res) => {
         const { id } = req.params;
         if (!mongoose.isValidObjectId(id)) return fail(res, 400, 'Invalid service id.');
 
-        const { error, data } = parseServiceBody(req.body, { partial: true });
+        const { error, data } = await parseServiceBody(req.body, { partial: true });
         if (error) return fail(res, 400, error);
         if (Object.keys(data).length === 0) return fail(res, 400, 'Nothing to update.');
 
@@ -119,7 +195,7 @@ export const updateService = async (req, res) => {
         if (!service) return fail(res, 404, 'Service not found.');
         return res.status(200).json({ success: true, message: 'Service updated successfully.', service });
     } catch (error) {
-        if (isDuplicateKey(error)) return fail(res, 409, 'A service with this name already exists.');
+        if (isDuplicateKey(error)) return fail(res, 409, 'This service already exists for the selected brand and model.');
         if (error.name === 'ValidationError') return fail(res, 400, error.message);
         console.error('updateService error:', error);
         return fail(res, 500, 'Server error');

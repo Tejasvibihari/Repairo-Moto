@@ -325,6 +325,7 @@ export default function CreateManualInvoice() {
                 onSave={handleSaveItem}
                 type={dialog.type}
                 editItem={editingItem}
+                vehicle={vehicle}
             />
 
             <div className="max-w-6xl mx-auto px-4 py-6">

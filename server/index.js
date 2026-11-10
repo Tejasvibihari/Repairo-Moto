@@ -45,6 +45,7 @@ import serviceRouter from "./Routes/serviceRoutes.js";
 import { attendanceRouter, attendanceAdminRouter } from "./Routes/attendanceRoutes.js";
 import { ensureUserIndexes } from "./Utils/userIndexes.js";
 import { ensureAuthIndexes } from "./Utils/authIndexes.js";
+import { ensureServiceIndexes } from "./Utils/serviceIndexes.js";
 import "./Utils/photoCleanCron.js";
 import './Utils/upcomingBookingReminder.js';
 import './Utils/notificationScheduler.js';
@@ -123,6 +124,7 @@ mongoose
         console.log("MongoDB connected successfully");
         await ensureUserIndexes();
         await ensureAuthIndexes();
+        await ensureServiceIndexes();
     })
     .catch((error) => console.error("MongoDB connection error:", error.message));
 

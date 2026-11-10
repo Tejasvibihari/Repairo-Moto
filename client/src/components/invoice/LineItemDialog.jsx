@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Dialog from '@mui/material/Dialog';
 import { LoaderCircle, X } from 'lucide-react';
 import { effectiveUnitPrice, formatMoney, toNumber } from '../../service/manualInvoiceApi';
-import { serviceApi, formatDuration } from '../../service/serviceApi';
+import { serviceApi, formatDuration, servicesForVehicle } from '../../service/serviceApi';
 import { htmlToLine } from '../../utils/richText';
 
 /**
@@ -14,8 +14,12 @@ import { htmlToLine } from '../../utils/richText';
  * first and offered as checkboxes, so several can be added at once (each
  * becomes its own line, quantity 1, at its saved price). "Other" lets the
  * user type any service name instead.
+ *
+ * Services are defined per brand + model, so the list is narrowed to the invoice's
+ * `vehicle` ({ brand, model, modelName }). If the vehicle is empty or nothing matches
+ * it, every saved service is shown (labelled with its brand and model) instead.
  */
-export default function LineItemDialog({ open, onClose, onSave, type = 'part', editItem = null }) {
+export default function LineItemDialog({ open, onClose, onSave, type = 'part', editItem = null, vehicle = null }) {
     const nameKey = type === 'part' ? 'partName' : 'serviceName';
     const label = type === 'part' ? 'Part' : 'Service';
 
@@ -60,6 +64,10 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
         return () => { cancelled = true; };
     }, [open, usesCatalog]);
 
+    // Services for this bike; fall back to everything when none match.
+    const forBike = servicesForVehicle(catalog, vehicle || {});
+    const bikeMatched = forBike.length > 0;
+    const shownCatalog = bikeMatched ? forBike : catalog;
     const selectedServices = catalog.filter((svc) => selectedIds.includes(svc._id));
     const multi = usesCatalog && selectedServices.length > 1;
     const showNameInput = !usesCatalog || manual;
@@ -190,7 +198,7 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
                                 </div>
                             ) : (
                                 <div className="max-h-60 overflow-y-auto rounded-lg border border-gray-200 divide-y divide-gray-100">
-                                    {catalog.map((svc) => {
+                                    {shownCatalog.map((svc) => {
                                         const checked = selectedIds.includes(svc._id);
                                         return (
                                             <label
@@ -205,6 +213,9 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
                                                 />
                                                 <span className="flex-1">
                                                     <span className="block text-sm font-medium text-gray-800">{svc.name}</span>
+                                                    {!bikeMatched && svc.brandName && (
+                                                        <span className="block text-xs font-medium text-amber-700">{svc.brandName} {svc.modelName}</span>
+                                                    )}
                                                     <span className="line-clamp-2 block text-xs text-gray-500">
                                                         {svc.description ? `${htmlToLine(svc.description)} · ` : ''}Approx. {formatDuration(svc.estimatedMinutes)}
                                                     </span>
@@ -237,6 +248,13 @@ export default function LineItemDialog({ open, onClose, onSave, type = 'part', e
                                         Each is added as a separate line (quantity 1). Edit a line afterwards to change its quantity or add a discount.
                                     </p>
                                 </div>
+                            )}
+                            {!catalogLoading && catalog.length > 0 && (
+                                <p className="mt-1 text-xs text-gray-500">
+                                    {bikeMatched
+                                        ? `Showing services for ${[vehicle?.brand, vehicle?.modelName || vehicle?.model].filter(Boolean).join(' ')}.`
+                                        : 'No saved services match this invoice\'s vehicle, so all services are shown.'}
+                                </p>
                             )}
                             {catalogError && <p className="mt-1 text-xs text-amber-700">{catalogError}</p>}
                         </div>
