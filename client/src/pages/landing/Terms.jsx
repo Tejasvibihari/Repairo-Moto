@@ -36,7 +36,7 @@ export default function Terms() {
                     <div className="mb-10">
                         <div className="text-gray-400 uppercase text-sm font-medium mb-2">AGREEMENT</div>
                         <h1 className="text-4xl font-bold text-primary mb-2">Terms &amp; Conditions</h1>
-                        <p className="text-sm text-gray-400 mb-4">Effective Date: 21 May 2026 &nbsp;|&nbsp; Issued by Shantram Private Limited &nbsp;|&nbsp; Governing Law: Laws of India; Jurisdiction: Patna, Bihar</p>
+                        <p className="text-sm text-gray-400 mb-4">Effective Date: 12 November 2026 &nbsp;|&nbsp; Issued by Shantram Private Limited (Trader) &nbsp;|&nbsp; Governing Law: Laws of India; Jurisdiction: Patna, Bihar</p>
                         <p className="text-gray-600">
                             By downloading, registering on, or using the Repairo Moto mobile application or website, you agree to be bound by these Terms &amp; Conditions and all policies incorporated herein by reference, including our Privacy Policy, Refund Policy, and Warranty Policy. If you do not agree, do not use the Platform.
                         </p>
@@ -140,6 +140,7 @@ export default function Terms() {
                                     "After service completion, no cancellation is possible. Quality issues must be raised under the Warranty Policy.",
                                     "For eligible cancellations, refunds of advance payments will be processed within 5–7 business days.",
                                     "Cancellation by Repairo Moto (force majeure, mechanic unavailability): Full refund of any advance payment.",
+                                    "If you are a consumer in the European Economic Area or the United Kingdom, you may also have statutory withdrawal and cancellation rights described in Section 15, which apply in addition to the above.",
                                 ].map((item, index) => (
                                     <li key={index} className="flex">
                                         <div className="mr-3 text-blue-600">•</div>
@@ -233,6 +234,7 @@ export default function Terms() {
                                     "We are not liable for indirect, incidental, consequential, or punitive damages.",
                                     "Damage claims must be supported by photographic evidence and submitted within 7 days of service completion.",
                                     "Before/after images uploaded by mechanics are considered primary evidence in damage disputes.",
+                                    "Nothing in these Terms excludes or limits any liability or consumer right that cannot be excluded or limited under applicable law, including mandatory consumer protection laws of your country of residence.",
                                 ].map((item, index) => (
                                     <li key={index} className="flex">
                                         <div className="mr-3 text-blue-600">•</div>
@@ -246,7 +248,7 @@ export default function Terms() {
                         <div>
                             <h2 className="text-xl font-semibold text-gray-900 mb-3">13. Governing Law &amp; Dispute Resolution</h2>
                             <p>
-                                These Terms are governed by the laws of India. Any dispute shall first be attempted to be resolved through good-faith negotiation. If unresolved within 30 days, disputes shall be subject to the exclusive jurisdiction of courts in Patna, Bihar, India.
+                                These Terms are governed by the laws of India. Any dispute shall first be attempted to be resolved through good-faith negotiation. If unresolved within 30 days, disputes shall be subject to the exclusive jurisdiction of courts in Patna, Bihar, India. If you are a consumer residing in the EEA or the UK, this does not deprive you of the mandatory consumer protections or the right to bring proceedings in the courts of your country of residence, where applicable law provides for them.
                             </p>
                         </div>
 
@@ -260,7 +262,37 @@ export default function Terms() {
 
                         {/* Section 15 */}
                         <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-3">15. Contact &amp; Grievance Officer</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-3">15. Trader Information &amp; Consumer Rights</h2>
+                            <p className="mb-3">
+                                Shantram Private Limited acts as a trader: it provides vehicle repair and maintenance services in the course of its business. The Platform is offered to consumers and businesses alike.
+                            </p>
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 text-sm space-y-1">
+                                <div><strong>Trader name:</strong> Shantram Private Limited (trading as Repairo Moto)</div>
+                                <div><strong>Address:</strong> 5C/12 Manna Singh Lane, Vivekanand Marg, North S.K Puri, Boring Road, Patna - 800013, Bihar, India</div>
+                                <div><strong>Email:</strong> <a href="mailto:repairomoto@gmail.com" className="text-blue-600 underline">repairomoto@gmail.com</a></div>
+                                <div><strong>Phone:</strong> <a href="tel:+919229207021" className="text-blue-600 underline">+91 9229207021</a></div>
+                                <div><strong>Website:</strong> <a href="https://repairomoto.in" className="text-blue-600 underline">https://repairomoto.in</a></div>
+                                <div><strong>GSTIN:</strong> 10AAXCS3327A1ZO</div>
+                            </div>
+                            <ul className="space-y-2">
+                                {[
+                                    "Services are currently provided only in Patna and selected operational areas of India. If you access the Platform from the EEA or the UK, the mandatory consumer protection laws of your country of residence continue to apply to you, and nothing in these Terms limits them.",
+                                    "Before you confirm a booking, the Platform displays the service description, the estimated price including applicable taxes, and how payment is taken. Any additional work or charge identified on inspection will be communicated to you before it is carried out.",
+                                    "Right of withdrawal: where you are entitled to it by law as a consumer in the EEA or the UK, you may withdraw from a service booking within 14 days of confirmation without giving a reason, by emailing repairomoto@gmail.com. If you request that the service begin within that period, you must pay a proportionate amount for what has been performed up to the time you inform us of your withdrawal. Once a service has been fully performed, the right of withdrawal is lost where you gave your express request for the service to begin and acknowledged this loss when booking.",
+                                    "Services are performed with reasonable care and skill. The workmanship warranty in Section 7 is in addition to, and does not affect, any statutory rights you have as a consumer.",
+                                    "Complaints: write to repairomoto@gmail.com or call the number above during support hours. We will acknowledge your complaint and aim to resolve it within a reasonable time.",
+                                ].map((item, index) => (
+                                    <li key={index} className="flex">
+                                        <div className="mr-3 text-blue-600">•</div>
+                                        <div>{item}</div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Section 16 */}
+                        <div>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-3">16. Contact &amp; Grievance Officer</h2>
                             <p>
                                 For any questions, complaints, or legal notices, please contact:<br />
                                 <strong>Shantram Private Limited (Repairo Moto)</strong><br />
